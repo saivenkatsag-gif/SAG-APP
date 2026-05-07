@@ -5,11 +5,59 @@ const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 
 const LOGO = "https://framerusercontent.com/images/J2SsjH2XcUHn6jAVX44tSmKJ8.png";
 
-// ─── DEMO USER ACCOUNTS (in-memory, replace with Supabase auth for production) ───
-const DEMO_USERS = [
-  { id: 1, email: "user@sagdrones.com", password: "sag123", name: "Ravi Kumar" },
-  { id: 2, email: "farmer@example.com", password: "farm123", name: "Anjali Singh" },
-];
+// ─── SUPABASE AUTH HELPERS ────────────────────────────────────
+const sbHeaders = {
+  "Content-Type": "application/json",
+  apikey: SUPABASE_KEY,
+  Authorization: `Bearer ${SUPABASE_KEY}`,
+};
+
+async function sbSignUp(email, password, name) {
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
+    method: "POST",
+    headers: sbHeaders,
+    body: JSON.stringify({ email, password, data: { full_name: name } }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.msg || data.message || "Sign up failed");
+  return data;
+}
+
+async function sbSignIn(email, password) {
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+    method: "POST",
+    headers: sbHeaders,
+    body: JSON.stringify({ email, password }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error_description || data.msg || "Invalid email or password");
+  return data;
+}
+
+async function sbSignOut(accessToken) {
+  await fetch(`${SUPABASE_URL}/auth/v1/logout`, {
+    method: "POST",
+    headers: { ...sbHeaders, Authorization: `Bearer ${accessToken}` },
+  });
+}
+
+async function sbGetUser(accessToken) {
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+    headers: { ...sbHeaders, Authorization: `Bearer ${accessToken}` },
+  });
+  if (!res.ok) return null;
+  return res.json();
+}
+
+function saveSession(session) {
+  localStorage.setItem("sag_sb_session", JSON.stringify(session));
+}
+function loadSession() {
+  try { return JSON.parse(localStorage.getItem("sag_sb_session") || "null"); } catch { return null; }
+}
+function clearSession() {
+  localStorage.removeItem("sag_sb_session");
+}
 
 const css = `
   @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap');
@@ -361,7 +409,7 @@ function useToast() {
   return [el, show];
 }
 
-// ─── AUTH MODAL ───────────────────────────────────────────────
+// ─── AUTH MODAL (Supabase) ────────────────────────────────────
 function AuthModal({ onClose, onLogin }) {
   const [tab, setTab] = useState("login");
   const [email, setEmail] = useState("");
@@ -369,34 +417,45 @@ function AuthModal({ onClose, onLogin }) {
   const [name, setName] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [users, setUsers] = useState(() => {
-    try { return JSON.parse(localStorage.getItem("sag_users") || "null") || DEMO_USERS; } catch { return DEMO_USERS; }
-  });
+  const [loading, setLoading] = useState(false);
 
-  const doLogin = () => {
-    setError("");
-    const u = users.find(u => u.email === email.trim() && u.password === password);
-    if (u) {
-      localStorage.setItem("sag_session", JSON.stringify({ id: u.id, name: u.name, email: u.email }));
-      onLogin({ id: u.id, name: u.name, email: u.email });
+  const doLogin = async () => {
+    setError(""); setLoading(true);
+    try {
+      const data = await sbSignIn(email.trim(), password);
+      const displayName = data.user?.user_metadata?.full_name || data.user?.email?.split("@")[0] || "User";
+      const session = { id: data.user.id, name: displayName, email: data.user.email, accessToken: data.access_token };
+      saveSession(session);
+      onLogin(session);
       onClose();
-    } else {
-      setError("Invalid email or password. Please try again.");
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const doRegister = () => {
-    setError(""); setSuccess("");
-    if (!name.trim() || !email.trim() || !password.trim()) { setError("All fields are required."); return; }
-    if (password.length < 6) { setError("Password must be at least 6 characters."); return; }
-    if (users.find(u => u.email === email.trim())) { setError("An account with this email already exists."); return; }
-    const newUser = { id: Date.now(), name: name.trim(), email: email.trim(), password };
-    const updated = [...users, newUser];
-    setUsers(updated);
-    localStorage.setItem("sag_users", JSON.stringify(updated));
-    setSuccess("Account created! You can now sign in.");
-    setTab("login");
-    setPassword(""); setName("");
+  const doRegister = async () => {
+    setError(""); setSuccess(""); setLoading(true);
+    if (!name.trim() || !email.trim() || !password.trim()) { setError("All fields are required."); setLoading(false); return; }
+    if (password.length < 6) { setError("Password must be at least 6 characters."); setLoading(false); return; }
+    try {
+      const data = await sbSignUp(email.trim(), password, name.trim());
+      if (data.access_token) {
+        const session = { id: data.user.id, name: name.trim(), email: data.user.email, accessToken: data.access_token };
+        saveSession(session);
+        onLogin(session);
+        onClose();
+      } else {
+        setSuccess("Account created! Please check your email to confirm, then sign in.");
+        setTab("login");
+        setPassword(""); setName("");
+      }
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -424,20 +483,11 @@ function AuthModal({ onClose, onLogin }) {
           <label>Password</label>
           <input type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === "Enter" && (tab === "login" ? doLogin() : doRegister())} />
         </div>
-        <button className="auth-btn" onClick={tab === "login" ? doLogin : doRegister}>
-          {tab === "login" ? "Sign In →" : "Create Account →"}
+        <button className="auth-btn" onClick={tab === "login" ? doLogin : doRegister} disabled={loading}>
+          {loading ? "Please wait..." : tab === "login" ? "Sign In →" : "Create Account →"}
         </button>
         {error && <div className="auth-error">⚠ {error}</div>}
         {success && <div className="auth-success">✅ {success}</div>}
-        {tab === "login" && (
-          <>
-            <div className="auth-divider">Demo Credentials</div>
-            <div className="auth-demo-note">
-              <strong>Email:</strong> user@sagdrones.com<br />
-              <strong>Password:</strong> sag123
-            </div>
-          </>
-        )}
       </div>
     </div>
   );
@@ -714,7 +764,7 @@ function ProductsPage({ user, cart, setCart, showAuth, showToast }) {
         cart={cart}
         onCartOpen={() => setCartOpen(true)}
         onAuthOpen={() => setAuthOpen(true)}
-        onLogout={() => { localStorage.removeItem("sag_session"); setLocalUser(null); showToast("success", "👋 Signed out successfully."); }}
+        onLogout={async () => { if (localUser?.accessToken) await sbSignOut(localUser.accessToken); clearSession(); setLocalUser(null); showToast("success", "👋 Signed out successfully."); }}
         search={navSearch}
         setSearch={setNavSearch}
         mobileOpen={mobileOpen}
@@ -1144,9 +1194,19 @@ export default function App() {
   const [page, setPage] = useState("products");
   const [cart, setCart] = useState([]);
   const [user, setUser] = useState(() => {
-    try { return JSON.parse(localStorage.getItem("sag_session") || "null"); } catch { return null; }
+    loadSession()
   });
   const [toastEl, showToast] = useToast();
+
+  // Validate stored session on mount
+  useEffect(() => {
+    const session = loadSession();
+    if (session?.accessToken) {
+      sbGetUser(session.accessToken)
+        .then(u => { if (!u) { clearSession(); setUser(null); } })
+        .catch(() => { clearSession(); setUser(null); });
+    }
+  }, []);
 
   useEffect(() => { window.scrollTo(0, 0); }, [page]);
 
