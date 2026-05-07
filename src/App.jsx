@@ -87,7 +87,7 @@ function clearSession() {
   localStorage.removeItem("sag_sb_session");
 }
 
-
+const css = `
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
   html{scroll-behavior:smooth;}
   body{font-family:'DM Sans',sans-serif;background:#0a0f0d;color:#e8f5ec;overflow-x:hidden;}
@@ -1290,9 +1290,7 @@ function AdminPage() {
 export default function App() {
   const [page, setPage] = useState("products");
   const [cart, setCart] = useState([]);
-  const [user, setUser] = useState(() => {
-    loadSession()
-  });
+  const [user, setUser] = useState(() => loadSession());
   const [toastEl, showToast] = useToast();
 
   // Validate stored session on mount
