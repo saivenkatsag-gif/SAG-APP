@@ -5,24 +5,34 @@ const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 
 const LOGO = "https://framerusercontent.com/images/J2SsjH2XcUHn6jAVX44tSmKJ8.png";
 
-// ─── SUPABASE AUTH HELPERS ────────────────────────────────────
+// ─── SUPABASE EMAIL AUTH HELPERS ─────────────────────────────
 const sbHeaders = {
   "Content-Type": "application/json",
   apikey: SUPABASE_KEY,
   Authorization: `Bearer ${SUPABASE_KEY}`,
 };
 
+// Register — sends confirmation email; user must click it before they can log in
 async function sbSignUp(email, password, name) {
   const res = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
     method: "POST",
     headers: sbHeaders,
-    body: JSON.stringify({ email, password, data: { full_name: name } }),
+    body: JSON.stringify({
+      email,
+      password,
+      data: { full_name: name },
+    }),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.msg || data.message || "Sign up failed");
+  if (!res.ok) throw new Error(data.msg || data.message || "Registration failed");
+  // If identities array is empty the email is already registered
+  if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+    throw new Error("An account with this email already exists. Please sign in.");
+  }
   return data;
 }
 
+// Login — will fail with a clear message if email not yet confirmed
 async function sbSignIn(email, password) {
   const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
     method: "POST",
@@ -30,7 +40,13 @@ async function sbSignIn(email, password) {
     body: JSON.stringify({ email, password }),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error_description || data.msg || "Invalid email or password");
+  if (!res.ok) {
+    const msg = data.error_description || data.msg || "";
+    if (msg.toLowerCase().includes("email not confirmed") || msg.toLowerCase().includes("not confirmed")) {
+      throw new Error("Please confirm your email first. Check your inbox and click the confirmation link.");
+    }
+    throw new Error("Invalid email or password. Please try again.");
+  }
   return data;
 }
 
@@ -49,6 +65,18 @@ async function sbGetUser(accessToken) {
   return res.json();
 }
 
+// Resend confirmation email
+async function sbResendConfirmation(email) {
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/resend`, {
+    method: "POST",
+    headers: sbHeaders,
+    body: JSON.stringify({ type: "signup", email }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.msg || data.message || "Could not resend email");
+  return data;
+}
+
 function saveSession(session) {
   localStorage.setItem("sag_sb_session", JSON.stringify(session));
 }
@@ -59,7 +87,7 @@ function clearSession() {
   localStorage.removeItem("sag_sb_session");
 }
 
-const css = `
+
   @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap');
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
   html{scroll-behavior:smooth;}
@@ -409,26 +437,33 @@ function useToast() {
   return [el, show];
 }
 
-// ─── AUTH MODAL (Supabase) ────────────────────────────────────
+// ─── AUTH MODAL — Email + Password ───────────────────────────
 function AuthModal({ onClose, onLogin }) {
   const [tab, setTab] = useState("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [info, setInfo] = useState("");   // neutral blue/green info messages
   const [loading, setLoading] = useState(false);
+  const [unconfirmedEmail, setUnconfirmedEmail] = useState(""); // track who needs resend
+
+  const switchTab = (t) => { setTab(t); setError(""); setInfo(""); setUnconfirmedEmail(""); };
 
   const doLogin = async () => {
-    setError(""); setLoading(true);
+    setError(""); setInfo(""); setLoading(true);
+    if (!email.trim() || !password) { setError("Please fill in all fields."); setLoading(false); return; }
     try {
-      const data = await sbSignIn(email.trim(), password);
-      const displayName = data.user?.user_metadata?.full_name || data.user?.email?.split("@")[0] || "User";
+      const data = await sbSignIn(email.trim().toLowerCase(), password);
+      const displayName = data.user?.user_metadata?.full_name || email.split("@")[0];
       const session = { id: data.user.id, name: displayName, email: data.user.email, accessToken: data.access_token };
       saveSession(session);
       onLogin(session);
       onClose();
     } catch (e) {
+      if (e.message.includes("confirm your email")) {
+        setUnconfirmedEmail(email.trim().toLowerCase());
+      }
       setError(e.message);
     } finally {
       setLoading(false);
@@ -436,21 +471,27 @@ function AuthModal({ onClose, onLogin }) {
   };
 
   const doRegister = async () => {
-    setError(""); setSuccess(""); setLoading(true);
-    if (!name.trim() || !email.trim() || !password.trim()) { setError("All fields are required."); setLoading(false); return; }
+    setError(""); setInfo(""); setLoading(true);
+    if (!name.trim() || !email.trim() || !password) { setError("All fields are required."); setLoading(false); return; }
     if (password.length < 6) { setError("Password must be at least 6 characters."); setLoading(false); return; }
     try {
-      const data = await sbSignUp(email.trim(), password, name.trim());
-      if (data.access_token) {
-        const session = { id: data.user.id, name: name.trim(), email: data.user.email, accessToken: data.access_token };
-        saveSession(session);
-        onLogin(session);
-        onClose();
-      } else {
-        setSuccess("Account created! Please check your email to confirm, then sign in.");
-        setTab("login");
-        setPassword(""); setName("");
-      }
+      await sbSignUp(email.trim().toLowerCase(), password, name.trim());
+      setInfo(`✅ We've sent a confirmation link to ${email.trim()}. Please open it to activate your account, then sign in here.`);
+      setTab("login");
+      setPassword(""); setName("");
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const doResend = async () => {
+    setError(""); setInfo(""); setLoading(true);
+    try {
+      await sbResendConfirmation(unconfirmedEmail);
+      setInfo(`📧 Confirmation email resent to ${unconfirmedEmail}. Please check your inbox (and spam folder).`);
+      setUnconfirmedEmail("");
     } catch (e) {
       setError(e.message);
     } finally {
@@ -464,30 +505,87 @@ function AuthModal({ onClose, onLogin }) {
         <button className="auth-close" onClick={onClose}>✕</button>
         <img src={LOGO} alt="SAG" className="auth-logo" />
         <h2>{tab === "login" ? "Welcome Back" : "Create Account"}</h2>
-        <p className="auth-sub">{tab === "login" ? "Sign in to your SAG Drones account" : "Join the SAG Drone Technologies community"}</p>
+        <p className="auth-sub">
+          {tab === "login"
+            ? "Sign in to your SAG Drones account"
+            : "Join the SAG Drone Technologies community"}
+        </p>
+
         <div className="auth-tabs">
-          <button className={`auth-tab${tab === "login" ? " active" : ""}`} onClick={() => { setTab("login"); setError(""); setSuccess(""); }}>Sign In</button>
-          <button className={`auth-tab${tab === "register" ? " active" : ""}`} onClick={() => { setTab("register"); setError(""); setSuccess(""); }}>Register</button>
+          <button className={`auth-tab${tab === "login" ? " active" : ""}`} onClick={() => switchTab("login")}>Sign In</button>
+          <button className={`auth-tab${tab === "register" ? " active" : ""}`} onClick={() => switchTab("register")}>Register</button>
         </div>
+
         {tab === "register" && (
           <div className="auth-field">
             <label>Full Name</label>
-            <input placeholder="Ravi Kumar" value={name} onChange={e => setName(e.target.value)} onKeyDown={e => e.key === "Enter" && doRegister()} />
+            <input
+              placeholder="Ravi Kumar"
+              value={name}
+              onChange={e => setName(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && doRegister()}
+            />
           </div>
         )}
+
         <div className="auth-field">
           <label>Email Address</label>
-          <input type="email" placeholder="you@example.com" value={email} onChange={e => setEmail(e.target.value)} onKeyDown={e => e.key === "Enter" && (tab === "login" ? doLogin() : doRegister())} />
+          <input
+            type="email"
+            placeholder="you@example.com"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && (tab === "login" ? doLogin() : doRegister())}
+          />
         </div>
+
         <div className="auth-field">
           <label>Password</label>
-          <input type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === "Enter" && (tab === "login" ? doLogin() : doRegister())} />
+          <input
+            type="password"
+            placeholder="••••••••"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && (tab === "login" ? doLogin() : doRegister())}
+          />
         </div>
-        <button className="auth-btn" onClick={tab === "login" ? doLogin : doRegister} disabled={loading}>
-          {loading ? "Please wait..." : tab === "login" ? "Sign In →" : "Create Account →"}
+
+        <button
+          className="auth-btn"
+          onClick={tab === "login" ? doLogin : doRegister}
+          disabled={loading}
+        >
+          {loading
+            ? (tab === "login" ? "Signing in..." : "Creating account...")
+            : (tab === "login" ? "Sign In →" : "Create Account →")}
         </button>
-        {error && <div className="auth-error">⚠ {error}</div>}
-        {success && <div className="auth-success">✅ {success}</div>}
+
+        {/* Error with optional resend button */}
+        {error && (
+          <div className="auth-error" style={{ marginTop: 12 }}>
+            ⚠ {error}
+            {unconfirmedEmail && (
+              <button
+                onClick={doResend}
+                disabled={loading}
+                style={{
+                  display: "block", marginTop: 8, background: "none", border: "1px solid rgba(224,80,80,0.5)",
+                  color: "#e05050", borderRadius: 6, padding: "5px 12px", fontSize: "0.78rem",
+                  cursor: "pointer", fontFamily: "'DM Sans',sans-serif", fontWeight: 600, width: "100%"
+                }}
+              >
+                📧 Resend confirmation email
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Success / info message */}
+        {info && (
+          <div className="auth-success" style={{ marginTop: 12, textAlign: "left", lineHeight: 1.6 }}>
+            {info}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -505,7 +603,7 @@ function CartDrawer({ open, onClose, cart, setCart, user, showAuth }) {
   const checkout = () => {
     if (!user) { onClose(); showAuth(); return; }
     const lines = cart.map(i => `• ${i.name} x${i.qty} — ${formatINR(i.price * i.qty)}`).join("\n");
-    const msg = `🛒 *Cart Enquiry — SAG Drone Technologies*\n\n👤 *Customer:* ${user.name}\n✉️ *Email:* ${user.email}\n\n*Items:*\n${lines}\n\n💰 *Total: ${formatINR(total)}*\n\nPlease confirm availability. Thank you!`;
+    const msg = `🛒 *Cart Enquiry — SAG Drone Technologies*\n\n👤 *Customer:* ${user.name}\n✉️ *Email:* ${user.email || ''}\n\n*Items:*\n${lines}\n\n💰 *Total: ${formatINR(total)}*\n\nPlease confirm availability. Thank you!`;
     window.open(`https://wa.me/919390238537?text=${encodeURIComponent(msg)}`, "_blank");
   };
 
@@ -664,7 +762,7 @@ function Nav({ user, cart, onCartOpen, onAuthOpen, onLogout, search, setSearch, 
                 <div className="user-dropdown">
                   <div className="user-dropdown-hdr">
                     <div className="user-dropdown-name">{user.name}</div>
-                    <div className="user-dropdown-email">{user.email}</div>
+                    <div className="user-dropdown-email">{user.email || ""}</div>
                   </div>
                   <button className="user-dropdown-item" onClick={() => { setUserMenuOpen(false); onCartOpen(); }}>🛒 My Cart ({cart.reduce((s, i) => s + i.qty, 0)} items)</button>
                   <button className="user-dropdown-item danger" onClick={() => { setUserMenuOpen(false); onLogout(); }}>⏏ Sign Out</button>
