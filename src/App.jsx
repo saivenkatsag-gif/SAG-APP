@@ -88,7 +88,6 @@ function clearSession() {
 }
 
 
-  @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap');
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
   html{scroll-behavior:smooth;}
   body{font-family:'DM Sans',sans-serif;background:#0a0f0d;color:#e8f5ec;overflow-x:hidden;}
