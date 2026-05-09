@@ -122,6 +122,54 @@ async function sbGetAllEnquiries() {
   if (!res.ok) return [];
   return res.json();
 }
+// ─── CART DB HELPERS ──────────────────────────────────────────
+async function sbGetCart(userId, accessToken) {
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/user_cart?user_id=eq.${userId}&select=*`,
+    { headers: { ...sbHeaders, Authorization: `Bearer ${accessToken}` } }
+  );
+  if (!res.ok) return [];
+  return res.json();
+}
+
+async function sbUpsertCartItem(userId, accessToken, productId, qty) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/user_cart`, {
+    method: "POST",
+    headers: {
+      ...sbHeaders,
+      Authorization: `Bearer ${accessToken}`,
+      Prefer: "resolution=merge-duplicates,return=representation",
+    },
+    body: JSON.stringify({
+      user_id: userId,
+      product_id: productId,
+      qty,
+      updated_at: new Date().toISOString(),
+    }),
+  });
+  if (!res.ok) throw new Error("Failed to update cart");
+  return res.json();
+}
+
+async function sbDeleteCartItem(userId, accessToken, productId) {
+  await fetch(
+    `${SUPABASE_URL}/rest/v1/user_cart?user_id=eq.${userId}&product_id=eq.${productId}`,
+    {
+      method: "DELETE",
+      headers: { ...sbHeaders, Authorization: `Bearer ${accessToken}` },
+    }
+  );
+}
+
+async function sbClearCart(userId, accessToken) {
+  await fetch(
+    `${SUPABASE_URL}/rest/v1/user_cart?user_id=eq.${userId}`,
+    {
+      method: "DELETE",
+      headers: { ...sbHeaders, Authorization: `Bearer ${accessToken}` },
+    }
+  );
+}
 
 // ─── STATIC DATA ──────────────────────────────────────────────
 const STATIC_PRODUCTS = [
