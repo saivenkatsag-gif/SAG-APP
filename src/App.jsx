@@ -781,7 +781,7 @@ function ProductDetailModal({ product, onClose, onAddCart, user, showAuth, allPr
       {/* ── Product Details ── */}
       <div style={S.card}>
         <div style={S.secTitle}>Product Details</div>
-        <p style={{ fontSize:"0.85rem", color:"#4b5563", lineHeight:1.8, margin:0 }}>
+        <p style={{ fontSize:"0.85rem", color:"#4b5563", lineHeight:1.8, margin:0, textAlign:"left" }}>
           DGCA-certified quality drone component. All products come with manufacturer warranty
           and SAG Drone Technologies' trusted after-sale support. Designed for professional
           agricultural operations with high reliability and performance.
@@ -930,7 +930,7 @@ function ProductDetailModal({ product, onClose, onAddCart, user, showAuth, allPr
                   </span>
                 </div>
                 <p style={{ fontSize:"0.83rem", color:"#4b5563", margin:"6px 0 0 40px",
-                  lineHeight:1.65 }}>{r.comment}</p>
+                  lineHeight:1.65, textAlign:"left" }}>{r.comment}</p>
               </div>
             ))}
 
@@ -1265,7 +1265,7 @@ function BannerAdminModal({ banners, onSave, onClose }) {
 }
 
 // ─── HOME PAGE ─────────────────────────────────────────────────
-function HomePage({ user, cart, showAuth, showToast, onTabChange, banners, setBanners, addToCart }) {
+function HomePage({ user, cart, showAuth, showToast, onTabChange, banners, setBanners, addToCart, onLogin }) {
   const [products, setProducts] = useState(STATIC_PRODUCTS);
   const [search, setSearch] = useState("");
   const [activeCat, setActiveCat] = useState("All");
@@ -1479,23 +1479,11 @@ function HomePage({ user, cart, showAuth, showToast, onTabChange, banners, setBa
           </>
         )}
 
-        <div style={{ padding:"20px 14px",borderTop:"1px solid #e8edf5",marginTop:10,background:"#fff" }}>
-          <div style={{ display:"flex",alignItems:"center",gap:10,marginBottom:10 }}>
-            <img src={LOGO} alt="SAG" style={{ height:28 }} />
-            <span style={{ fontFamily:"'Barlow Condensed',sans-serif",fontSize:"0.9rem",fontWeight:800,color:"#111827" }}>SAG Drone Technologies</span>
-          </div>
-          <div style={{ fontSize:"0.78rem",color:"#6b7280",lineHeight:1.9 }}>
-            📞 +91 897777 6019 &nbsp;|&nbsp; ✉️ sagtechinfo@gmail.com
-          </div>
-          <div style={{ fontSize:"0.72rem",color:"#9ca3af",marginTop:10,textAlign:"center" }}>
-            © 2025 SAG Drone Technologies. All rights reserved.
-          </div>
-        </div>
       </div>
 
       {/* Modals */}
       {cartOpen && <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} cart={cart} user={localUser} showAuth={() => setAuthOpen(true)} updateCartQty={updateCartQty} removeFromCart={removeFromCart} />}
-      {authOpen && <AuthModal onClose={() => setAuthOpen(false)} onLogin={(session) => { saveSession(session); setLocalUser(session); showToast("success","✅ Welcome, "+session.name+"!"); }} />}
+      {authOpen && <AuthModal onClose={() => setAuthOpen(false)} onLogin={(session) => { saveSession(session); setLocalUser(session); if (onLogin) onLogin(session); showToast("success","✅ Welcome, "+session.name+"!"); }} />}
       {modalProduct && <ProductDetailModal product={modalProduct} onClose={closeModal} onAddCart={addToCart} allProducts={products} onSimilarClick={openProduct} user={localUser} showAuth={() => { closeModal(); setProductHistory([]); setModalProduct(null); setAuthOpen(true); }} />}
       {bannerAdminOpen && <BannerAdminModal banners={banners} onSave={(list) => { setBanners(list); setBannerAdminOpen(false); showToast("success","✅ Banners saved!"); }} onClose={() => setBannerAdminOpen(false)} />}
     </div>
@@ -1902,8 +1890,8 @@ function AccountPage({ user, onLogin, onLogout, cart, showToast }) {
                   <div style={{ background:"linear-gradient(135deg,rgba(46,204,113,0.1),rgba(46,204,113,0.05))",border:"1px solid rgba(46,204,113,0.2)",borderRadius:12,padding:"14px 16px",marginBottom:12 }}>
                     <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center" }}>
                       <div>
-                        <div style={{ fontWeight:700,fontSize:"0.9rem",color:"#fff",marginBottom:2 }}>🛒 Active Cart</div>
-                        <div style={{ fontSize:"0.78rem",color:"#7aab8a" }}>{cartCount} item{cartCount!==1?"s":""} · {formatINR(cartTotal)}</div>
+                        <div style={{ fontWeight:700,fontSize:"0.9rem",color:"#0a4d1e",marginBottom:2 }}>🛒 Active Cart</div>
+                        <div style={{ fontSize:"0.78rem",color:"#1a5c30" }}>{cartCount} item{cartCount!==1?"s":""} · {formatINR(cartTotal)}</div>
                       </div>
                       <a href={`https://wa.me/919390238537?text=${encodeURIComponent(`Hello SAG! I have ${cartCount} items in my cart worth ${formatINR(cartTotal)}.`)}`}
                         target="_blank" rel="noreferrer"
@@ -1922,7 +1910,7 @@ function AccountPage({ user, onLogin, onLogout, cart, showToast }) {
                 ].map(([icon,label,sub,action]) => (
                   <div key={label} onClick={action||undefined} style={{ display:"flex",alignItems:"center",gap:12,padding:"13px 14px",background:"#131f16",border:"1px solid rgba(46,204,113,0.1)",borderRadius:12,marginBottom:9,cursor:action?"pointer":"default" }}>
                     <span style={{ fontSize:"1.25rem" }}>{icon}</span>
-                    <div style={{ flex:1 }}>
+                    <div style={{ flex:1, textAlign:"left" }}>
                       <div style={{ fontWeight:600,fontSize:"0.87rem",color:"#fff" }}>{label}</div>
                       <div style={{ fontSize:"0.73rem",color:"#7aab8a",marginTop:1 }}>{sub}</div>
                     </div>
@@ -3384,11 +3372,21 @@ export default function App() {
   useEffect(() => {
     const session = loadSession();
 
-    // Validate session
+    // Validate session — only wipe if the token still matches what's stored
+    // (guards against async validation racing with a mid-flight login)
     if (session?.accessToken) {
-      sbGetUser(session.accessToken)
-        .then(u => { if (!u) { clearSession(); setUser(null); } })
-        .catch(() => { clearSession(); setUser(null); });
+      const tokenToValidate = session.accessToken;
+      sbGetUser(tokenToValidate)
+        .then(u => {
+          if (!u) {
+            const current = loadSession();
+            if (current?.accessToken === tokenToValidate) { clearSession(); setUser(null); }
+          }
+        })
+        .catch(() => {
+          const current = loadSession();
+          if (current?.accessToken === tokenToValidate) { clearSession(); setUser(null); }
+        });
     }
 
     // Load products
@@ -3501,7 +3499,7 @@ export default function App() {
 
       {tab === "home" && (
         <HomePage user={user} cart={cart} showAuth={()=>{}} showToast={showToast} onTabChange={setTab}
-          banners={banners} setBanners={setBanners} addToCart={addToCart} />
+          banners={banners} setBanners={setBanners} addToCart={addToCart} onLogin={handleLogin} />
       )}
       {tab === "categories" && (
         <CategoriesPage products={products} onProductClick={openProduct} onAddCart={addToCart} user={user} />
