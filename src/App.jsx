@@ -240,6 +240,35 @@ function discount(price, original) {
   return Math.round((1 - price / original) * 100);
 }
 
+// ─── CATEGORY ICON HELPERS ────────────────────────────────────
+function isImgUrl(v) {
+  if (!v || typeof v !== "string") return false;
+  return v.startsWith("http://") || v.startsWith("https://") || v.startsWith("data:image");
+}
+
+// Renders either a PNG/URL image or an emoji, sized to fit the container
+function CategoryIcon({ icon, size = 46, fontSize = "1.4rem", borderRadius = 12 }) {
+  const wrapStyle = {
+    width: size, height: size, borderRadius, flexShrink: 0,
+    background: "linear-gradient(135deg,#1a2b6b,#2454c7)",
+    display: "flex", alignItems: "center", justifyContent: "center",
+    overflow: "hidden",
+  };
+  if (isImgUrl(icon)) {
+    return (
+      <div style={wrapStyle}>
+        <img src={icon} alt="category icon"
+          style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+      </div>
+    );
+  }
+  return (
+    <div style={wrapStyle}>
+      <span style={{ fontSize }}>{icon || "📦"}</span>
+    </div>
+  );
+}
+
 // ─── TOAST ────────────────────────────────────────────────────
 function useToast() {
   const [toast, setToast] = useState({ show: false, type: "success", msg: "" });
@@ -1388,7 +1417,10 @@ function HomePage({ user, cart, showAuth, showToast, onTabChange, banners, setBa
               borderRadius:10,padding:"6px 14px",cursor:"pointer",transition:"all .2s",
               minWidth:60
             }}>
-              <span style={{ fontSize:"1.2rem" }}>{cat.icon}</span>
+              {isImgUrl(cat.icon)
+                ? <img src={cat.icon} alt={cat.name} style={{ width:22,height:22,borderRadius:5,objectFit:"cover",flexShrink:0 }} />
+                : <span style={{ fontSize:"1.2rem" }}>{cat.icon}</span>
+              }
               <span style={{ fontSize:"0.66rem",fontWeight:700,color:"#fff",whiteSpace:"nowrap",fontFamily:"'DM Sans',sans-serif" }}>{cat.name}</span>
               {activeCat===cat.name && <div style={{ width:18,height:2,background:"#fff",borderRadius:1 }} />}
             </button>
@@ -1682,7 +1714,10 @@ function CategoriesPage({ products: propProducts, onProductClick, onAddCart, use
                   border: activeCat===cat.name ? "2px solid #fff" : "2px solid transparent",
                   borderRadius:20,padding:"6px 14px",cursor:"pointer",transition:"all .2s",
                 }}>
-                  <span style={{ fontSize:"1rem" }}>{cat.icon || "📦"}</span>
+                  {isImgUrl(cat.icon)
+                  ? <img src={cat.icon} alt={cat.name} style={{ width:20,height:20,borderRadius:4,objectFit:"cover",flexShrink:0 }} />
+                  : <span style={{ fontSize:"1rem" }}>{cat.icon || "📦"}</span>
+                }
                   <span style={{ fontSize:"0.72rem",fontWeight:700,color:"#fff",whiteSpace:"nowrap",fontFamily:"'DM Sans',sans-serif" }}>{cat.name}</span>
                 </button>
               ))
@@ -1730,11 +1765,7 @@ function CategoriesPage({ products: propProducts, onProductClick, onAddCart, use
                   <div style={{ display:"flex",alignItems:"center",gap:12,marginBottom:12,
                     padding:"10px 14px",background:"#fff",borderRadius:14,
                     boxShadow:"0 1px 4px rgba(0,0,0,0.06)",border:"1px solid #e8edf5" }}>
-                    <div style={{
-                      width:46,height:46,borderRadius:12,flexShrink:0,
-                      background:"linear-gradient(135deg,#1a2b6b,#2454c7)",
-                      display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.4rem"
-                    }}>{iconFor(name)}</div>
+                    <CategoryIcon icon={iconFor(name)} size={46} fontSize="1.4rem" borderRadius={12} />
                     <div style={{ flex:1,minWidth:0 }}>
                       <div style={{ fontFamily:"'Barlow Condensed',sans-serif",fontSize:"1.2rem",fontWeight:800,color:"#111827" }}>{name}</div>
                       <div style={{ fontSize:"0.72rem",color:"#6b7280",marginTop:1 }}>
@@ -2799,6 +2830,8 @@ function AdminCategories({ showToast }) {
   const [deleting, setDeleting] = useState(null);
   const emptyForm = { name:"", icon:"📦", description:"", active:true };
   const [form, setForm] = useState(emptyForm);
+  const [iconTab, setIconTab] = useState("emoji"); // "emoji" | "image"
+  const [imgUrlDraft, setImgUrlDraft] = useState("");
   const COMMON_ICONS = ["📦","🚁","🔋","🕹️","🔧","⚙️","🛸","🌾","💡","🛠️","📡","🎮","🔩","🪝","🧰","🛡️","🔌","📷","🎯","🏷️"];
 
   useEffect(() => {
@@ -2816,8 +2849,12 @@ function AdminCategories({ showToast }) {
   }, []);
 
   const openEdit = (i) => {
+    const f = i === -1 ? { ...emptyForm, sort_order: cats.length } : { ...cats[i] };
     setEditIdx(i);
-    setForm(i === -1 ? { ...emptyForm, sort_order: cats.length } : { ...cats[i] });
+    setForm(f);
+    const isImg = f.icon && (f.icon.startsWith("http://") || f.icon.startsWith("https://") || f.icon.startsWith("data:image"));
+    setIconTab(isImg ? "image" : "emoji");
+    setImgUrlDraft(isImg ? f.icon : "");
   };
 
   const saveForm = async () => {
@@ -2877,18 +2914,92 @@ function AdminCategories({ showToast }) {
 
         {/* Icon picker */}
         <div className="modal-field">
-          <label>Icon Emoji</label>
-          <div style={{ display:"flex",flexWrap:"wrap",gap:8,marginBottom:10 }}>
-            {COMMON_ICONS.map(ic => (
-              <button key={ic} onClick={()=>setForm(f=>({...f,icon:ic}))} style={{
-                width:38,height:38,borderRadius:10,border: form.icon===ic?"2px solid #2ecc71":"1px solid rgba(46,204,113,0.2)",
-                background: form.icon===ic?"rgba(46,204,113,0.15)":"#0a0f0d",fontSize:"1.2rem",cursor:"pointer",
-                display:"flex",alignItems:"center",justifyContent:"center",transition:"all .15s"
-              }}>{ic}</button>
+          <label>Category Icon</label>
+
+          {/* Tab switcher */}
+          <div style={{ display:"flex",background:"#0a0f0d",borderRadius:30,padding:3,marginBottom:14,width:"fit-content" }}>
+            {[["emoji","😀 Emoji"],["image","🖼 Image URL"]].map(([t,lbl]) => (
+              <button key={t} onClick={()=>setIconTab(t)} style={{
+                padding:"5px 16px",borderRadius:30,border:"none",cursor:"pointer",
+                fontFamily:"'DM Sans',sans-serif",fontSize:"0.78rem",fontWeight:700,
+                background: iconTab===t ? "rgba(46,204,113,0.2)" : "none",
+                color: iconTab===t ? "#2ecc71" : "#7aab8a", transition:"all .15s"
+              }}>{lbl}</button>
             ))}
           </div>
-          <input value={form.icon} onChange={e=>setForm(f=>({...f,icon:e.target.value}))} placeholder="Or type any emoji"
-            style={{ width:"100%",padding:"9px 12px",background:"#0a0f0d",border:"1.5px solid rgba(46,204,113,0.2)",borderRadius:10,color:"#fff",fontFamily:"'DM Sans',sans-serif",fontSize:"1.2rem",outline:"none",boxSizing:"border-box",textAlign:"center" }} />
+
+          {iconTab === "emoji" ? (
+            <>
+              <div style={{ display:"flex",flexWrap:"wrap",gap:8,marginBottom:10 }}>
+                {COMMON_ICONS.map(ic => (
+                  <button key={ic} onClick={()=>setForm(f=>({...f,icon:ic}))} style={{
+                    width:38,height:38,borderRadius:10,
+                    border: (!isImgUrl(form.icon) && form.icon===ic) ? "2px solid #2ecc71" : "1px solid rgba(46,204,113,0.2)",
+                    background: (!isImgUrl(form.icon) && form.icon===ic) ? "rgba(46,204,113,0.15)" : "#0a0f0d",
+                    fontSize:"1.2rem",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .15s"
+                  }}>{ic}</button>
+                ))}
+              </div>
+              <input
+                value={isImgUrl(form.icon) ? "" : form.icon}
+                onChange={e => setForm(f => ({...f, icon: e.target.value}))}
+                placeholder="Or type any emoji"
+                style={{ width:"100%",padding:"9px 12px",background:"#0a0f0d",border:"1.5px solid rgba(46,204,113,0.2)",borderRadius:10,color:"#fff",fontFamily:"'DM Sans',sans-serif",fontSize:"1.2rem",outline:"none",boxSizing:"border-box",textAlign:"center" }}
+              />
+            </>
+          ) : (
+            <>
+              {/* Cloudinary / any image URL input */}
+              <div style={{ background:"rgba(46,204,113,0.05)",border:"1px solid rgba(46,204,113,0.15)",borderRadius:10,padding:"12px 14px",marginBottom:12 }}>
+                <div style={{ fontSize:"0.7rem",color:"#7aab8a",fontWeight:700,letterSpacing:".07em",textTransform:"uppercase",marginBottom:8 }}>
+                  Cloudinary / Image URL
+                </div>
+                <input
+                  value={imgUrlDraft}
+                  onChange={e => {
+                    setImgUrlDraft(e.target.value);
+                    if (e.target.value.startsWith("http://") || e.target.value.startsWith("https://")) {
+                      setForm(f => ({...f, icon: e.target.value}));
+                    }
+                  }}
+                  placeholder="https://res.cloudinary.com/your-cloud/image/upload/v1/icon.png"
+                  style={{
+                    width:"100%",padding:"10px 13px",background:"#0a0f0d",
+                    border:"1.5px solid rgba(46,204,113,0.25)",borderRadius:10,
+                    color:"#fff",fontFamily:"'DM Sans',sans-serif",fontSize:"0.85rem",
+                    outline:"none",boxSizing:"border-box"
+                  }}
+                />
+                <div style={{ fontSize:"0.71rem",color:"#7aab8a",marginTop:7,display:"flex",alignItems:"center",gap:5 }}>
+                  <span>💡</span> Upload your PNG to Cloudinary, copy the URL and paste it above.
+                </div>
+              </div>
+
+              {/* Live preview */}
+              {isImgUrl(form.icon) ? (
+                <div style={{ display:"flex",alignItems:"center",gap:14,padding:"12px 14px",background:"#0a0f0d",border:"1px solid rgba(46,204,113,0.2)",borderRadius:12 }}>
+                  <img
+                    src={form.icon}
+                    alt="icon preview"
+                    onError={e => { e.target.style.display="none"; }}
+                    style={{ width:56,height:56,borderRadius:12,objectFit:"cover",border:"1.5px solid rgba(46,204,113,0.35)",flexShrink:0 }}
+                  />
+                  <div style={{ flex:1,minWidth:0 }}>
+                    <div style={{ fontSize:"0.75rem",color:"#2ecc71",fontWeight:700,marginBottom:3 }}>✅ Image set</div>
+                    <div style={{ fontSize:"0.7rem",color:"#7aab8a",wordBreak:"break-all",lineHeight:1.4 }}>{form.icon.length > 60 ? form.icon.slice(0,57)+"…" : form.icon}</div>
+                  </div>
+                  <button
+                    onClick={() => { setForm(f => ({...f, icon:"📦"})); setImgUrlDraft(""); setIconTab("emoji"); }}
+                    style={{ background:"rgba(224,80,80,0.12)",border:"1px solid #e05050",color:"#e05050",borderRadius:20,padding:"5px 12px",fontFamily:"'DM Sans',sans-serif",fontSize:"0.75rem",fontWeight:700,cursor:"pointer",flexShrink:0 }}
+                  >✕ Remove</button>
+                </div>
+              ) : (
+                <div style={{ textAlign:"center",padding:"16px",color:"#7aab8a",fontSize:"0.8rem",background:"#0a0f0d",borderRadius:10,border:"1px dashed rgba(46,204,113,0.15)" }}>
+                  Paste a URL above to preview the icon
+                </div>
+              )}
+            </>
+          )}
         </div>
 
         <div className="modal-field">
@@ -2907,7 +3018,7 @@ function AdminCategories({ showToast }) {
         <div style={{ background:"#0a0f0d",border:"1px solid rgba(46,204,113,0.15)",borderRadius:12,padding:"12px 16px",marginBottom:18 }}>
           <div style={{ fontSize:"0.7rem",color:"#7aab8a",marginBottom:8,textTransform:"uppercase",letterSpacing:".07em",fontWeight:700 }}>Preview</div>
           <div style={{ display:"flex",alignItems:"center",gap:12 }}>
-            <div style={{ width:48,height:48,borderRadius:14,background:"linear-gradient(135deg,#1a2b6b,#2454c7)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.5rem" }}>{form.icon||"📦"}</div>
+            <CategoryIcon icon={form.icon || "📦"} size={48} fontSize="1.5rem" borderRadius={14} />
             <div>
               <div style={{ fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:"1.1rem",color:"#fff" }}>{form.name||"Category Name"}</div>
               <div style={{ fontSize:"0.73rem",color:"#7aab8a",marginTop:1 }}>{form.description||"No description"}</div>
@@ -2958,7 +3069,7 @@ function AdminCategories({ showToast }) {
               </div>
 
               {/* Icon */}
-              <div style={{ width:46,height:46,borderRadius:12,background:"linear-gradient(135deg,#1a2b6b,#2454c7)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.4rem",flexShrink:0 }}>{c.icon||"📦"}</div>
+              <CategoryIcon icon={c.icon} size={46} fontSize="1.4rem" borderRadius={12} />
 
               {/* Info */}
               <div style={{ flex:1,minWidth:0 }}>
