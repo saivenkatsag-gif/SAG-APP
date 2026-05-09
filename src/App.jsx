@@ -528,7 +528,7 @@ function StarPicker({ value, onChange }) {
 }
 
 // ─── PRODUCT DETAIL PAGE (full screen) ────────────────────────
-function ProductDetailModal({ product, onClose, onAddCart, user, showAuth, allProducts }) {
+function ProductDetailModal({ product, onClose, onAddCart, user, showAuth, allProducts, onSimilarClick }) {
   const off = discount(product.price, product.originalPrice);
   const handleAddCart = () => { if (!user) { onClose(); showAuth(); return; } onAddCart(product); onClose(); };
   const msg = `Hello SAG Drone Technologies! 👋\n\nI'm interested in: ${product.name}\nPrice: ${formatINR(product.price)}\n\nPlease share more details.`;
@@ -601,9 +601,9 @@ function ProductDetailModal({ product, onClose, onAddCart, user, showAuth, allPr
     finally { setSubmitting(false); }
   };
 
-  // Hardware back button
+  // Hardware back button — App.openProduct already pushed a history entry.
+  // We just listen for popstate and call onClose (which navigates the product stack).
   useEffect(() => {
-    window.history.pushState({ pdModal: true }, "");
     const onPop = () => { onClose(); };
     window.addEventListener("popstate", onPop);
     return () => { window.removeEventListener("popstate", onPop); };
@@ -912,8 +912,15 @@ function ProductDetailModal({ product, onClose, onAddCart, user, showAuth, allPr
             {similar.map(p=>{
               const pOff=discount(p.price,p.originalPrice);
               return (
-                <div key={p.id} style={{ flexShrink:0, width:144, background:"#f9fafb",
-                  borderRadius:12, border:"1px solid #e5e7eb", overflow:"hidden" }}>
+                <div key={p.id}
+                  onClick={()=>onSimilarClick(p)}
+                  style={{ flexShrink:0, width:144, background:"#f9fafb",
+                    borderRadius:12, border:"1px solid #e5e7eb", overflow:"hidden",
+                    cursor:"pointer", transition:"box-shadow .18s, transform .18s",
+                  }}
+                  onMouseEnter={e=>{ e.currentTarget.style.boxShadow="0 4px 16px rgba(0,0,0,0.12)"; e.currentTarget.style.transform="translateY(-2px)"; }}
+                  onMouseLeave={e=>{ e.currentTarget.style.boxShadow="none"; e.currentTarget.style.transform="translateY(0)"; }}
+                >
                   <div style={{ height:100, background:"#fff", display:"flex",
                     alignItems:"center", justifyContent:"center", padding:8 }}>
                     {p.image
@@ -1169,7 +1176,25 @@ function HomePage({ user, cart, showAuth, showToast, onTabChange, banners, setBa
   const [search, setSearch] = useState("");
   const [activeCat, setActiveCat] = useState("All");
   const [modalProduct, setModalProduct] = useState(null);
+  const [productHistory, setProductHistory] = useState([]);
   const [cartOpen, setCartOpen] = useState(false);
+
+  const openProduct = (p) => {
+    if (modalProduct) setProductHistory(h => [...h, modalProduct]);
+    setModalProduct(p);
+    window.history.pushState({ pdModal: true }, "");
+  };
+
+  const closeModal = () => {
+    if (productHistory.length > 0) {
+      const prev = productHistory[productHistory.length - 1];
+      setProductHistory(h => h.slice(0, -1));
+      setModalProduct(prev);
+    } else {
+      setModalProduct(null);
+      setProductHistory([]);
+    }
+  };
   const [authOpen, setAuthOpen] = useState(false);
   const [localUser, setLocalUser] = useState(user);
   const [bannerAdminOpen, setBannerAdminOpen] = useState(false);
@@ -1309,24 +1334,24 @@ function HomePage({ user, cart, showAuth, showToast, onTabChange, banners, setBa
               </div>
             ) : (
               <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:10 }}>
-                {filtered.map(p => <ProductCard key={p.id} p={p} onClick={() => setModalProduct(p)} onAddCart={() => { if(!localUser){setAuthOpen(true);return;} addToCart(p); }} user={localUser} />)}
+                {filtered.map(p => <ProductCard key={p.id} p={p} onClick={() => openProduct(p)} onAddCart={() => { if(!localUser){setAuthOpen(true);return;} addToCart(p); }} user={localUser} />)}
               </div>
             )}
           </div>
         ) : (
           <>
             <SectionBlock title="🚁 Drones" subtitle="Agricultural drones for every farm" products={featuredDrones}
-              onProductClick={setModalProduct} onAddCart={(p) => { if(!localUser){setAuthOpen(true);return;} addToCart(p); }} user={localUser}
+              onProductClick={openProduct} onAddCart={(p) => { if(!localUser){setAuthOpen(true);return;} addToCart(p); }} user={localUser}
               onViewAll={() => setActiveCat("Drones")} />
 
             {offers.length > 0 && (
               <SectionBlock title="🏷️ Hot Deals" subtitle="Best prices on top products" products={offers}
-                onProductClick={setModalProduct} onAddCart={(p) => { if(!localUser){setAuthOpen(true);return;} addToCart(p); }} user={localUser}
+                onProductClick={openProduct} onAddCart={(p) => { if(!localUser){setAuthOpen(true);return;} addToCart(p); }} user={localUser}
                 onViewAll={() => setActiveCat("Offers")} accent="#f0a030" />
             )}
 
             <SectionBlock title="🔋 Batteries" subtitle="SAG VOLT Plus series & chargers" products={featuredBatteries}
-              onProductClick={setModalProduct} onAddCart={(p) => { if(!localUser){setAuthOpen(true);return;} addToCart(p); }} user={localUser}
+              onProductClick={openProduct} onAddCart={(p) => { if(!localUser){setAuthOpen(true);return;} addToCart(p); }} user={localUser}
               onViewAll={() => setActiveCat("Batteries")} />
 
             <div style={{ padding:"0 14px 8px" }}>
@@ -1337,7 +1362,7 @@ function HomePage({ user, cart, showAuth, showToast, onTabChange, banners, setBa
                 </div>
               </div>
               <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:10 }}>
-                {products.map(p => <ProductCard key={p.id} p={p} onClick={() => setModalProduct(p)} onAddCart={() => { if(!localUser){setAuthOpen(true);return;} addToCart(p); }} user={localUser} />)}
+                {products.map(p => <ProductCard key={p.id} p={p} onClick={() => openProduct(p)} onAddCart={() => { if(!localUser){setAuthOpen(true);return;} addToCart(p); }} user={localUser} />)}
               </div>
             </div>
           </>
@@ -1360,7 +1385,7 @@ function HomePage({ user, cart, showAuth, showToast, onTabChange, banners, setBa
       {/* Modals */}
       {cartOpen && <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} cart={cart} user={localUser} showAuth={() => setAuthOpen(true)} updateCartQty={updateCartQty} removeFromCart={removeFromCart} />}
       {authOpen && <AuthModal onClose={() => setAuthOpen(false)} onLogin={(session) => { saveSession(session); setLocalUser(session); showToast("success","✅ Welcome, "+session.name+"!"); }} />}
-      {modalProduct && <ProductDetailModal product={modalProduct} onClose={() => setModalProduct(null)} onAddCart={addToCart} allProducts={products} user={localUser} showAuth={() => { setModalProduct(null); setAuthOpen(true); }} />}
+      {modalProduct && <ProductDetailModal product={modalProduct} onClose={closeModal} onAddCart={addToCart} allProducts={products} onSimilarClick={openProduct} user={localUser} showAuth={() => { closeModal(); setProductHistory([]); setModalProduct(null); setAuthOpen(true); }} />}
       {bannerAdminOpen && <BannerAdminModal banners={banners} onSave={(list) => { setBanners(list); setBannerAdminOpen(false); showToast("success","✅ Banners saved!"); }} onClose={() => setBannerAdminOpen(false)} />}
     </div>
   );
@@ -2610,6 +2635,25 @@ export default function App() {
   const [showAdmin, setShowAdmin] = useState(false);
   const [products, setProducts] = useState(STATIC_PRODUCTS);
   const [modalProduct, setModalProduct] = useState(null);
+  // Stack so similar-product clicks create a back-navigable history
+  const [productHistory, setProductHistory] = useState([]);
+
+  const openProduct = (p) => {
+    if (modalProduct) setProductHistory(h => [...h, modalProduct]);
+    setModalProduct(p);
+    window.history.pushState({ pdModal: true }, "");
+  };
+
+  const closeModal = () => {
+    if (productHistory.length > 0) {
+      const prev = productHistory[productHistory.length - 1];
+      setProductHistory(h => h.slice(0, -1));
+      setModalProduct(prev);
+    } else {
+      setModalProduct(null);
+      setProductHistory([]);
+    }
+  };
 
   // ── Load products + cart on mount ──
   useEffect(() => {
@@ -2735,7 +2779,7 @@ export default function App() {
           banners={banners} setBanners={setBanners} addToCart={addToCart} />
       )}
       {tab === "categories" && (
-        <CategoriesPage products={products} onProductClick={setModalProduct} onAddCart={addToCart} user={user} />
+        <CategoriesPage products={products} onProductClick={openProduct} onAddCart={addToCart} user={user} />
       )}
       {tab === "account" && (
         <AccountPage user={user} onLogin={handleLogin} onLogout={logout} cart={cart} showToast={showToast} />
@@ -2749,9 +2793,10 @@ export default function App() {
       {toastEl}
 
       {modalProduct && (
-        <ProductDetailModal product={modalProduct} onClose={()=>setModalProduct(null)}
+        <ProductDetailModal product={modalProduct} onClose={closeModal}
           onAddCart={addToCart} allProducts={products}
-          user={user} showAuth={()=>{setModalProduct(null);setTab("account");}} />
+          onSimilarClick={openProduct}
+          user={user} showAuth={()=>{closeModal();setProductHistory([]);setModalProduct(null);setTab("account");}} />
       )}
 
       {(user?.email||"").toLowerCase() === ADMIN_EMAIL && (
