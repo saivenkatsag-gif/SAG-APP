@@ -551,6 +551,9 @@ function ProductDetailModal({ product, onClose, onAddCart, user, showAuth, allPr
   const [reviewsLoading, setReviewsLoading] = useState(true);
   const [alreadyReviewed, setAlreadyReviewed] = useState(false);
 
+  // Collapsed reviews
+  const [showAllReviews, setShowAllReviews] = useState(false);
+
   // Write-review form
   const [showForm, setShowForm]   = useState(false);
   const [formRating, setFormRating] = useState(0);
@@ -561,6 +564,7 @@ function ProductDetailModal({ product, onClose, onAddCart, user, showAuth, allPr
 
   // Load reviews on mount
   useEffect(() => {
+    setShowAllReviews(false);
     setReviewsLoading(true);
     sbGetReviews(product.id)
       .then(rows => { setReviews(rows); setReviewsLoading(false); })
@@ -870,10 +874,10 @@ function ProductDetailModal({ product, onClose, onAddCart, user, showAuth, allPr
             </div>
 
             {/* Individual review cards */}
-            {reviews.map((r,i) => (
+            {(showAllReviews ? reviews : reviews.slice(0,3)).map((r,i,arr) => (
               <div key={r.id||i} style={{
                 paddingBottom:14, marginBottom:14,
-                borderBottom: i<reviews.length-1 ? "1px solid #f3f4f6" : "none",
+                borderBottom: i<arr.length-1 ? "1px solid #f3f4f6" : "none",
               }}>
                 <div style={{ display:"flex", justifyContent:"space-between",
                   alignItems:"flex-start", marginBottom:4 }}>
@@ -899,6 +903,23 @@ function ProductDetailModal({ product, onClose, onAddCart, user, showAuth, allPr
                   lineHeight:1.65 }}>{r.comment}</p>
               </div>
             ))}
+
+            {/* View All / Show Less toggle */}
+            {reviews.length > 3 && (
+              <button
+                onClick={() => setShowAllReviews(v => !v)}
+                style={{
+                  width:"100%", padding:"10px", marginTop:2,
+                  background:"rgba(133,201,255,0.1)", border:"1px solid #bae6fd",
+                  borderRadius:10, color:"#0369a1", fontFamily:"'DM Sans',sans-serif",
+                  fontWeight:700, fontSize:"0.83rem", cursor:"pointer",
+                }}
+              >
+                {showAllReviews
+                  ? "▲ Show Less"
+                  : `View All ${reviews.length} Reviews ▼`}
+              </button>
+            )}
           </>
         )}
       </div>
