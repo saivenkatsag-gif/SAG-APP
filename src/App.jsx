@@ -122,6 +122,7 @@ async function sbGetAllEnquiries() {
   if (!res.ok) return [];
   return res.json();
 }
+
 // ─── CART DB HELPERS ──────────────────────────────────────────
 async function sbGetCart(userId, accessToken) {
   const res = await fetch(
@@ -380,16 +381,13 @@ function AuthModal({ onClose, onLogin }) {
 }
 
 // ─── CART DRAWER ──────────────────────────────────────────────
-function CartDrawer({ open, onClose, cart, setCart, user, showAuth }) {
+function CartDrawer({ open, onClose, cart, user, showAuth, updateCartQty, removeFromCart }) {
   const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
-  const updateQty = (id, delta) => setCart(c => c.map(i => i.id===id ? {...i,qty:Math.max(1,i.qty+delta)} : i));
-  const remove = (id) => setCart(c => c.filter(i => i.id !== id));
 
   const checkout = async () => {
     if (!user) { onClose(); showAuth(); return; }
     const lines = cart.map(i => `• ${i.name} x${i.qty} — ${formatINR(i.price*i.qty)}`).join("\n");
     const msg = `🛒 *Cart Enquiry — SAG Drone Technologies*\n\n👤 *Customer:* ${user.name}\n✉️ *Email:* ${user.email||''}\n\n*Items:*\n${lines}\n\n💰 *Total: ${formatINR(total)}*\n\nPlease confirm availability. Thank you!`;
-    // Save enquiry to Supabase
     if (user.accessToken) {
       await sbSaveEnquiry(user.accessToken, {
         user_id: user.id,
@@ -434,12 +432,12 @@ function CartDrawer({ open, onClose, cart, setCart, user, showAuth }) {
                 <div style={{ fontSize:"0.84rem",fontWeight:600,color:"#fff",marginBottom:3,lineHeight:1.3 }}>{item.name}</div>
                 <div style={{ fontFamily:"'Barlow Condensed',sans-serif",fontSize:"1rem",fontWeight:800,color:"#2ecc71" }}>{formatINR(item.price*item.qty)}</div>
                 <div style={{ display:"flex",alignItems:"center",gap:8,marginTop:6 }}>
-                  <button onClick={() => updateQty(item.id,-1)} style={{ width:24,height:24,borderRadius:"50%",border:"1px solid rgba(46,204,113,0.3)",background:"#0a0f0d",color:"#e8f5ec",cursor:"pointer",fontSize:"0.85rem",display:"flex",alignItems:"center",justifyContent:"center" }}>−</button>
+                  <button onClick={() => updateCartQty(item.id, item.qty - 1)} style={{ width:24,height:24,borderRadius:"50%",border:"1px solid rgba(46,204,113,0.3)",background:"#0a0f0d",color:"#e8f5ec",cursor:"pointer",fontSize:"0.85rem",display:"flex",alignItems:"center",justifyContent:"center" }}>−</button>
                   <span style={{ fontSize:"0.88rem",fontWeight:600,color:"#fff",minWidth:18,textAlign:"center" }}>{item.qty}</span>
-                  <button onClick={() => updateQty(item.id,1)} style={{ width:24,height:24,borderRadius:"50%",border:"1px solid rgba(46,204,113,0.3)",background:"#0a0f0d",color:"#e8f5ec",cursor:"pointer",fontSize:"0.85rem",display:"flex",alignItems:"center",justifyContent:"center" }}>+</button>
+                  <button onClick={() => updateCartQty(item.id, item.qty + 1)} style={{ width:24,height:24,borderRadius:"50%",border:"1px solid rgba(46,204,113,0.3)",background:"#0a0f0d",color:"#e8f5ec",cursor:"pointer",fontSize:"0.85rem",display:"flex",alignItems:"center",justifyContent:"center" }}>+</button>
                 </div>
               </div>
-              <button onClick={() => remove(item.id)} style={{ background:"none",border:"none",color:"#7aab8a",cursor:"pointer",fontSize:"1rem",alignSelf:"flex-start" }}>✕</button>
+              <button onClick={() => removeFromCart(item.id)} style={{ background:"none",border:"none",color:"#7aab8a",cursor:"pointer",fontSize:"1rem",alignSelf:"flex-start" }}>✕</button>
             </div>
           ))}
         </div>
@@ -544,13 +542,10 @@ function BannerCarousel({ banners }) {
         background: b.bg, minHeight:170,padding:"22px 20px",
         display:"flex",flexDirection:"column",justifyContent:"center",position:"relative"
       }}>
-        {/* Badge */}
         <div style={{ display:"inline-flex",alignItems:"center",gap:6,background:"rgba(255,255,255,0.18)",borderRadius:20,padding:"3px 10px",fontSize:"0.68rem",fontWeight:800,color:"#fff",letterSpacing:".08em",marginBottom:10,width:"fit-content" }}>
           🔥 {b.badge}
         </div>
-        {/* Big emoji decoration */}
         <div style={{ position:"absolute",right:20,top:"50%",transform:"translateY(-50%)",fontSize:"5rem",opacity:.25 }}>{b.emoji}</div>
-        {/* Title */}
         <div style={{ fontFamily:"'Barlow Condensed',sans-serif",fontSize:"2.2rem",fontWeight:900,color:"#fff",lineHeight:1,marginBottom:6,letterSpacing:"-0.02em" }}>
           {b.title}
         </div>
@@ -559,7 +554,6 @@ function BannerCarousel({ banners }) {
           {b.cta} →
         </button>
       </div>
-      {/* Dots */}
       <div style={{ display:"flex",justifyContent:"center",gap:6,padding:"8px 0",background:"rgba(0,0,0,0.4)" }}>
         {banners.map((_,i) => (
           <div key={i} onClick={() => goTo(i)} style={{
@@ -660,7 +654,7 @@ function BannerAdminModal({ banners, onSave, onClose }) {
 }
 
 // ─── HOME PAGE ─────────────────────────────────────────────────
-function HomePage({ user, cart, setCart, showAuth, showToast, onTabChange, banners, setBanners }) {
+function HomePage({ user, cart, showAuth, showToast, onTabChange, banners, setBanners, addToCart }) {
   const [products, setProducts] = useState(STATIC_PRODUCTS);
   const [search, setSearch] = useState("");
   const [activeCat, setActiveCat] = useState("All");
@@ -669,7 +663,6 @@ function HomePage({ user, cart, setCart, showAuth, showToast, onTabChange, banne
   const [authOpen, setAuthOpen] = useState(false);
   const [localUser, setLocalUser] = useState(user);
   const [bannerAdminOpen, setBannerAdminOpen] = useState(false);
-  const [showBannerHint, setShowBannerHint] = useState(false);
 
   useEffect(() => { setLocalUser(user); }, [user]);
 
@@ -698,18 +691,8 @@ function HomePage({ user, cart, setCart, showAuth, showToast, onTabChange, banne
     return true;
   });
 
-  const addToCart = (product) => {
-    setCart(c => {
-      const ex = c.find(i => i.id===product.id);
-      if (ex) return c.map(i => i.id===product.id ? {...i,qty:i.qty+1} : i);
-      return [...c, {...product,qty:1}];
-    });
-    showToast("success", `✅ "${product.name}" added to cart!`);
-  };
-
   const cartCount = cart.reduce((s,i) => s+i.qty, 0);
 
-  // Featured sections
   const featuredDrones = products.filter(p => p.category==="Drones").slice(0,3);
   const featuredBatteries = products.filter(p => p.category==="Batteries").slice(0,3);
   const offers = products.filter(p => p.isOffer).slice(0,4);
@@ -723,7 +706,6 @@ function HomePage({ user, cart, setCart, showAuth, showToast, onTabChange, banne
         background:"linear-gradient(135deg,#0d3a8e 0%,#1760d8 100%)",
         padding:"10px 14px 0"
       }}>
-        {/* Logo row */}
         <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8 }}>
           <div style={{ display:"flex",alignItems:"center",gap:8 }}>
             <img src={LOGO} alt="SAG" style={{ height:34,borderRadius:6 }} />
@@ -733,7 +715,6 @@ function HomePage({ user, cart, setCart, showAuth, showToast, onTabChange, banne
             </div>
           </div>
           <div style={{ display:"flex",alignItems:"center",gap:8 }}>
-            {/* Banner admin hint — admin only */}
             {(localUser?.email||"").toLowerCase() === ADMIN_EMAIL && (
               <button onClick={() => setBannerAdminOpen(true)} title="Manage Banners" style={{
                 background:"rgba(255,255,255,0.12)",border:"none",borderRadius:8,padding:"6px 10px",
@@ -771,7 +752,6 @@ function HomePage({ user, cart, setCart, showAuth, showToast, onTabChange, banne
           </div>
         </div>
 
-        {/* Search bar */}
         <div style={{ position:"relative",marginBottom:10 }}>
           <span style={{ position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",fontSize:"0.95rem",color:"#7aab8a",pointerEvents:"none" }}>🔍</span>
           <input
@@ -786,7 +766,6 @@ function HomePage({ user, cart, setCart, showAuth, showToast, onTabChange, banne
           />
         </div>
 
-        {/* Category chips */}
         <div style={{ display:"flex",gap:8,overflowX:"auto",paddingBottom:10,scrollbarWidth:"none" }}>
           {cats.map(cat => (
             <button key={cat} onClick={() => setActiveCat(cat)} style={{
@@ -806,12 +785,9 @@ function HomePage({ user, cart, setCart, showAuth, showToast, onTabChange, banne
 
       {/* ─── MAIN SCROLL AREA ─── */}
       <div>
-
-        {/* Promotional Banner Carousel */}
         <BannerCarousel banners={banners} />
 
         {search || activeCat !== "All" ? (
-          /* ── FILTERED RESULTS ── */
           <div style={{ padding:"16px 14px 8px" }}>
             <div style={{ fontSize:"0.82rem",color:"#7aab8a",marginBottom:12 }}>
               {filtered.length} result{filtered.length!==1?"s":""}{search ? ` for "${search}"` : ``}{activeCat!=="All" ? ` in ${activeCat}` : ""}
@@ -829,24 +805,20 @@ function HomePage({ user, cart, setCart, showAuth, showToast, onTabChange, banne
           </div>
         ) : (
           <>
-            {/* ── FEATURED DRONES ── */}
             <SectionBlock title="🚁 Drones" subtitle="Agricultural drones for every farm" products={featuredDrones}
               onProductClick={setModalProduct} onAddCart={(p) => { if(!localUser){setAuthOpen(true);return;} addToCart(p); }} user={localUser}
               onViewAll={() => setActiveCat("Drones")} />
 
-            {/* ── HOT OFFERS ── */}
             {offers.length > 0 && (
               <SectionBlock title="🏷️ Hot Deals" subtitle="Best prices on top products" products={offers}
                 onProductClick={setModalProduct} onAddCart={(p) => { if(!localUser){setAuthOpen(true);return;} addToCart(p); }} user={localUser}
                 onViewAll={() => setActiveCat("Offers")} accent="#f0a030" />
             )}
 
-            {/* ── BATTERIES ── */}
             <SectionBlock title="🔋 Batteries" subtitle="SAG VOLT Plus series & chargers" products={featuredBatteries}
               onProductClick={setModalProduct} onAddCart={(p) => { if(!localUser){setAuthOpen(true);return;} addToCart(p); }} user={localUser}
               onViewAll={() => setActiveCat("Batteries")} />
 
-            {/* ── ALL PRODUCTS ── */}
             <div style={{ padding:"0 14px 8px" }}>
               <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12 }}>
                 <div>
@@ -861,7 +833,6 @@ function HomePage({ user, cart, setCart, showAuth, showToast, onTabChange, banne
           </>
         )}
 
-        {/* Footer info */}
         <div style={{ padding:"20px 14px",borderTop:"1px solid rgba(46,204,113,0.1)",marginTop:10 }}>
           <div style={{ display:"flex",alignItems:"center",gap:10,marginBottom:10 }}>
             <img src={LOGO} alt="SAG" style={{ height:28 }} />
@@ -875,11 +846,10 @@ function HomePage({ user, cart, setCart, showAuth, showToast, onTabChange, banne
             © 2025 SAG Drone Technologies. All rights reserved.
           </div>
         </div>
-
       </div>
 
       {/* Modals */}
-      {cartOpen && <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} cart={cart} setCart={setCart} user={localUser} showAuth={() => setAuthOpen(true)} />}
+      {cartOpen && <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} cart={cart} user={localUser} showAuth={() => setAuthOpen(true)} updateCartQty={updateCartQty} removeFromCart={removeFromCart} />}
       {authOpen && <AuthModal onClose={() => setAuthOpen(false)} onLogin={(session) => { saveSession(session); setLocalUser(session); showToast("success","✅ Welcome, "+session.name+"!"); }} />}
       {modalProduct && <ProductDetailModal product={modalProduct} onClose={() => setModalProduct(null)} onAddCart={addToCart} user={localUser} showAuth={() => { setModalProduct(null); setAuthOpen(true); }} />}
       {bannerAdminOpen && <BannerAdminModal banners={banners} onSave={(list) => { setBanners(list); setBannerAdminOpen(false); showToast("success","✅ Banners saved!"); }} onClose={() => setBannerAdminOpen(false)} />}
@@ -1000,7 +970,6 @@ function AccountPage({ user, onLogin, onLogout, cart, showToast }) {
   const [authOpen, setAuthOpen] = useState(false);
   const [profile, setProfile] = useState(null);
   const [enquiries, setEnquiries] = useState([]);
-  const [editingProfile, setEditingProfile] = useState(false);
   const [profileForm, setProfileForm] = useState({ phone:"", address:"" });
   const [savingProfile, setSavingProfile] = useState(false);
   const [activeSection, setActiveSection] = useState("overview");
@@ -1021,7 +990,6 @@ function AccountPage({ user, onLogin, onLogout, cart, showToast }) {
     try {
       await sbUpdateProfile(user.id, user.accessToken, profileForm);
       setProfile(p => ({...p, ...profileForm}));
-      setEditingProfile(false);
       showToast("success","✅ Profile updated!");
     } catch { showToast("error","❌ Failed to save."); }
     finally { setSavingProfile(false); }
@@ -1031,7 +999,6 @@ function AccountPage({ user, onLogin, onLogout, cart, showToast }) {
 
   return (
     <div style={{ background:"#0a0f0d",minHeight:"100vh",paddingBottom:80,fontFamily:"'DM Sans',sans-serif" }}>
-      {/* Header */}
       <div style={{ background:"linear-gradient(135deg,#0d3a8e 0%,#1760d8 100%)",padding:"16px 16px 20px" }}>
         <div style={{ fontFamily:"'Barlow Condensed',sans-serif",fontSize:"1.5rem",fontWeight:800,color:"#fff",marginBottom:2 }}>Account</div>
         {user ? (
@@ -1044,9 +1011,6 @@ function AccountPage({ user, onLogin, onLogout, cart, showToast }) {
               <div style={{ fontSize:"0.76rem",color:"rgba(255,255,255,0.7)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{user.email}</div>
               {profile?.phone && <div style={{ fontSize:"0.74rem",color:"rgba(255,255,255,0.6)",marginTop:1 }}>📞 {profile.phone}</div>}
             </div>
-            <button onClick={() => setEditingProfile(true)} style={{ background:"rgba(255,255,255,0.15)",border:"none",borderRadius:8,padding:"6px 12px",color:"#fff",fontSize:"0.74rem",fontWeight:700,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",flexShrink:0 }}>
-              ✏️ Edit
-            </button>
           </div>
         ) : (
           <div style={{ fontSize:"0.85rem",color:"rgba(255,255,255,0.75)",marginTop:4 }}>Sign in to access your account</div>
@@ -1066,7 +1030,6 @@ function AccountPage({ user, onLogin, onLogout, cart, showToast }) {
           </div>
         ) : (
           <>
-            {/* Section tabs */}
             <div style={{ display:"flex",gap:8,marginBottom:16 }}>
               {[["overview","🏠 Overview"],["orders","📦 My Orders"],["profile","👤 Profile"]].map(([s,l]) => (
                 <button key={s} onClick={() => setActiveSection(s)} style={{
@@ -1080,10 +1043,8 @@ function AccountPage({ user, onLogin, onLogout, cart, showToast }) {
               ))}
             </div>
 
-            {/* ── OVERVIEW ── */}
             {activeSection === "overview" && (
               <>
-                {/* Stats row */}
                 <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:14 }}>
                   {[
                     ["📦", enquiries.length, "Enquiries"],
@@ -1098,7 +1059,6 @@ function AccountPage({ user, onLogin, onLogout, cart, showToast }) {
                   ))}
                 </div>
 
-                {/* Cart summary */}
                 {cartCount > 0 && (
                   <div style={{ background:"linear-gradient(135deg,rgba(46,204,113,0.1),rgba(46,204,113,0.05))",border:"1px solid rgba(46,204,113,0.2)",borderRadius:12,padding:"14px 16px",marginBottom:12 }}>
                     <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center" }}>
@@ -1115,7 +1075,6 @@ function AccountPage({ user, onLogin, onLogout, cart, showToast }) {
                   </div>
                 )}
 
-                {/* Quick links */}
                 {[
                   ["💬","WhatsApp Support","Chat with our team",() => window.open("https://wa.me/919390238537","_blank")],
                   ["📞","Call Us","+91 897777 6019",() => window.open("tel:+918977776019","_blank")],
@@ -1140,7 +1099,6 @@ function AccountPage({ user, onLogin, onLogout, cart, showToast }) {
               </>
             )}
 
-            {/* ── MY ORDERS ── */}
             {activeSection === "orders" && (
               <div>
                 <div style={{ fontSize:"0.8rem",color:"#7aab8a",marginBottom:12 }}>{enquiries.length} enquir{enquiries.length!==1?"ies":"y"} recorded</div>
@@ -1172,15 +1130,11 @@ function AccountPage({ user, onLogin, onLogout, cart, showToast }) {
               </div>
             )}
 
-            {/* ── PROFILE EDIT ── */}
             {activeSection === "profile" && (
               <div>
                 <div style={{ background:"#131f16",border:"1px solid rgba(46,204,113,0.1)",borderRadius:12,padding:"16px",marginBottom:12 }}>
                   <div style={{ fontSize:"0.88rem",fontWeight:700,color:"#fff",marginBottom:14 }}>Personal Information</div>
-                  {[
-                    ["Full Name", user.name, null, true],
-                    ["Email", user.email, null, true],
-                  ].map(([label,val]) => (
+                  {[["Full Name", user.name],["Email", user.email]].map(([label,val]) => (
                     <div key={label} style={{ marginBottom:12 }}>
                       <div style={{ fontSize:"0.7rem",color:"#7aab8a",fontWeight:700,textTransform:"uppercase",letterSpacing:".07em",marginBottom:4 }}>{label}</div>
                       <div style={{ padding:"10px 13px",background:"rgba(255,255,255,0.04)",borderRadius:10,fontSize:"0.88rem",color:"rgba(255,255,255,0.5)",border:"1px solid rgba(46,204,113,0.08)" }}>{val}</div>
@@ -1201,7 +1155,6 @@ function AccountPage({ user, onLogin, onLogout, cart, showToast }) {
                     fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:"0.9rem",cursor:"pointer"
                   }}>{savingProfile ? "Saving..." : "💾 Save Profile"}</button>
                 </div>
-
                 <button onClick={onLogout} style={{
                   width:"100%",padding:"13px",background:"rgba(224,80,80,0.08)",
                   border:"1px solid rgba(224,80,80,0.25)",color:"#e05050",borderRadius:12,
@@ -1219,15 +1172,20 @@ function AccountPage({ user, onLogin, onLogout, cart, showToast }) {
 }
 
 // ─── CART PAGE ─────────────────────────────────────────────────
-function CartPage({ cart, setCart, user, showAuth, showToast }) {
+function CartPage({ cart, user, showAuth, showToast, updateCartQty, removeFromCart, clearCart }) {
   const total = cart.reduce((s,i) => s+i.price*i.qty, 0);
-  const updateQty = (id, delta) => setCart(c => c.map(i => i.id===id ? {...i,qty:Math.max(1,i.qty+delta)} : i));
-  const remove = (id) => setCart(c => c.filter(i => i.id !== id));
 
-  const checkout = () => {
+  const checkout = async () => {
     if (!user) { showAuth(); return; }
     const lines = cart.map(i => `• ${i.name} x${i.qty} — ${formatINR(i.price*i.qty)}`).join("\n");
     const msg = `🛒 *Cart Enquiry — SAG Drone Technologies*\n\n👤 *Customer:* ${user.name}\n✉️ *Email:* ${user.email||''}\n\n*Items:*\n${lines}\n\n💰 *Total: ${formatINR(total)}*\n\nPlease confirm availability. Thank you!`;
+    if (user.accessToken) {
+      await sbSaveEnquiry(user.accessToken, {
+        user_id: user.id, user_name: user.name, user_email: user.email || "",
+        items: cart.map(i => ({ id:i.id, name:i.name, price:i.price, qty:i.qty })),
+        total_amount: total, status: "enquired",
+      }).catch(() => {});
+    }
     window.open(`https://wa.me/919390238537?text=${encodeURIComponent(msg)}`, "_blank");
   };
 
@@ -1256,12 +1214,12 @@ function CartPage({ cart, setCart, user, showAuth, showToast }) {
                   <div style={{ fontSize:"0.84rem",fontWeight:600,color:"#fff",marginBottom:3,lineHeight:1.3 }}>{item.name}</div>
                   <div style={{ fontFamily:"'Barlow Condensed',sans-serif",fontSize:"1rem",fontWeight:800,color:"#2ecc71",marginBottom:8 }}>{formatINR(item.price*item.qty)}</div>
                   <div style={{ display:"flex",alignItems:"center",gap:8 }}>
-                    <button onClick={() => updateQty(item.id,-1)} style={{ width:28,height:28,borderRadius:"50%",border:"1.5px solid rgba(46,204,113,0.3)",background:"#0a0f0d",color:"#e8f5ec",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1rem" }}>−</button>
+                    <button onClick={() => updateCartQty(item.id, item.qty - 1)} style={{ width:28,height:28,borderRadius:"50%",border:"1.5px solid rgba(46,204,113,0.3)",background:"#0a0f0d",color:"#e8f5ec",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1rem" }}>−</button>
                     <span style={{ fontSize:"0.9rem",fontWeight:700,color:"#fff",minWidth:20,textAlign:"center" }}>{item.qty}</span>
-                    <button onClick={() => updateQty(item.id,1)} style={{ width:28,height:28,borderRadius:"50%",border:"1.5px solid rgba(46,204,113,0.3)",background:"#0a0f0d",color:"#e8f5ec",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1rem" }}>+</button>
+                    <button onClick={() => updateCartQty(item.id, item.qty + 1)} style={{ width:28,height:28,borderRadius:"50%",border:"1.5px solid rgba(46,204,113,0.3)",background:"#0a0f0d",color:"#e8f5ec",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1rem" }}>+</button>
                   </div>
                 </div>
-                <button onClick={() => remove(item.id)} style={{ background:"none",border:"none",color:"#7aab8a",cursor:"pointer",fontSize:"1.1rem",alignSelf:"flex-start" }}>✕</button>
+                <button onClick={() => removeFromCart(item.id)} style={{ background:"none",border:"none",color:"#7aab8a",cursor:"pointer",fontSize:"1.1rem",alignSelf:"flex-start" }}>✕</button>
               </div>
             ))}
 
@@ -1283,6 +1241,13 @@ function CartPage({ cart, setCart, user, showAuth, showToast }) {
                 fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:"0.93rem",cursor:"pointer",
                 display:"flex",alignItems:"center",justifyContent:"center",gap:8
               }}>💬 Enquire via WhatsApp</button>
+              {cart.length > 0 && (
+                <button onClick={clearCart} style={{
+                  width:"100%",marginTop:8,padding:"10px",background:"none",
+                  border:"1px solid rgba(224,80,80,0.25)",color:"#e05050",borderRadius:40,
+                  fontFamily:"'DM Sans',sans-serif",fontWeight:600,fontSize:"0.82rem",cursor:"pointer"
+                }}>🗑 Clear Cart</button>
+              )}
               <div style={{ fontSize:"0.73rem",color:"#7aab8a",textAlign:"center",marginTop:8 }}>
                 {user ? `Signed in as ${user.name}` : "Sign in to enquire"}
               </div>
@@ -1445,7 +1410,6 @@ async function sbUpsertProduct(product, accessToken) {
     updated_at: new Date().toISOString(),
   };
   if (product.id && typeof product.id === "number" && product.id < 1e12) {
-    // existing row – patch by id
     const res = await fetch(`${SUPABASE_URL}/rest/v1/products?id=eq.${product.id}`, {
       method: "PATCH",
       headers: { ...sbHeaders, Authorization: `Bearer ${accessToken||SUPABASE_KEY}`, Prefer: "return=representation" },
@@ -1936,7 +1900,6 @@ function AdminPage({ autoAuthed = false }) {
   const [users, setUsers] = useState([]);
   const [enquiries, setEnquiries] = useState([]);
   const [toast, setToast] = useState({ show:false,type:"success",msg:"" });
-  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const showToast = (type, msg) => { setToast({show:true,type,msg}); setTimeout(()=>setToast(t=>({...t,show:false})),3200); };
 
@@ -2079,22 +2042,111 @@ export default function App() {
   const [products, setProducts] = useState(STATIC_PRODUCTS);
   const [modalProduct, setModalProduct] = useState(null);
 
+  // ── Load products + cart on mount ──
   useEffect(() => {
     const session = loadSession();
-    if (session?.accessToken) sbGetUser(session.accessToken).then(u => { if (!u) { clearSession(); setUser(null); } }).catch(() => { clearSession(); setUser(null); });
+
+    // Validate session
+    if (session?.accessToken) {
+      sbGetUser(session.accessToken)
+        .then(u => { if (!u) { clearSession(); setUser(null); } })
+        .catch(() => { clearSession(); setUser(null); });
+    }
+
+    // Load products
     fetch(`${SUPABASE_URL}/rest/v1/products?order=created_at.asc&select=*`, {
       headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
     }).then(r => r.ok ? r.json() : null)
-      .then(rows => { if (rows&&rows.length) setProducts(rows.map(r => ({ id:r.id,name:r.name,price:r.price,originalPrice:r.original_price,image:r.image,isNew:r.is_new,isOffer:r.is_offer,status:r.status,category:r.category,waNum:r.wa_num||"919390238537" }))); })
-      .catch(()=>{});
+      .then(rows => {
+        if (rows && rows.length) {
+          const mapped = rows.map(r => ({
+            id:r.id, name:r.name, price:r.price, originalPrice:r.original_price,
+            image:r.image, isNew:r.is_new, isOffer:r.is_offer, status:r.status,
+            category:r.category, waNum:r.wa_num||"919390238537"
+          }));
+          setProducts(mapped);
+
+          // Load cart from DB after products are ready
+          if (session?.accessToken && session?.id) {
+            sbGetCart(session.id, session.accessToken).then(rows => {
+              if (rows && rows.length) {
+                const cartItems = rows.map(row => {
+                  const product = mapped.find(p => p.id === row.product_id);
+                  return product ? { ...product, qty: row.qty } : null;
+                }).filter(Boolean);
+                setCart(cartItems);
+              }
+            }).catch(() => {});
+          }
+        } else {
+          // No products from DB yet — still try to load cart from static products
+          if (session?.accessToken && session?.id) {
+            sbGetCart(session.id, session.accessToken).then(rows => {
+              if (rows && rows.length) {
+                const cartItems = rows.map(row => {
+                  const product = STATIC_PRODUCTS.find(p => p.id === row.product_id);
+                  return product ? { ...product, qty: row.qty } : null;
+                }).filter(Boolean);
+                setCart(cartItems);
+              }
+            }).catch(() => {});
+          }
+        }
+      }).catch(() => {});
   }, []);
+
+  // ── Cart helpers that sync to DB ──
+  const addToCart = (p) => {
+    if (!user) { showToast("error", "Sign in to add to cart"); return; }
+    setCart(c => {
+      const ex = c.find(i => i.id === p.id);
+      const newQty = ex ? ex.qty + 1 : 1;
+      sbUpsertCartItem(user.id, user.accessToken, p.id, newQty).catch(() => {});
+      if (ex) return c.map(i => i.id === p.id ? { ...i, qty: newQty } : i);
+      return [...c, { ...p, qty: 1 }];
+    });
+    showToast("success", `✅ "${p.name}" added!`);
+  };
+
+  const updateCartQty = (productId, qty) => {
+    if (qty <= 0) { removeFromCart(productId); return; }
+    setCart(c => c.map(i => i.id === productId ? { ...i, qty } : i));
+    if (user) sbUpsertCartItem(user.id, user.accessToken, productId, qty).catch(() => {});
+  };
+
+  const removeFromCart = (productId) => {
+    setCart(c => c.filter(i => i.id !== productId));
+    if (user) sbDeleteCartItem(user.id, user.accessToken, productId).catch(() => {});
+  };
+
+  const clearCart = () => {
+    setCart([]);
+    if (user) sbClearCart(user.id, user.accessToken).catch(() => {});
+  };
 
   const logout = async () => {
     if (user?.accessToken) await sbSignOut(user.accessToken);
-    clearSession(); setUser(null); showToast("success","👋 Signed out.");
+    clearSession(); setUser(null); setCart([]); showToast("success", "👋 Signed out.");
   };
 
-  const cartCount = cart.reduce((s,i)=>s+i.qty,0);
+  // Load cart when user logs in mid-session
+  const handleLogin = (session) => {
+    setUser(session);
+    sbGetCart(session.id, session.accessToken).then(rows => {
+      if (rows && rows.length) {
+        setProducts(prev => {
+          const cartItems = rows.map(row => {
+            const product = prev.find(p => p.id === row.product_id);
+            return product ? { ...product, qty: row.qty } : null;
+          }).filter(Boolean);
+          setCart(cartItems);
+          return prev;
+        });
+      }
+    }).catch(() => {});
+  };
+
+  const cartCount = cart.reduce((s, i) => s + i.qty, 0);
 
   if (showAdmin) return (
     <div>
@@ -2110,17 +2162,18 @@ export default function App() {
       <style>{`*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}html,body{overflow-x:hidden;}`}</style>
 
       {tab === "home" && (
-        <HomePage user={user} cart={cart} setCart={setCart} showAuth={()=>{}} showToast={showToast} onTabChange={setTab} banners={banners} setBanners={setBanners} />
+        <HomePage user={user} cart={cart} showAuth={()=>{}} showToast={showToast} onTabChange={setTab}
+          banners={banners} setBanners={setBanners} addToCart={addToCart} />
       )}
       {tab === "categories" && (
-        <CategoriesPage products={products} onProductClick={setModalProduct}
-          onAddCart={(p) => { if(!user){showToast("error","Sign in to add to cart");return;} setCart(c=>{const ex=c.find(i=>i.id===p.id);if(ex)return c.map(i=>i.id===p.id?{...i,qty:i.qty+1}:i);return[...c,{...p,qty:1}];});showToast("success",`✅ "${p.name}" added!`); }} user={user} />
+        <CategoriesPage products={products} onProductClick={setModalProduct} onAddCart={addToCart} user={user} />
       )}
       {tab === "account" && (
-        <AccountPage user={user} onLogin={(s)=>{setUser(s);}} onLogout={logout} cart={cart} showToast={showToast} />
+        <AccountPage user={user} onLogin={handleLogin} onLogout={logout} cart={cart} showToast={showToast} />
       )}
       {tab === "cart" && (
-        <CartPage cart={cart} setCart={setCart} user={user} showAuth={()=>setTab("account")} showToast={showToast} />
+        <CartPage cart={cart} user={user} showAuth={()=>setTab("account")} showToast={showToast}
+          updateCartQty={updateCartQty} removeFromCart={removeFromCart} clearCart={clearCart} />
       )}
 
       <BottomNav activeTab={tab} onTabChange={setTab} cartCount={cartCount} />
@@ -2128,11 +2181,10 @@ export default function App() {
 
       {modalProduct && (
         <ProductDetailModal product={modalProduct} onClose={()=>setModalProduct(null)}
-          onAddCart={(p)=>{ setCart(c=>{const ex=c.find(i=>i.id===p.id);if(ex)return c.map(i=>i.id===p.id?{...i,qty:i.qty+1}:i);return[...c,{...p,qty:1}];});showToast("success",`✅ "${p.name}" added!`); }}
+          onAddCart={addToCart}
           user={user} showAuth={()=>{setModalProduct(null);setTab("account");}} />
       )}
 
-      {/* Admin shortcut — only visible to the admin account */}
       {(user?.email||"").toLowerCase() === ADMIN_EMAIL && (
         <div style={{ position:"fixed",bottom:72,right:16,zIndex:99 }}>
           <button onClick={()=>setShowAdmin(true)} style={{ background:"rgba(10,15,13,0.9)",border:"1px solid rgba(46,204,113,0.2)",color:"#7aab8a",padding:"7px 13px",borderRadius:40,fontSize:"0.72rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",backdropFilter:"blur(6px)" }}>⚙ Admin</button>
