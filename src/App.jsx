@@ -2217,34 +2217,73 @@ async function sbDeleteBanner(id) {
 
 // ─── CATEGORY DB HELPERS ──────────────────────────────────────
 async function sbGetCategories() {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/categories?order=sort_order.asc,name.asc&select=*`, { headers: sbHeaders });
-  if (!res.ok) return null;
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/categories?order=sort_order.asc,name.asc&select=*`,
+    { headers: sbHeaders }
+  );
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    console.warn("sbGetCategories failed:", res.status, err);
+    return null;
+  }
   return res.json();
 }
+
 async function sbUpsertCategory(cat) {
   const payload = {
-    name: cat.name,
-    icon: cat.icon || "📦",
+    name:        cat.name,
+    icon:        cat.icon        || "📦",
     description: cat.description || "",
-    sort_order: cat.sort_order || 0,
-    active: cat.active !== false,
+    sort_order:  cat.sort_order  ?? 0,
+    active:      cat.active      !== false,
+    updated_at:  new Date().toISOString(),
   };
+
+  // UPDATE existing row by id
   if (cat.db_id) {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/categories?id=eq.${cat.db_id}`, {
-      method:"PATCH", headers:{...sbHeaders,Prefer:"return=representation"},
-      body: JSON.stringify({...payload, updated_at: new Date().toISOString()}),
-    });
-    return res.ok ? res.json() : null;
-  } else {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/categories`, {
-      method:"POST", headers:{...sbHeaders,Prefer:"return=representation"},
-      body: JSON.stringify({...payload, created_at: new Date().toISOString()}),
-    });
-    return res.ok ? res.json() : null;
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/categories?id=eq.${cat.db_id}`,
+      {
+        method: "PATCH",
+        headers: { ...sbHeaders, Prefer: "return=representation" },
+        body: JSON.stringify(payload),
+      }
+    );
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      console.error("sbUpsertCategory PATCH failed:", res.status, err);
+      throw new Error(err.message || err.details || "Update failed");
+    }
+    return res.json();
   }
+
+  // INSERT new row — use ON CONFLICT(name) DO UPDATE so duplicate names update instead of erroring
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/categories`, {
+    method: "POST",
+    headers: {
+      ...sbHeaders,
+      Prefer: "resolution=merge-duplicates,return=representation",
+    },
+    body: JSON.stringify({ ...payload, created_at: new Date().toISOString() }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    console.error("sbUpsertCategory INSERT failed:", res.status, err);
+    throw new Error(err.message || err.details || "Insert failed");
+  }
+  return res.json();
 }
+
 async function sbDeleteCategory(id) {
-  await fetch(`${SUPABASE_URL}/rest/v1/categories?id=eq.${id}`, { method:"DELETE", headers:sbHeaders });
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/categories?id=eq.${id}`,
+    { method: "DELETE", headers: sbHeaders }
+  );
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    console.error("sbDeleteCategory failed:", res.status, err);
+    throw new Error(err.message || "Delete failed");
+  }
 }
 
 // ─── ADMIN: BANNER SECTION ─────────────────────────────────────
