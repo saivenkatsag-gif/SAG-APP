@@ -461,62 +461,488 @@ function CartDrawer({ open, onClose, cart, user, showAuth, updateCartQty, remove
   );
 }
 
-// ─── PRODUCT DETAIL MODAL ─────────────────────────────────────
-function ProductDetailModal({ product, onClose, onAddCart, user, showAuth }) {
+// ─── SUPABASE REVIEW HELPERS ──────────────────────────────────
+async function sbGetReviews(productId) {
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/product_reviews?product_id=eq.${productId}&order=created_at.desc&select=*`,
+    { headers: sbHeaders }
+  );
+  if (!res.ok) return [];
+  return res.json();
+}
+
+async function sbSubmitReview(accessToken, review) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/product_reviews`, {
+    method: "POST",
+    headers: { ...sbHeaders, Authorization: `Bearer ${accessToken}`, Prefer: "return=representation" },
+    body: JSON.stringify(review),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || err.details || "Failed to submit review");
+  }
+  return res.json();
+}
+
+async function sbCheckUserReview(productId, userId, accessToken) {
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/product_reviews?product_id=eq.${productId}&user_id=eq.${userId}&select=id`,
+    { headers: { ...sbHeaders, Authorization: `Bearer ${accessToken}` } }
+  );
+  if (!res.ok) return false;
+  const data = await res.json();
+  return data.length > 0;
+}
+
+// ─── STAR RATING (display) ────────────────────────────────────
+function StarRating({ rating = 0, count = 0, size = "0.9rem" }) {
+  const full = Math.floor(rating);
+  const half = rating - full >= 0.5;
+  return (
+    <span style={{ display:"inline-flex",alignItems:"center",gap:2 }}>
+      {[1,2,3,4,5].map(i => (
+        <span key={i} style={{ fontSize:size, color: i<=full ? "#f59e0b" : (i===full+1&&half ? "#f59e0b" : "#d1d5db") }}>
+          {i<=full ? "★" : (i===full+1&&half ? "⯨" : "☆")}
+        </span>
+      ))}
+      {count>0 && <span style={{ fontSize:"0.72rem",color:"#6b7280",marginLeft:4 }}>({count})</span>}
+    </span>
+  );
+}
+
+// ─── STAR PICKER (interactive) ────────────────────────────────
+function StarPicker({ value, onChange }) {
+  const [hover, setHover] = useState(0);
+  return (
+    <span style={{ display:"inline-flex",gap:4 }}>
+      {[1,2,3,4,5].map(i => (
+        <span key={i}
+          onMouseEnter={()=>setHover(i)} onMouseLeave={()=>setHover(0)}
+          onClick={()=>onChange(i)}
+          style={{ fontSize:"1.6rem",cursor:"pointer",color: i<=(hover||value) ? "#f59e0b" : "#d1d5db",transition:"color .15s" }}>
+          ★
+        </span>
+      ))}
+    </span>
+  );
+}
+
+// ─── PRODUCT DETAIL PAGE (full screen) ────────────────────────
+function ProductDetailModal({ product, onClose, onAddCart, user, showAuth, allProducts }) {
   const off = discount(product.price, product.originalPrice);
   const handleAddCart = () => { if (!user) { onClose(); showAuth(); return; } onAddCart(product); onClose(); };
   const msg = `Hello SAG Drone Technologies! 👋\n\nI'm interested in: ${product.name}\nPrice: ${formatINR(product.price)}\n\nPlease share more details.`;
 
+  // Similar products (same category, excluding current)
+  const similar = (allProducts||[]).filter(p=>p.id!==product.id && p.category===product.category).slice(0,8);
+
+  // Product highlights
+  const highlights = [
+    { label:"Brand",         value:"SAG Drone Technologies" },
+    { label:"Category",      value:product.category||"—" },
+    { label:"Status",        value:product.status==="instock" ? "✅ In Stock" : "❌ Out of Stock" },
+    { label:"Warranty",      value:"Manufacturer Warranty" },
+    { label:"Certification", value:"DGCA Certified" },
+    { label:"Support",       value:"After-Sales Support" },
+  ];
+
+  // ── Real reviews state ──
+  const [reviews, setReviews]         = useState([]);
+  const [reviewsLoading, setReviewsLoading] = useState(true);
+  const [alreadyReviewed, setAlreadyReviewed] = useState(false);
+
+  // Write-review form
+  const [showForm, setShowForm]   = useState(false);
+  const [formRating, setFormRating] = useState(0);
+  const [formText, setFormText]   = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState("");
+  const [formSuccess, setFormSuccess] = useState("");
+
+  // Load reviews on mount
+  useEffect(() => {
+    setReviewsLoading(true);
+    sbGetReviews(product.id)
+      .then(rows => { setReviews(rows); setReviewsLoading(false); })
+      .catch(() => setReviewsLoading(false));
+    if (user?.id && user?.accessToken) {
+      sbCheckUserReview(product.id, user.id, user.accessToken)
+        .then(setAlreadyReviewed).catch(()=>{});
+    }
+  }, [product.id, user]);
+
+  // Aggregate stats computed from real reviews
+  const totalReviews = reviews.length;
+  const avgRating = totalReviews
+    ? Math.round((reviews.reduce((s,r)=>s+r.rating,0)/totalReviews)*10)/10
+    : 0;
+  const starCounts = [5,4,3,2,1].map(s=>({ star:s, count:reviews.filter(r=>r.rating===s).length }));
+
+  const submitReview = async () => {
+    setFormError(""); setFormSuccess("");
+    if (!formRating) { setFormError("Please select a star rating."); return; }
+    if (!formText.trim()) { setFormError("Please write a comment."); return; }
+    setSubmitting(true);
+    try {
+      await sbSubmitReview(user.accessToken, {
+        product_id: product.id,
+        user_id: user.id,
+        user_name: user.name,
+        rating: formRating,
+        comment: formText.trim(),
+      });
+      setFormSuccess("✅ Review submitted! Thank you.");
+      setFormRating(0); setFormText(""); setShowForm(false);
+      setAlreadyReviewed(true);
+      // Refresh reviews
+      const rows = await sbGetReviews(product.id);
+      setReviews(rows);
+    } catch(e) { setFormError(e.message); }
+    finally { setSubmitting(false); }
+  };
+
+  // Hardware back button
+  useEffect(() => {
+    window.history.pushState({ pdModal: true }, "");
+    const onPop = () => { onClose(); };
+    window.addEventListener("popstate", onPop);
+    return () => { window.removeEventListener("popstate", onPop); };
+  }, [onClose]);
+
+  // Shared style tokens
+  const S = {
+    page: {
+      position:"fixed", inset:0, zIndex:9990,
+      background:"#f5f7fa", overflowY:"auto",
+      fontFamily:"'DM Sans',sans-serif",
+    },
+    header: {
+      position:"sticky", top:0, zIndex:20,
+      display:"flex", alignItems:"center", gap:10,
+      padding:"14px 16px",
+      background:"#fff", borderBottom:"1px solid #e5e7eb",
+    },
+    backBtn: {
+      background:"none", border:"none", cursor:"pointer",
+      color:"#374151", fontSize:"1.3rem", lineHeight:1,
+      display:"flex", alignItems:"center", justifyContent:"center",
+      width:32, height:32, borderRadius:8, flexShrink:0,
+    },
+    card: {
+      background:"#fff", borderTop:"1px solid #e5e7eb",
+      borderBottom:"1px solid #e5e7eb", padding:"16px",
+      marginBottom:8,
+    },
+    secTitle: {
+      fontSize:"0.78rem", fontWeight:700, color:"#374151",
+      letterSpacing:".07em", textTransform:"uppercase", marginBottom:12,
+    },
+  };
+
   return (
-    <div onClick={e => e.target === e.currentTarget && onClose()} style={{
-      position:"fixed",inset:0,zIndex:9990,background:"rgba(0,0,0,0.88)",
-      backdropFilter:"blur(10px)",display:"flex",alignItems:"flex-end",justifyContent:"center",padding:0
-    }}>
-      <div style={{
-        background:"#131f16",borderRadius:"20px 20px 0 0",width:"100%",maxWidth:600,
-        maxHeight:"92vh",overflowY:"auto",position:"relative",padding:"0 0 20px"
-      }}>
-        <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"16px 18px",borderBottom:"1px solid rgba(46,204,113,0.15)" }}>
-          <span style={{ fontFamily:"'Barlow Condensed',sans-serif",fontSize:"1.1rem",fontWeight:800,color:"#fff" }}>Product Details</span>
-          <button onClick={onClose} style={{ background:"rgba(255,255,255,0.05)",border:"none",color:"#7aab8a",width:30,height:30,borderRadius:"50%",cursor:"pointer",fontSize:"1rem",display:"flex",alignItems:"center",justifyContent:"center" }}>✕</button>
+    <div style={S.page}>
+
+      {/* ── Sticky header ── */}
+      <div style={S.header}>
+        <button style={S.backBtn} onClick={onClose}>←</button>
+        <span style={{ fontWeight:700, fontSize:"0.92rem", color:"#111827", flex:1,
+          overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+          {product.name}
+        </span>
+      </div>
+
+      {/* ── Product image ── */}
+      <div style={{ background:"#fff", display:"flex", alignItems:"center",
+        justifyContent:"center", padding:"28px 20px", borderBottom:"1px solid #e5e7eb" }}>
+        {product.image
+          ? <img src={product.image} alt={product.name}
+              style={{ width:"100%", maxHeight:280, objectFit:"contain" }} />
+          : <div style={{ fontSize:"5rem", opacity:.2 }}>📦</div>}
+      </div>
+
+      {/* ── Primary info ── */}
+      <div style={{ background:"#fff", padding:"16px 16px 20px", marginBottom:8, borderBottom:"1px solid #e5e7eb" }}>
+        <div style={{ fontSize:"0.67rem", fontWeight:700, color:"#85c9ff",
+          letterSpacing:".1em", textTransform:"uppercase", marginBottom:4 }}>
+          {product.category||"PRODUCT"}
         </div>
-        <div style={{ height:260,overflow:"hidden",background:"#0d1a10" }}>
-          {product.image
-            ? <img src={product.image} alt={product.name} style={{ width:"100%",height:"100%",objectFit:"cover" }} />
-            : <div style={{ width:"100%",height:"100%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"5rem",opacity:.2 }}>📦</div>
-          }
+        <div style={{ fontSize:"1.3rem", fontWeight:700, color:"#111827",
+          lineHeight:1.3, marginBottom:10 }}>{product.name}</div>
+
+        {/* Live rating row — only shows if there are real reviews */}
+        {totalReviews>0 && (
+          <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10 }}>
+            <StarRating rating={avgRating} />
+            <span style={{ fontSize:"0.85rem", fontWeight:700, color:"#111827" }}>{avgRating}</span>
+            <span style={{ fontSize:"0.78rem", color:"#85c9ff", fontWeight:600 }}>
+              {totalReviews} review{totalReviews!==1?"s":""}
+            </span>
+          </div>
+        )}
+
+        {/* Price row */}
+        <div style={{ display:"flex", alignItems:"baseline", gap:10, flexWrap:"wrap", marginBottom:6 }}>
+          <span style={{ fontSize:"1.65rem", fontWeight:800, color:"#111827" }}>
+            {formatINR(product.price)}
+          </span>
+          {product.originalPrice && (
+            <span style={{ fontSize:"0.95rem", color:"#9ca3af", textDecoration:"line-through" }}>
+              {formatINR(product.originalPrice)}
+            </span>
+          )}
+          {off && (
+            <span style={{ display:"inline-block", padding:"2px 10px", borderRadius:20,
+              fontSize:"0.72rem", fontWeight:700, background:"rgba(133,201,255,0.15)", color:"#0369a1" }}>
+              {off}% off
+            </span>
+          )}
         </div>
-        <div style={{ padding:"16px 18px" }}>
-          <div style={{ fontSize:"0.7rem",fontWeight:700,color:"#2ecc71",letterSpacing:".08em",textTransform:"uppercase",marginBottom:4 }}>{product.category || "Product"}</div>
-          <div style={{ fontFamily:"'Barlow Condensed',sans-serif",fontSize:"1.6rem",fontWeight:800,color:"#fff",lineHeight:1.1,marginBottom:10 }}>{product.name}</div>
-          <div style={{ display:"flex",alignItems:"baseline",gap:10,marginBottom:12 }}>
-            <span style={{ fontFamily:"'Barlow Condensed',sans-serif",fontSize:"1.9rem",fontWeight:800,color:"#2ecc71" }}>{formatINR(product.price)}</span>
-            {product.originalPrice && <span style={{ fontSize:"1rem",color:"#7aab8a",textDecoration:"line-through" }}>{formatINR(product.originalPrice)}</span>}
-            {off && <span style={{ fontSize:"0.78rem",background:"rgba(46,204,113,0.15)",border:"1px solid rgba(46,204,113,0.3)",color:"#2ecc71",padding:"2px 8px",borderRadius:20,fontWeight:700 }}>{off}% off</span>}
+
+        {off && product.originalPrice && (
+          <div style={{ fontSize:"0.8rem", color:"#0369a1", fontWeight:600, marginBottom:10 }}>
+            You save {formatINR(product.originalPrice - product.price)}
           </div>
-          <div style={{ display:"flex",alignItems:"center",gap:6,fontSize:"0.78rem",color:"#2ecc71",fontWeight:600,marginBottom:16 }}>
-            <span style={{ width:6,height:6,borderRadius:"50%",background:"#2ecc71",display:"inline-block" }} />
-            In Stock — Ready to ship
-          </div>
-          <div style={{ height:1,background:"rgba(46,204,113,0.1)",marginBottom:16 }} />
-          <div style={{ fontSize:"0.72rem",fontWeight:700,color:"#7aab8a",letterSpacing:".08em",textTransform:"uppercase",marginBottom:6 }}>Product Details</div>
-          <div style={{ fontSize:"0.84rem",color:"#7aab8a",lineHeight:1.7,marginBottom:20 }}>
-            DGCA-certified quality drone component. All products come with manufacturer warranty and SAG Drone Technologies' trusted after-sale support.
-          </div>
-          <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
-            <button onClick={handleAddCart} style={{
-              background:"#2ecc71",color:"#0a0f0d",border:"none",borderRadius:40,padding:"13px 20px",
-              fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:"0.95rem",cursor:"pointer",
-              display:"flex",alignItems:"center",justifyContent:"center",gap:8
-            }}>🛒 {user ? "Add to Cart" : "Sign in to Add to Cart"}</button>
-            <a href={waLink(product.waNum||"919390238537", msg)} target="_blank" rel="noreferrer" style={{
-              border:"1.5px solid rgba(46,204,113,0.4)",background:"none",color:"#2ecc71",borderRadius:40,
-              padding:"11px 20px",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:"0.9rem",cursor:"pointer",
-              display:"flex",alignItems:"center",justifyContent:"center",gap:8,textDecoration:"none"
-            }}>💬 Enquire on WhatsApp</a>
-          </div>
+        )}
+
+        {/* Stock status */}
+        <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:"0.8rem", marginBottom:16 }}>
+          <span style={{ width:7, height:7, borderRadius:"50%", flexShrink:0,
+            background:product.status==="instock"?"#22c55e":"#ef4444", display:"inline-block" }} />
+          <span style={{ fontWeight:600, color:product.status==="instock"?"#15803d":"#dc2626" }}>
+            {product.status==="instock" ? "In Stock — Ready to ship" : "Out of Stock"}
+          </span>
+        </div>
+
+        {/* CTAs */}
+        <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+          <button onClick={handleAddCart} style={{
+            background:"#85c9ff", color:"#0c1b2e", border:"none", borderRadius:40,
+            padding:"13px 20px", fontFamily:"'DM Sans',sans-serif", fontWeight:700,
+            fontSize:"0.95rem", cursor:"pointer",
+            display:"flex", alignItems:"center", justifyContent:"center", gap:8,
+          }}>🛒 {user ? "Add to Cart" : "Sign in to Add to Cart"}</button>
+          <a href={waLink(product.waNum||"919390238537", msg)} target="_blank" rel="noreferrer" style={{
+            border:"1.5px solid #85c9ff", background:"#fff", color:"#0369a1",
+            borderRadius:40, padding:"11px 20px", fontFamily:"'DM Sans',sans-serif",
+            fontWeight:700, fontSize:"0.9rem", textDecoration:"none",
+            display:"flex", alignItems:"center", justifyContent:"center", gap:8,
+          }}>💬 Enquire on WhatsApp</a>
         </div>
       </div>
+
+      {/* ── Product Highlights ── */}
+      <div style={S.card}>
+        <div style={S.secTitle}>Product Highlights</div>
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px 16px" }}>
+          {highlights.map(h => (
+            <div key={h.label} style={{ display:"flex", flexDirection:"column", gap:2 }}>
+              <span style={{ fontSize:"0.68rem", color:"#9ca3af", fontWeight:600,
+                textTransform:"uppercase", letterSpacing:".05em" }}>{h.label}</span>
+              <span style={{ fontSize:"0.84rem", color:"#1f2937", fontWeight:600 }}>{h.value}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Product Details ── */}
+      <div style={S.card}>
+        <div style={S.secTitle}>Product Details</div>
+        <p style={{ fontSize:"0.85rem", color:"#4b5563", lineHeight:1.8, margin:0 }}>
+          DGCA-certified quality drone component. All products come with manufacturer warranty
+          and SAG Drone Technologies' trusted after-sale support. Designed for professional
+          agricultural operations with high reliability and performance.
+        </p>
+      </div>
+
+      {/* ── Ratings & Reviews ── */}
+      <div style={S.card}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
+          <div style={S.secTitle}>Ratings &amp; Reviews</div>
+          {user && !alreadyReviewed && !showForm && (
+            <button onClick={()=>setShowForm(true)} style={{
+              background:"rgba(133,201,255,0.12)", border:"1px solid #85c9ff",
+              color:"#0369a1", borderRadius:20, padding:"5px 14px",
+              fontSize:"0.78rem", fontWeight:700, cursor:"pointer",
+              fontFamily:"'DM Sans',sans-serif",
+            }}>+ Write a Review</button>
+          )}
+          {!user && (
+            <button onClick={()=>{onClose();showAuth();}} style={{
+              background:"rgba(133,201,255,0.12)", border:"1px solid #85c9ff",
+              color:"#0369a1", borderRadius:20, padding:"5px 14px",
+              fontSize:"0.78rem", fontWeight:700, cursor:"pointer",
+              fontFamily:"'DM Sans',sans-serif",
+            }}>Sign in to Review</button>
+          )}
+        </div>
+
+        {/* Write-review form */}
+        {showForm && (
+          <div style={{ background:"#f0f9ff", border:"1px solid #bae6fd",
+            borderRadius:12, padding:14, marginBottom:16 }}>
+            <div style={{ fontSize:"0.82rem", fontWeight:700, color:"#0369a1", marginBottom:10 }}>
+              Your Review
+            </div>
+            <div style={{ marginBottom:10 }}>
+              <StarPicker value={formRating} onChange={setFormRating} />
+              {formRating>0 && (
+                <span style={{ fontSize:"0.78rem", color:"#6b7280", marginLeft:8 }}>
+                  {["","Poor","Fair","Good","Very Good","Excellent"][formRating]}
+                </span>
+              )}
+            </div>
+            <textarea
+              value={formText} onChange={e=>setFormText(e.target.value)}
+              placeholder="Share your experience with this product..."
+              rows={3}
+              style={{ width:"100%", boxSizing:"border-box", borderRadius:8,
+                border:"1px solid #bae6fd", padding:"8px 10px", fontSize:"0.85rem",
+                fontFamily:"'DM Sans',sans-serif", resize:"vertical", color:"#111827",
+                background:"#fff", outline:"none" }}
+            />
+            {formError && <div style={{ fontSize:"0.78rem", color:"#dc2626", marginTop:6 }}>{formError}</div>}
+            {formSuccess && <div style={{ fontSize:"0.78rem", color:"#15803d", marginTop:6 }}>{formSuccess}</div>}
+            <div style={{ display:"flex", gap:8, marginTop:10 }}>
+              <button onClick={submitReview} disabled={submitting} style={{
+                flex:1, background:"#85c9ff", color:"#0c1b2e", border:"none",
+                borderRadius:30, padding:"10px", fontSize:"0.85rem", fontWeight:700,
+                cursor:submitting?"wait":"pointer", fontFamily:"'DM Sans',sans-serif",
+                opacity:submitting?.7:1,
+              }}>{submitting?"Submitting…":"Submit Review"}</button>
+              <button onClick={()=>{setShowForm(false);setFormError("");setFormRating(0);setFormText("");}} style={{
+                flex:1, background:"#fff", color:"#6b7280", border:"1px solid #e5e7eb",
+                borderRadius:30, padding:"10px", fontSize:"0.85rem", fontWeight:600,
+                cursor:"pointer", fontFamily:"'DM Sans',sans-serif",
+              }}>Cancel</button>
+            </div>
+          </div>
+        )}
+
+        {alreadyReviewed && (
+          <div style={{ fontSize:"0.8rem", color:"#15803d", background:"#f0fdf4",
+            border:"1px solid #bbf7d0", borderRadius:8, padding:"8px 12px", marginBottom:12 }}>
+            ✅ You have already reviewed this product.
+          </div>
+        )}
+
+        {/* Aggregate summary */}
+        {reviewsLoading ? (
+          <div style={{ textAlign:"center", color:"#9ca3af", padding:"20px 0", fontSize:"0.85rem" }}>
+            Loading reviews…
+          </div>
+        ) : totalReviews===0 ? (
+          <div style={{ textAlign:"center", color:"#9ca3af", padding:"20px 0", fontSize:"0.85rem" }}>
+            No reviews yet. Be the first to review this product!
+          </div>
+        ) : (
+          <>
+            {/* Summary bar */}
+            <div style={{ display:"flex", alignItems:"center", gap:16,
+              padding:"12px 0", borderBottom:"1px solid #f3f4f6", marginBottom:16 }}>
+              <div style={{ textAlign:"center", flexShrink:0 }}>
+                <div style={{ fontSize:"2.8rem", fontWeight:800, color:"#111827", lineHeight:1 }}>
+                  {avgRating}
+                </div>
+                <StarRating rating={avgRating} size="1rem" />
+                <div style={{ fontSize:"0.7rem", color:"#9ca3af", marginTop:4 }}>
+                  {totalReviews} review{totalReviews!==1?"s":""}
+                </div>
+              </div>
+              <div style={{ flex:1 }}>
+                {starCounts.map(({star,count})=>{
+                  const pct = totalReviews ? Math.round((count/totalReviews)*100) : 0;
+                  return (
+                    <div key={star} style={{ display:"flex", alignItems:"center",
+                      gap:6, marginBottom:4 }}>
+                      <span style={{ fontSize:"0.7rem", color:"#6b7280", width:8 }}>{star}</span>
+                      <span style={{ fontSize:"0.7rem", color:"#f59e0b" }}>★</span>
+                      <div style={{ flex:1, height:6, background:"#e5e7eb",
+                        borderRadius:4, overflow:"hidden" }}>
+                        <div style={{ width:`${pct}%`, height:"100%",
+                          background:"#85c9ff", borderRadius:4, transition:"width .3s" }} />
+                      </div>
+                      <span style={{ fontSize:"0.68rem", color:"#9ca3af",
+                        width:28, textAlign:"right" }}>{count}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Individual review cards */}
+            {reviews.map((r,i) => (
+              <div key={r.id||i} style={{
+                paddingBottom:14, marginBottom:14,
+                borderBottom: i<reviews.length-1 ? "1px solid #f3f4f6" : "none",
+              }}>
+                <div style={{ display:"flex", justifyContent:"space-between",
+                  alignItems:"flex-start", marginBottom:4 }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                    <div style={{ width:32, height:32, borderRadius:"50%",
+                      background:"linear-gradient(135deg,#85c9ff,#38bdf8)",
+                      display:"flex", alignItems:"center", justifyContent:"center",
+                      fontSize:"0.85rem", fontWeight:700, color:"#0c1b2e", flexShrink:0 }}>
+                      {(r.user_name||"U")[0].toUpperCase()}
+                    </div>
+                    <div>
+                      <div style={{ fontSize:"0.82rem", fontWeight:700, color:"#111827" }}>
+                        {r.user_name||"User"}
+                      </div>
+                      <StarRating rating={r.rating} size="0.8rem" />
+                    </div>
+                  </div>
+                  <span style={{ fontSize:"0.7rem", color:"#9ca3af", flexShrink:0 }}>
+                    {new Date(r.created_at).toLocaleDateString("en-IN",{month:"short",year:"numeric"})}
+                  </span>
+                </div>
+                <p style={{ fontSize:"0.83rem", color:"#4b5563", margin:"6px 0 0 40px",
+                  lineHeight:1.65 }}>{r.comment}</p>
+              </div>
+            ))}
+          </>
+        )}
+      </div>
+
+      {/* ── Similar Products ── */}
+      {similar.length>0 && (
+        <div style={S.card}>
+          <div style={S.secTitle}>Similar Products</div>
+          <div style={{ display:"flex", gap:12, overflowX:"auto",
+            paddingBottom:4, scrollbarWidth:"none" }}>
+            {similar.map(p=>{
+              const pOff=discount(p.price,p.originalPrice);
+              return (
+                <div key={p.id} style={{ flexShrink:0, width:144, background:"#f9fafb",
+                  borderRadius:12, border:"1px solid #e5e7eb", overflow:"hidden" }}>
+                  <div style={{ height:100, background:"#fff", display:"flex",
+                    alignItems:"center", justifyContent:"center", padding:8 }}>
+                    {p.image
+                      ? <img src={p.image} alt={p.name}
+                          style={{ width:"100%", height:"100%", objectFit:"contain" }} />
+                      : <span style={{ fontSize:"2rem", opacity:.3 }}>📦</span>}
+                  </div>
+                  <div style={{ padding:"8px 8px 10px" }}>
+                    <div style={{ fontSize:"0.72rem", color:"#374151", fontWeight:600,
+                      lineHeight:1.3, marginBottom:4,
+                      display:"-webkit-box", WebkitLineClamp:2,
+                      WebkitBoxOrient:"vertical", overflow:"hidden" }}>{p.name}</div>
+                    <div style={{ fontSize:"0.82rem", fontWeight:800, color:"#111827" }}>
+                      {formatINR(p.price)}
+                    </div>
+                    {pOff && (
+                      <span style={{ fontSize:"0.65rem", color:"#0369a1", fontWeight:700 }}>
+                        {pOff}% off
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      <div style={{ height:32 }} />
     </div>
   );
 }
@@ -934,7 +1360,7 @@ function HomePage({ user, cart, showAuth, showToast, onTabChange, banners, setBa
       {/* Modals */}
       {cartOpen && <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} cart={cart} user={localUser} showAuth={() => setAuthOpen(true)} updateCartQty={updateCartQty} removeFromCart={removeFromCart} />}
       {authOpen && <AuthModal onClose={() => setAuthOpen(false)} onLogin={(session) => { saveSession(session); setLocalUser(session); showToast("success","✅ Welcome, "+session.name+"!"); }} />}
-      {modalProduct && <ProductDetailModal product={modalProduct} onClose={() => setModalProduct(null)} onAddCart={addToCart} user={localUser} showAuth={() => { setModalProduct(null); setAuthOpen(true); }} />}
+      {modalProduct && <ProductDetailModal product={modalProduct} onClose={() => setModalProduct(null)} onAddCart={addToCart} allProducts={products} user={localUser} showAuth={() => { setModalProduct(null); setAuthOpen(true); }} />}
       {bannerAdminOpen && <BannerAdminModal banners={banners} onSave={(list) => { setBanners(list); setBannerAdminOpen(false); showToast("success","✅ Banners saved!"); }} onClose={() => setBannerAdminOpen(false)} />}
     </div>
   );
@@ -2324,7 +2750,7 @@ export default function App() {
 
       {modalProduct && (
         <ProductDetailModal product={modalProduct} onClose={()=>setModalProduct(null)}
-          onAddCart={addToCart}
+          onAddCart={addToCart} allProducts={products}
           user={user} showAuth={()=>{setModalProduct(null);setTab("account");}} />
       )}
 
