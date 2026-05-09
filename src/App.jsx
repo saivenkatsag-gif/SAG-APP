@@ -1583,8 +1583,12 @@ function ProductCard({ p, onClick, onAddCart, user, compact }) {
 }
 
 // ─── CATEGORIES PAGE ──────────────────────────────────────────
-function CategoriesPage({ products, onProductClick, onAddCart, user }) {
-  const cats = ["Drones","Batteries","Flight Controller","Accessories"];
+function CategoriesPage({ products: propProducts, onProductClick, onAddCart, user }) {
+  const [products, setProducts] = useState(propProducts && propProducts.length ? propProducts : STATIC_PRODUCTS);
+  const [loading, setLoading] = useState(true);
+  const [activeCat, setActiveCat] = useState("All");
+
+  const cats = ["All","Drones","Batteries","Flight Controller","Accessories"];
   const catDescs = {
     "Drones": "DGCA-certified agricultural drones",
     "Batteries": "High-capacity LiPo batteries & chargers",
@@ -1592,31 +1596,118 @@ function CategoriesPage({ products, onProductClick, onAddCart, user }) {
     "Accessories": "Pumps, transmitters, motors & more",
   };
 
+  // Fetch directly from Supabase so Categories page always has data
+  useEffect(() => {
+    fetch(`${SUPABASE_URL}/rest/v1/products?order=created_at.asc&select=*`, {
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
+    })
+      .then(r => r.ok ? r.json() : null)
+      .then(rows => {
+        if (rows && rows.length) {
+          setProducts(rows.map(r => ({
+            id: r.id, name: r.name, price: r.price, originalPrice: r.original_price,
+            image: r.image, isNew: r.is_new, isOffer: r.is_offer, status: r.status,
+            category: r.category, waNum: r.wa_num || "919390238537"
+          })));
+        }
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
+
+  // Keep in sync if parent passes updated products
+  useEffect(() => {
+    if (propProducts && propProducts.length) setProducts(propProducts);
+  }, [propProducts]);
+
+  const displayCats = activeCat === "All"
+    ? ["Drones","Batteries","Flight Controller","Accessories"]
+    : [activeCat];
+
   return (
     <div style={{ background:"#f5f7fa",minHeight:"100vh",paddingBottom:70,fontFamily:"'DM Sans',sans-serif" }}>
-      <div style={{ background:"linear-gradient(135deg,#1a2b6b 0%,#2454c7 100%)",padding:"16px 16px 14px" }}>
+
+      {/* Header */}
+      <div style={{ background:"linear-gradient(135deg,#1a2b6b 0%,#2454c7 100%)",padding:"16px 16px 0" }}>
         <div style={{ fontFamily:"'Barlow Condensed',sans-serif",fontSize:"1.5rem",fontWeight:800,color:"#fff" }}>Categories</div>
-        <div style={{ fontSize:"0.78rem",color:"rgba(255,255,255,0.8)",marginTop:2 }}>Browse by product type</div>
+        <div style={{ fontSize:"0.78rem",color:"rgba(255,255,255,0.8)",marginTop:2,marginBottom:12 }}>Browse by product type</div>
+
+        {/* Category filter pills */}
+        <div style={{ display:"flex",gap:8,overflowX:"auto",paddingBottom:12,scrollbarWidth:"none" }}>
+          {cats.map(cat => (
+            <button key={cat} onClick={() => setActiveCat(cat)} style={{
+              flexShrink:0,display:"flex",alignItems:"center",gap:6,
+              background: activeCat===cat ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.1)",
+              border: activeCat===cat ? "2px solid #fff" : "2px solid transparent",
+              borderRadius:20,padding:"6px 14px",cursor:"pointer",transition:"all .2s",
+            }}>
+              <span style={{ fontSize:"1rem" }}>{CATEGORY_ICONS[cat]||"📦"}</span>
+              <span style={{ fontSize:"0.72rem",fontWeight:700,color:"#fff",whiteSpace:"nowrap",fontFamily:"'DM Sans',sans-serif" }}>{cat}</span>
+            </button>
+          ))}
+        </div>
       </div>
+
+      {/* Content */}
       <div style={{ padding:"14px 14px" }}>
-        {cats.map(cat => {
-          const items = products.filter(p => p.category === cat);
-          if (!items.length) return null;
-          return (
-            <div key={cat} style={{ marginBottom:22 }}>
-              <div style={{ display:"flex",alignItems:"center",gap:10,marginBottom:10 }}>
-                <span style={{ fontSize:"1.5rem" }}>{CATEGORY_ICONS[cat]}</span>
-                <div>
-                  <div style={{ fontFamily:"'Barlow Condensed',sans-serif",fontSize:"1.15rem",fontWeight:800,color:"#111827" }}>{cat}</div>
-                  <div style={{ fontSize:"0.73rem",color:"#6b7280" }}>{catDescs[cat]} · {items.length} items</div>
+        {loading ? (
+          // Skeleton loader
+          <div style={{ display:"flex",flexDirection:"column",gap:20 }}>
+            {[1,2,3].map(i => (
+              <div key={i}>
+                <div style={{ display:"flex",alignItems:"center",gap:10,marginBottom:10 }}>
+                  <div style={{ width:40,height:40,borderRadius:"50%",background:"#e5e7eb",animation:"pulse 1.5s infinite" }} />
+                  <div>
+                    <div style={{ width:120,height:16,background:"#e5e7eb",borderRadius:6,marginBottom:6 }} />
+                    <div style={{ width:80,height:12,background:"#f3f4f6",borderRadius:6 }} />
+                  </div>
+                </div>
+                <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:10 }}>
+                  {[1,2].map(j => (
+                    <div key={j} style={{ height:280,background:"#e5e7eb",borderRadius:14 }} />
+                  ))}
                 </div>
               </div>
-              <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:10 }}>
-                {items.map(p => <ProductCard key={p.id} p={p} onClick={() => onProductClick(p)} onAddCart={() => onAddCart(p)} user={user} />)}
+            ))}
+            <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}`}</style>
+          </div>
+        ) : (
+          displayCats.map(cat => {
+            const items = products.filter(p => p.category === cat);
+            if (!items.length) return null;
+            return (
+              <div key={cat} style={{ marginBottom:22 }}>
+                {/* Category header */}
+                <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10 }}>
+                  <div style={{ display:"flex",alignItems:"center",gap:10 }}>
+                    <div style={{
+                      width:42,height:42,borderRadius:12,
+                      background:"linear-gradient(135deg,#1a2b6b,#2454c7)",
+                      display:"flex",alignItems:"center",justifyContent:"center",
+                      fontSize:"1.3rem",flexShrink:0
+                    }}>{CATEGORY_ICONS[cat]}</div>
+                    <div>
+                      <div style={{ fontFamily:"'Barlow Condensed',sans-serif",fontSize:"1.15rem",fontWeight:800,color:"#111827" }}>{cat}</div>
+                      <div style={{ fontSize:"0.73rem",color:"#6b7280" }}>{catDescs[cat]} · {items.length} item{items.length!==1?"s":""}</div>
+                    </div>
+                  </div>
+                </div>
+                <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:10 }}>
+                  {items.map(p => <ProductCard key={p.id} p={p} onClick={() => onProductClick(p)} onAddCart={() => onAddCart(p)} user={user} />)}
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })
+        )}
+
+        {/* Empty state — only shown after loading */}
+        {!loading && displayCats.every(cat => !products.filter(p => p.category === cat).length) && (
+          <div style={{ textAlign:"center",padding:"60px 20px",color:"#9ca3af" }}>
+            <div style={{ fontSize:"3rem",marginBottom:12,opacity:.4 }}>📭</div>
+            <div style={{ fontFamily:"'Barlow Condensed',sans-serif",fontSize:"1.3rem",fontWeight:800,color:"#374151",marginBottom:6 }}>No products found</div>
+            <div style={{ fontSize:"0.85rem" }}>Check back soon for new arrivals.</div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -2124,6 +2215,38 @@ async function sbDeleteBanner(id) {
   await fetch(`${SUPABASE_URL}/rest/v1/banners?id=eq.${id}`, { method:"DELETE", headers:sbHeaders });
 }
 
+// ─── CATEGORY DB HELPERS ──────────────────────────────────────
+async function sbGetCategories() {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/categories?order=sort_order.asc,name.asc&select=*`, { headers: sbHeaders });
+  if (!res.ok) return null;
+  return res.json();
+}
+async function sbUpsertCategory(cat) {
+  const payload = {
+    name: cat.name,
+    icon: cat.icon || "📦",
+    description: cat.description || "",
+    sort_order: cat.sort_order || 0,
+    active: cat.active !== false,
+  };
+  if (cat.db_id) {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/categories?id=eq.${cat.db_id}`, {
+      method:"PATCH", headers:{...sbHeaders,Prefer:"return=representation"},
+      body: JSON.stringify({...payload, updated_at: new Date().toISOString()}),
+    });
+    return res.ok ? res.json() : null;
+  } else {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/categories`, {
+      method:"POST", headers:{...sbHeaders,Prefer:"return=representation"},
+      body: JSON.stringify({...payload, created_at: new Date().toISOString()}),
+    });
+    return res.ok ? res.json() : null;
+  }
+}
+async function sbDeleteCategory(id) {
+  await fetch(`${SUPABASE_URL}/rest/v1/categories?id=eq.${id}`, { method:"DELETE", headers:sbHeaders });
+}
+
 // ─── ADMIN: BANNER SECTION ─────────────────────────────────────
 function AdminBanners({ showToast }) {
   const [banners, setBanners] = useState(DEFAULT_BANNERS.map((b,i) => ({...b, sort_order:i, active:true})));
@@ -2397,8 +2520,16 @@ function AdminProducts({ products, setProducts, showToast }) {
   const [filterCat, setFilterCat] = useState("All");
   const [filterStatus, setFilterStatus] = useState("All");
   const [saving, setSaving] = useState(false);
+  const [catList, setCatList] = useState(["Drones","Batteries","Flight Controller","Accessories"]);
 
-  const cats = ["All","Drones","Batteries","Flight Controller","Accessories"];
+  // Load real categories for filter chips
+  useEffect(() => {
+    sbGetCategories().then(rows => {
+      if (rows && rows.length) setCatList(rows.filter(r=>r.active!==false).map(r=>r.name));
+    }).catch(()=>{});
+  }, []);
+
+  const cats = ["All", ...catList];
   const statuses = ["All","In Stock","Out of Stock"];
 
   const filtered = products.filter(p => {
@@ -2555,6 +2686,217 @@ function AdminDashboard({ products, users, enquiries, setAdminPage }) {
   );
 }
 
+// ─── ADMIN: CATEGORIES SECTION ────────────────────────────────
+function AdminCategories({ showToast }) {
+  const DEFAULT_CATS = [
+    { name:"Drones",            icon:"🚁", description:"DGCA-certified agricultural drones",       sort_order:0, active:true },
+    { name:"Batteries",         icon:"🔋", description:"High-capacity LiPo batteries & chargers",  sort_order:1, active:true },
+    { name:"Flight Controller", icon:"🕹️", description:"Precision FC kits for AG drones",          sort_order:2, active:true },
+    { name:"Accessories",       icon:"🔧", description:"Pumps, transmitters, motors & more",        sort_order:3, active:true },
+  ];
+
+  const [cats, setCats] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [editIdx, setEditIdx] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(null);
+  const emptyForm = { name:"", icon:"📦", description:"", active:true };
+  const [form, setForm] = useState(emptyForm);
+  const COMMON_ICONS = ["📦","🚁","🔋","🕹️","🔧","⚙️","🛸","🌾","💡","🛠️","📡","🎮","🔩","🪝","🧰","🛡️","🔌","📷","🎯","🏷️"];
+
+  useEffect(() => {
+    sbGetCategories()
+      .then(rows => {
+        if (rows && rows.length) {
+          setCats(rows.map(r => ({ db_id:r.id, name:r.name, icon:r.icon||"📦", description:r.description||"", sort_order:r.sort_order||0, active:r.active!==false })));
+        } else {
+          // Seed defaults if table is empty
+          setCats(DEFAULT_CATS);
+        }
+        setLoading(false);
+      })
+      .catch(() => { setCats(DEFAULT_CATS); setLoading(false); });
+  }, []);
+
+  const openEdit = (i) => {
+    setEditIdx(i);
+    setForm(i === -1 ? { ...emptyForm, sort_order: cats.length } : { ...cats[i] });
+  };
+
+  const saveForm = async () => {
+    if (!form.name.trim()) return;
+    setSaving(true);
+    try {
+      const payload = { ...form, name: form.name.trim(), sort_order: editIdx === -1 ? cats.length : (form.sort_order ?? editIdx) };
+      const rows = await sbUpsertCategory(payload);
+      const saved = Array.isArray(rows) ? rows[0] : rows;
+      if (editIdx === -1) {
+        setCats(prev => [...prev, { ...payload, db_id: saved?.id }]);
+        showToast("success", `✅ Category "${payload.name}" created!`);
+      } else {
+        setCats(prev => prev.map((c,i) => i===editIdx ? { ...payload, db_id: saved?.id || c.db_id } : c));
+        showToast("success", `✅ Category updated!`);
+      }
+      setEditIdx(null);
+    } catch { showToast("error","Failed to save category."); }
+    setSaving(false);
+  };
+
+  const deleteCat = async (i) => {
+    const c = cats[i];
+    if (!window.confirm(`Delete category "${c.name}"? Products using this category will need to be reassigned.`)) return;
+    setDeleting(i);
+    try {
+      if (c.db_id) await sbDeleteCategory(c.db_id);
+      setCats(prev => prev.filter((_,x)=>x!==i));
+      showToast("success", `🗑️ "${c.name}" deleted.`);
+    } catch { showToast("error","Failed to delete."); }
+    setDeleting(null);
+  };
+
+  const toggleActive = async (i) => {
+    const updated = { ...cats[i], active: !cats[i].active };
+    setCats(prev => prev.map((c,x)=>x===i?updated:c));
+    if (updated.db_id) { try { await sbUpsertCategory(updated); } catch {} }
+  };
+
+  const moveRow = async (i, dir) => {
+    const arr = [...cats];
+    const j = i + dir;
+    if (j < 0 || j >= arr.length) return;
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+    arr[i] = { ...arr[i], sort_order: i };
+    arr[j] = { ...arr[j], sort_order: j };
+    setCats(arr);
+    // Persist new order silently
+    [arr[i], arr[j]].forEach(c => { if (c.db_id) sbUpsertCategory(c).catch(()=>{}); });
+  };
+
+  if (editIdx !== null) return (
+    <div>
+      <button onClick={()=>setEditIdx(null)} style={{ display:"flex",alignItems:"center",gap:6,background:"none",border:"none",color:"#7aab8a",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontSize:"0.85rem",marginBottom:20,padding:0 }}>← Back to Categories</button>
+      <div style={{ background:"#131f16",border:"1px solid rgba(46,204,113,0.2)",borderRadius:16,padding:24,maxWidth:520 }}>
+        <div className="modal-title" style={{ marginBottom:18 }}>{editIdx===-1?"➕ New Category":"✏️ Edit Category"}</div>
+
+        {/* Icon picker */}
+        <div className="modal-field">
+          <label>Icon Emoji</label>
+          <div style={{ display:"flex",flexWrap:"wrap",gap:8,marginBottom:10 }}>
+            {COMMON_ICONS.map(ic => (
+              <button key={ic} onClick={()=>setForm(f=>({...f,icon:ic}))} style={{
+                width:38,height:38,borderRadius:10,border: form.icon===ic?"2px solid #2ecc71":"1px solid rgba(46,204,113,0.2)",
+                background: form.icon===ic?"rgba(46,204,113,0.15)":"#0a0f0d",fontSize:"1.2rem",cursor:"pointer",
+                display:"flex",alignItems:"center",justifyContent:"center",transition:"all .15s"
+              }}>{ic}</button>
+            ))}
+          </div>
+          <input value={form.icon} onChange={e=>setForm(f=>({...f,icon:e.target.value}))} placeholder="Or type any emoji"
+            style={{ width:"100%",padding:"9px 12px",background:"#0a0f0d",border:"1.5px solid rgba(46,204,113,0.2)",borderRadius:10,color:"#fff",fontFamily:"'DM Sans',sans-serif",fontSize:"1.2rem",outline:"none",boxSizing:"border-box",textAlign:"center" }} />
+        </div>
+
+        <div className="modal-field">
+          <label>Category Name *</label>
+          <input value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} placeholder="e.g. Spare Parts"
+            style={{ width:"100%",padding:"10px 13px",background:"#0a0f0d",border:"1.5px solid rgba(46,204,113,0.2)",borderRadius:10,color:"#fff",fontFamily:"'DM Sans',sans-serif",fontSize:"0.88rem",outline:"none",boxSizing:"border-box" }} />
+        </div>
+
+        <div className="modal-field">
+          <label>Description</label>
+          <input value={form.description||""} onChange={e=>setForm(f=>({...f,description:e.target.value}))} placeholder="e.g. Replacement parts and spares"
+            style={{ width:"100%",padding:"10px 13px",background:"#0a0f0d",border:"1.5px solid rgba(46,204,113,0.2)",borderRadius:10,color:"#fff",fontFamily:"'DM Sans',sans-serif",fontSize:"0.88rem",outline:"none",boxSizing:"border-box" }} />
+        </div>
+
+        {/* Preview */}
+        <div style={{ background:"#0a0f0d",border:"1px solid rgba(46,204,113,0.15)",borderRadius:12,padding:"12px 16px",marginBottom:18 }}>
+          <div style={{ fontSize:"0.7rem",color:"#7aab8a",marginBottom:8,textTransform:"uppercase",letterSpacing:".07em",fontWeight:700 }}>Preview</div>
+          <div style={{ display:"flex",alignItems:"center",gap:12 }}>
+            <div style={{ width:48,height:48,borderRadius:14,background:"linear-gradient(135deg,#1a2b6b,#2454c7)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.5rem" }}>{form.icon||"📦"}</div>
+            <div>
+              <div style={{ fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:"1.1rem",color:"#fff" }}>{form.name||"Category Name"}</div>
+              <div style={{ fontSize:"0.73rem",color:"#7aab8a",marginTop:1 }}>{form.description||"No description"}</div>
+            </div>
+          </div>
+        </div>
+
+        <label style={{ display:"flex",alignItems:"center",gap:10,cursor:"pointer",marginBottom:20,color:"#7aab8a",fontSize:"0.85rem",fontFamily:"'DM Sans',sans-serif" }}>
+          <input type="checkbox" checked={!!form.active} onChange={e=>setForm(f=>({...f,active:e.target.checked}))} style={{ accentColor:"#2ecc71",width:16,height:16 }} />
+          Active (visible in app and product form)
+        </label>
+
+        <div style={{ display:"flex",gap:10 }}>
+          <button onClick={saveForm} disabled={saving||!form.name.trim()} style={{ flex:1,padding:"11px",background:saving||!form.name.trim()?"rgba(46,204,113,0.4)":"#2ecc71",color:"#0a0f0d",border:"none",borderRadius:40,fontFamily:"'DM Sans',sans-serif",fontWeight:700,cursor:saving?"wait":"pointer" }}>{saving?"Saving…":"Save Category"}</button>
+          <button onClick={()=>setEditIdx(null)} style={{ flex:1,padding:"11px",background:"rgba(255,255,255,0.05)",color:"#e8f5ec",border:"1px solid rgba(255,255,255,0.1)",borderRadius:40,fontFamily:"'DM Sans',sans-serif",fontWeight:600,cursor:"pointer" }}>Cancel</button>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div>
+      <div className="section-hdr">
+        <h3>🗂️ Categories ({cats.filter(c=>c.active).length} active)</h3>
+        <button className="admin-btn green" onClick={()=>openEdit(-1)}>+ New Category</button>
+      </div>
+
+      {/* Info banner */}
+      <div style={{ background:"rgba(46,204,113,0.06)",border:"1px solid rgba(46,204,113,0.18)",borderRadius:12,padding:"10px 16px",marginBottom:20,fontSize:"0.8rem",color:"#7aab8a",display:"flex",alignItems:"center",gap:8 }}>
+        <span style={{ fontSize:"1.1rem" }}>💡</span>
+        Categories created here appear in the <strong style={{ color:"#2ecc71" }}>Add/Edit Product</strong> form and in the app's <strong style={{ color:"#2ecc71" }}>Browse</strong> sections. Drag ↕ arrows to reorder.
+      </div>
+
+      {loading ? (
+        <div style={{ textAlign:"center",padding:"40px 0",color:"#7aab8a" }}>Loading categories…</div>
+      ) : (
+        <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
+          {cats.map((c,i) => (
+            <div key={c.db_id||c.name||i} style={{
+              background:"#131f16",border:`1px solid ${c.active?"rgba(46,204,113,0.2)":"rgba(255,255,255,0.06)"}`,
+              borderRadius:14,padding:"14px 18px",display:"flex",alignItems:"center",gap:14,
+              opacity:c.active?1:0.6,transition:"all .2s"
+            }}>
+              {/* Reorder arrows */}
+              <div style={{ display:"flex",flexDirection:"column",gap:2,flexShrink:0 }}>
+                <button onClick={()=>moveRow(i,-1)} disabled={i===0} style={{ background:"none",border:"none",color:i===0?"#2d3d2e":"#7aab8a",cursor:i===0?"default":"pointer",fontSize:"0.75rem",lineHeight:1,padding:"1px 4px" }}>▲</button>
+                <button onClick={()=>moveRow(i,+1)} disabled={i===cats.length-1} style={{ background:"none",border:"none",color:i===cats.length-1?"#2d3d2e":"#7aab8a",cursor:i===cats.length-1?"default":"pointer",fontSize:"0.75rem",lineHeight:1,padding:"1px 4px" }}>▼</button>
+              </div>
+
+              {/* Icon */}
+              <div style={{ width:46,height:46,borderRadius:12,background:"linear-gradient(135deg,#1a2b6b,#2454c7)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.4rem",flexShrink:0 }}>{c.icon||"📦"}</div>
+
+              {/* Info */}
+              <div style={{ flex:1,minWidth:0 }}>
+                <div style={{ display:"flex",alignItems:"center",gap:8 }}>
+                  <div style={{ fontFamily:"'Barlow Condensed',sans-serif",fontSize:"1rem",fontWeight:800,color:"#fff" }}>{c.name}</div>
+                  {!c.active && <span style={{ fontSize:"0.65rem",background:"rgba(255,100,100,0.15)",border:"1px solid rgba(255,100,100,0.4)",color:"#ff8080",borderRadius:20,padding:"1px 8px",fontWeight:700 }}>HIDDEN</span>}
+                </div>
+                <div style={{ fontSize:"0.74rem",color:"#7aab8a",marginTop:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{c.description||"No description"}</div>
+              </div>
+
+              {/* Actions */}
+              <div style={{ display:"flex",alignItems:"center",gap:8,flexShrink:0 }}>
+                <label style={{ display:"flex",alignItems:"center",gap:5,cursor:"pointer",fontSize:"0.75rem",color:c.active?"#2ecc71":"#7aab8a" }}>
+                  <input type="checkbox" checked={!!c.active} onChange={()=>toggleActive(i)} style={{ accentColor:"#2ecc71" }} />
+                  {c.active?"Live":"Off"}
+                </label>
+                <button className="admin-btn blue sm" onClick={()=>openEdit(i)}>✏️ Edit</button>
+                <button className="admin-btn red sm" onClick={()=>deleteCat(i)} disabled={!!deleting}>{deleting===i?"…":"🗑️"}</button>
+              </div>
+            </div>
+          ))}
+
+          {cats.length === 0 && (
+            <div className="empty-state">
+              <div className="es-icon">🗂️</div>
+              <div className="es-title">No Categories Yet</div>
+              <p>Click "New Category" to add your first one.</p>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── ADMIN PAGE ROOT ───────────────────────────────────────────
 function AdminPage({ autoAuthed = false }) {
   const [authed, setAuthed] = useState(() => autoAuthed || sessionStorage.getItem("sag_admin") === "1");
@@ -2596,10 +2938,10 @@ function AdminPage({ autoAuthed = false }) {
     </div>
   );
 
-  const pageTitle = { dashboard:"Dashboard", products:"Products", offers:"Offers", banners:"Banners", users:"Users" };
+  const pageTitle = { dashboard:"Dashboard", products:"Products", offers:"Offers", banners:"Banners", users:"Users", categories:"Categories" };
   const navItems = [
     { group:"Overview", items:[["dashboard","📊","Dashboard"]] },
-    { group:"Catalog", items:[["products","🛒","Products"],["offers","🏷️","Offers"]] },
+    { group:"Catalog", items:[["products","🛒","Products"],["categories","🗂️","Categories"],["offers","🏷️","Offers"]] },
     { group:"Content", items:[["banners","🖼","Banners"]] },
     { group:"CRM", items:[["users","👥","Users"]] },
   ];
@@ -2620,8 +2962,7 @@ function AdminPage({ autoAuthed = false }) {
                 <button key={page} className={`admin-link${adminPage===page?" active":""}`} onClick={()=>setAdminPage(page)}>
                   <span className="admin-link-icon">{icon}</span>{label}
                   {page==="offers" && <span className="admin-link-badge">{products.filter(p=>p.isOffer).length}</span>}
-                  {page==="users" && <span className="admin-link-badge">{users.length}</span>}
-                </button>
+                  {page==="users" && <span className="admin-link-badge">{users.length}</span>}                </button>
               ))}
             </div>
           ))}
@@ -2645,6 +2986,7 @@ function AdminPage({ autoAuthed = false }) {
         <div className="admin-content">
           {adminPage==="dashboard" && <AdminDashboard products={products} users={users.length} enquiries={enquiries.length} setAdminPage={setAdminPage} />}
           {adminPage==="products" && <AdminProducts products={products} setProducts={setProducts} showToast={showToast} />}
+          {adminPage==="categories" && <AdminCategories showToast={showToast} />}
           {adminPage==="offers" && <AdminOffers products={products} setProducts={setProducts} showToast={showToast} />}
           {adminPage==="banners" && <AdminBanners showToast={showToast} />}
           {adminPage==="users" && <AdminUsers showToast={showToast} />}
@@ -2657,7 +2999,49 @@ function AdminPage({ autoAuthed = false }) {
 
 function ProductFormModal({ product, onSave, onClose, saving }) {
   const [form, setForm] = useState(product || { name:"",price:"",originalPrice:"",image:"",category:"Drones",status:"instock",isNew:false,isOffer:false,waNum:"919390238537" });
+  const [categories, setCategories] = useState(["Drones","Batteries","Flight Controller","Accessories"]);
+  const [catLoading, setCatLoading] = useState(true);
+  const [newCatMode, setNewCatMode] = useState(false);
+  const [newCatName, setNewCatName] = useState("");
+  const [newCatIcon, setNewCatIcon] = useState("📦");
+  const [addingCat, setAddingCat] = useState(false);
+
   const set = (k,v) => setForm(f=>({...f,[k]:v}));
+
+  useEffect(() => {
+    sbGetCategories()
+      .then(rows => {
+        if (rows && rows.length) {
+          setCategories(rows.filter(r=>r.active!==false).map(r=>r.name));
+          // If product's current category isn't in list, keep it
+          if (product?.category && !rows.find(r=>r.name===product.category)) {
+            setCategories(prev => [product.category, ...prev]);
+          }
+        }
+        setCatLoading(false);
+      })
+      .catch(() => setCatLoading(false));
+  }, []);
+
+  // Auto-select first category if form has none
+  useEffect(() => {
+    if (!form.category && categories.length) set("category", categories[0]);
+  }, [categories]);
+
+  const addQuickCategory = async () => {
+    if (!newCatName.trim()) return;
+    setAddingCat(true);
+    try {
+      const rows = await sbUpsertCategory({ name: newCatName.trim(), icon: newCatIcon, sort_order: categories.length, active: true });
+      const saved = Array.isArray(rows) ? rows[0] : rows;
+      const name = saved?.name || newCatName.trim();
+      setCategories(prev => [...prev, name]);
+      set("category", name);
+      setNewCatName(""); setNewCatIcon("📦"); setNewCatMode(false);
+    } catch {}
+    setAddingCat(false);
+  };
+
   return (
     <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
       <div className="modal-box">
@@ -2668,12 +3052,56 @@ function ProductFormModal({ product, onSave, onClose, saving }) {
             <input type={type} placeholder={ph} value={form[key]||""} onChange={e=>set(key,e.target.value)} />
           </div>
         ))}
+
+        {/* ── Category selector ── */}
         <div className="modal-field">
-          <label>Category</label>
-          <select value={form.category} onChange={e=>set("category",e.target.value)}>
-            {["Drones","Batteries","Flight Controller","Accessories"].map(c=><option key={c}>{c}</option>)}
-          </select>
+          <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:5 }}>
+            <label style={{ margin:0 }}>Category</label>
+            <button onClick={()=>setNewCatMode(v=>!v)} style={{
+              background:"rgba(46,204,113,0.1)",border:"1px solid rgba(46,204,113,0.3)",color:"#2ecc71",
+              borderRadius:20,padding:"3px 10px",fontSize:"0.7rem",fontWeight:700,cursor:"pointer",
+              fontFamily:"'DM Sans',sans-serif"
+            }}>{newCatMode ? "✕ Cancel" : "+ New Category"}</button>
+          </div>
+
+          {/* Quick add new category inline */}
+          {newCatMode && (
+            <div style={{ background:"rgba(46,204,113,0.06)",border:"1px solid rgba(46,204,113,0.2)",borderRadius:10,padding:"10px 12px",marginBottom:10 }}>
+              <div style={{ fontSize:"0.72rem",color:"#7aab8a",fontWeight:700,marginBottom:8,textTransform:"uppercase",letterSpacing:".06em" }}>Quick-add Category</div>
+              <div style={{ display:"flex",gap:8,marginBottom:8 }}>
+                <input value={newCatIcon} onChange={e=>setNewCatIcon(e.target.value)} placeholder="📦"
+                  style={{ width:44,padding:"8px",background:"#0a0f0d",border:"1.5px solid rgba(46,204,113,0.2)",borderRadius:8,color:"#fff",fontFamily:"'DM Sans',sans-serif",fontSize:"1.1rem",textAlign:"center",outline:"none" }} />
+                <input value={newCatName} onChange={e=>setNewCatName(e.target.value)}
+                  placeholder="e.g. Spare Parts" onKeyDown={e=>e.key==="Enter"&&addQuickCategory()}
+                  style={{ flex:1,padding:"8px 12px",background:"#0a0f0d",border:"1.5px solid rgba(46,204,113,0.2)",borderRadius:8,color:"#fff",fontFamily:"'DM Sans',sans-serif",fontSize:"0.88rem",outline:"none" }} />
+              </div>
+              <button onClick={addQuickCategory} disabled={addingCat||!newCatName.trim()} style={{
+                width:"100%",padding:"8px",background:addingCat||!newCatName.trim()?"rgba(46,204,113,0.3)":"#2ecc71",
+                color:"#0a0f0d",border:"none",borderRadius:8,fontFamily:"'DM Sans',sans-serif",
+                fontWeight:700,fontSize:"0.82rem",cursor:addingCat?"wait":"pointer"
+              }}>{addingCat?"Adding…":"✅ Add & Select"}</button>
+            </div>
+          )}
+
+          {catLoading ? (
+            <div style={{ padding:"10px 12px",background:"#0a0f0d",border:"1.5px solid rgba(46,204,113,0.2)",borderRadius:10,color:"#7aab8a",fontSize:"0.85rem" }}>Loading categories…</div>
+          ) : (
+            <select value={form.category} onChange={e=>set("category",e.target.value)}
+              size={Math.min(categories.length, 6)}
+              style={{ width:"100%",background:"#0a0f0d",border:"1.5px solid rgba(46,204,113,0.2)",
+                borderRadius:10,color:"#fff",fontFamily:"'DM Sans',sans-serif",fontSize:"0.88rem",outline:"none",
+                boxSizing:"border-box",minHeight:44,padding:0,cursor:"pointer",overflowY:"auto" }}>
+              {categories.map(c => (
+                <option key={c} value={c} style={{ padding:"8px 12px",background: form.category===c?"#1a4d2e":"#0a0f0d",color:"#fff",fontSize:"0.88rem" }}>{c}</option>
+              ))}
+            </select>
+          )}
+          <div style={{ fontSize:"0.72rem",color:"#7aab8a",marginTop:5 }}>
+            Selected: <strong style={{ color:"#2ecc71" }}>{form.category || "—"}</strong>
+            &nbsp;·&nbsp;{categories.length} categor{categories.length!==1?"ies":"y"} available
+          </div>
         </div>
+
         <div className="modal-field">
           <label>Status</label>
           <select value={form.status} onChange={e=>set("status",e.target.value)}>
