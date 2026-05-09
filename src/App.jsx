@@ -247,17 +247,18 @@ function isImgUrl(v) {
 }
 
 // Renders either a PNG/URL image or an emoji, sized to fit the container
-function CategoryIcon({ icon, size = 46, fontSize = "1.4rem", borderRadius = 12 }) {
+function CategoryIcon({ icon, imageUrl, size = 46, fontSize = "1.4rem", borderRadius = 12 }) {
   const wrapStyle = {
     width: size, height: size, borderRadius, flexShrink: 0,
     background: "linear-gradient(135deg,#1a2b6b,#2454c7)",
     display: "flex", alignItems: "center", justifyContent: "center",
     overflow: "hidden",
   };
-  if (isImgUrl(icon)) {
+  const imgSrc = imageUrl || (isImgUrl(icon) ? icon : null);
+  if (imgSrc) {
     return (
       <div style={wrapStyle}>
-        <img src={icon} alt="category icon"
+        <img src={imgSrc} alt="category icon"
           style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
       </div>
     );
@@ -1320,7 +1321,7 @@ function HomePage({ user, cart, showAuth, showToast, onTabChange, banners, setBa
   // Build category pill list: All + DB categories + virtual Offers + New
   const cats = [
     { name:"All", icon: CATEGORY_ICONS["All"] || "🏪" },
-    ...dbCategories.map(c => ({ name: c.name, icon: c.icon || CATEGORY_ICONS[c.name] || "📦" })),
+    ...dbCategories.map(c => ({ name: c.name, icon: c.icon || CATEGORY_ICONS[c.name] || "📦", imageUrl: c.image_url || "" })),
     { name:"Offers", icon: CATEGORY_ICONS["Offers"] || "🏷️" },
     { name:"New",    icon: CATEGORY_ICONS["New"]    || "✨" },
   ];
@@ -1417,8 +1418,8 @@ function HomePage({ user, cart, showAuth, showToast, onTabChange, banners, setBa
               borderRadius:10,padding:"6px 14px",cursor:"pointer",transition:"all .2s",
               minWidth:60
             }}>
-              {isImgUrl(cat.icon)
-                ? <img src={cat.icon} alt={cat.name} style={{ width:22,height:22,borderRadius:5,objectFit:"cover",flexShrink:0 }} />
+              {cat.imageUrl
+                ? <img src={cat.imageUrl} alt={cat.name} style={{ width:22,height:22,borderRadius:5,objectFit:"cover",flexShrink:0 }} />
                 : <span style={{ fontSize:"1.2rem" }}>{cat.icon}</span>
               }
               <span style={{ fontSize:"0.66rem",fontWeight:700,color:"#fff",whiteSpace:"nowrap",fontFamily:"'DM Sans',sans-serif" }}>{cat.name}</span>
@@ -1654,7 +1655,7 @@ function CategoriesPage({ products: propProducts, onProductClick, onAddCart, use
           })));
         }
         if (catRows && catRows.length) {
-          setCatObjs(catRows.filter(c => c.active !== false));
+          setCatObjs(catRows.filter(c => c.active !== false).map(c => ({ ...c, imageUrl: c.image_url || "" })));
         } else {
           // Fallback: derive unique category names from products
           const names = [...new Set((productRows || STATIC_PRODUCTS).map(p => p.category).filter(Boolean))];
@@ -1677,6 +1678,7 @@ function CategoriesPage({ products: propProducts, onProductClick, onAddCart, use
 
   // Helper: look up icon from catObjs first, then CATEGORY_ICONS fallback
   const iconFor  = (name) => catObjs.find(c => c.name === name)?.icon || CATEGORY_ICONS[name] || "📦";
+  const imageFor = (name) => catObjs.find(c => c.name === name)?.imageUrl || "";
   const descFor  = (name) => catObjs.find(c => c.name === name)?.description || "";
 
   return (
@@ -1714,8 +1716,8 @@ function CategoriesPage({ products: propProducts, onProductClick, onAddCart, use
                   border: activeCat===cat.name ? "2px solid #fff" : "2px solid transparent",
                   borderRadius:20,padding:"6px 14px",cursor:"pointer",transition:"all .2s",
                 }}>
-                  {isImgUrl(cat.icon)
-                  ? <img src={cat.icon} alt={cat.name} style={{ width:20,height:20,borderRadius:4,objectFit:"cover",flexShrink:0 }} />
+                  {cat.imageUrl
+                  ? <img src={cat.imageUrl} alt={cat.name} style={{ width:20,height:20,borderRadius:4,objectFit:"cover",flexShrink:0 }} />
                   : <span style={{ fontSize:"1rem" }}>{cat.icon || "📦"}</span>
                 }
                   <span style={{ fontSize:"0.72rem",fontWeight:700,color:"#fff",whiteSpace:"nowrap",fontFamily:"'DM Sans',sans-serif" }}>{cat.name}</span>
@@ -1765,7 +1767,7 @@ function CategoriesPage({ products: propProducts, onProductClick, onAddCart, use
                   <div style={{ display:"flex",alignItems:"center",gap:12,marginBottom:12,
                     padding:"10px 14px",background:"#fff",borderRadius:14,
                     boxShadow:"0 1px 4px rgba(0,0,0,0.06)",border:"1px solid #e8edf5" }}>
-                    <CategoryIcon icon={iconFor(name)} size={46} fontSize="1.4rem" borderRadius={12} />
+                    <CategoryIcon icon={iconFor(name)} imageUrl={imageFor(name)} size={46} fontSize="1.4rem" borderRadius={12} />
                     <div style={{ flex:1,minWidth:0 }}>
                       <div style={{ fontFamily:"'Barlow Condensed',sans-serif",fontSize:"1.2rem",fontWeight:800,color:"#111827" }}>{name}</div>
                       <div style={{ fontSize:"0.72rem",color:"#6b7280",marginTop:1 }}>
@@ -2322,6 +2324,7 @@ async function sbUpsertCategory(cat) {
   const payload = {
     name:        cat.name,
     icon:        cat.icon        || "📦",
+    image_url:   cat.imageUrl    || null,
     description: cat.description || "",
     sort_order:  cat.sort_order  ?? 0,
     active:      cat.active      !== false,
@@ -2828,7 +2831,7 @@ function AdminCategories({ showToast }) {
   const [editIdx, setEditIdx] = useState(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(null);
-  const emptyForm = { name:"", icon:"📦", description:"", active:true };
+  const emptyForm = { name:"", icon:"📦", imageUrl:"", description:"", active:true };
   const [form, setForm] = useState(emptyForm);
   const [iconTab, setIconTab] = useState("emoji"); // "emoji" | "image"
   const [imgUrlDraft, setImgUrlDraft] = useState("");
@@ -2838,7 +2841,7 @@ function AdminCategories({ showToast }) {
     sbGetCategories()
       .then(rows => {
         if (rows && rows.length) {
-          setCats(rows.map(r => ({ db_id:r.id, name:r.name, icon:r.icon||"📦", description:r.description||"", sort_order:r.sort_order||0, active:r.active!==false })));
+          setCats(rows.map(r => ({ db_id:r.id, name:r.name, icon:r.icon||"📦", imageUrl:r.image_url||"", description:r.description||"", sort_order:r.sort_order||0, active:r.active!==false })));
         } else {
           // Seed defaults if table is empty
           setCats(DEFAULT_CATS);
@@ -2852,9 +2855,9 @@ function AdminCategories({ showToast }) {
     const f = i === -1 ? { ...emptyForm, sort_order: cats.length } : { ...cats[i] };
     setEditIdx(i);
     setForm(f);
-    const isImg = f.icon && (f.icon.startsWith("http://") || f.icon.startsWith("https://") || f.icon.startsWith("data:image"));
+    const isImg = !!(f.imageUrl && (f.imageUrl.startsWith("http://") || f.imageUrl.startsWith("https://")));
     setIconTab(isImg ? "image" : "emoji");
-    setImgUrlDraft(isImg ? f.icon : "");
+    setImgUrlDraft(isImg ? f.imageUrl : "");
   };
 
   const saveForm = async () => {
@@ -2958,9 +2961,7 @@ function AdminCategories({ showToast }) {
                   value={imgUrlDraft}
                   onChange={e => {
                     setImgUrlDraft(e.target.value);
-                    if (e.target.value.startsWith("http://") || e.target.value.startsWith("https://")) {
-                      setForm(f => ({...f, icon: e.target.value}));
-                    }
+                    setForm(f => ({...f, imageUrl: e.target.value}));
                   }}
                   placeholder="https://res.cloudinary.com/your-cloud/image/upload/v1/icon.png"
                   style={{
@@ -2976,20 +2977,20 @@ function AdminCategories({ showToast }) {
               </div>
 
               {/* Live preview */}
-              {isImgUrl(form.icon) ? (
+              {form.imageUrl ? (
                 <div style={{ display:"flex",alignItems:"center",gap:14,padding:"12px 14px",background:"#0a0f0d",border:"1px solid rgba(46,204,113,0.2)",borderRadius:12 }}>
                   <img
-                    src={form.icon}
+                    src={form.imageUrl}
                     alt="icon preview"
                     onError={e => { e.target.style.display="none"; }}
                     style={{ width:56,height:56,borderRadius:12,objectFit:"cover",border:"1.5px solid rgba(46,204,113,0.35)",flexShrink:0 }}
                   />
                   <div style={{ flex:1,minWidth:0 }}>
                     <div style={{ fontSize:"0.75rem",color:"#2ecc71",fontWeight:700,marginBottom:3 }}>✅ Image set</div>
-                    <div style={{ fontSize:"0.7rem",color:"#7aab8a",wordBreak:"break-all",lineHeight:1.4 }}>{form.icon.length > 60 ? form.icon.slice(0,57)+"…" : form.icon}</div>
+                    <div style={{ fontSize:"0.7rem",color:"#7aab8a",wordBreak:"break-all",lineHeight:1.4 }}>{form.imageUrl.length > 60 ? form.imageUrl.slice(0,57)+"…" : form.imageUrl}</div>
                   </div>
                   <button
-                    onClick={() => { setForm(f => ({...f, icon:"📦"})); setImgUrlDraft(""); setIconTab("emoji"); }}
+                    onClick={() => { setForm(f => ({...f, imageUrl:""})); setImgUrlDraft(""); setIconTab("emoji"); }}
                     style={{ background:"rgba(224,80,80,0.12)",border:"1px solid #e05050",color:"#e05050",borderRadius:20,padding:"5px 12px",fontFamily:"'DM Sans',sans-serif",fontSize:"0.75rem",fontWeight:700,cursor:"pointer",flexShrink:0 }}
                   >✕ Remove</button>
                 </div>
@@ -3018,7 +3019,7 @@ function AdminCategories({ showToast }) {
         <div style={{ background:"#0a0f0d",border:"1px solid rgba(46,204,113,0.15)",borderRadius:12,padding:"12px 16px",marginBottom:18 }}>
           <div style={{ fontSize:"0.7rem",color:"#7aab8a",marginBottom:8,textTransform:"uppercase",letterSpacing:".07em",fontWeight:700 }}>Preview</div>
           <div style={{ display:"flex",alignItems:"center",gap:12 }}>
-            <CategoryIcon icon={form.icon || "📦"} size={48} fontSize="1.5rem" borderRadius={14} />
+            <CategoryIcon icon={form.icon || "📦"} imageUrl={form.imageUrl||""} size={48} fontSize="1.5rem" borderRadius={14} />
             <div>
               <div style={{ fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:"1.1rem",color:"#fff" }}>{form.name||"Category Name"}</div>
               <div style={{ fontSize:"0.73rem",color:"#7aab8a",marginTop:1 }}>{form.description||"No description"}</div>
@@ -3069,7 +3070,7 @@ function AdminCategories({ showToast }) {
               </div>
 
               {/* Icon */}
-              <CategoryIcon icon={c.icon} size={46} fontSize="1.4rem" borderRadius={12} />
+              <CategoryIcon icon={c.icon} imageUrl={c.imageUrl||""} size={46} fontSize="1.4rem" borderRadius={12} />
 
               {/* Info */}
               <div style={{ flex:1,minWidth:0 }}>
