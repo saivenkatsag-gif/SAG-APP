@@ -1836,14 +1836,14 @@ function AccountPage({ user, onLogin, onLogout, cart, showToast }) {
 
   return (
     <div style={{ background:"#f5f7fa",minHeight:"100vh",paddingBottom:80,fontFamily:"'DM Sans',sans-serif" }}>
-      <div style={{ background:"linear-gradient(135deg,#1a2b6b 0%,#2454c7 100%)",padding:"16px 16px 20px" }}>
+      <div style={{ background:"linear-gradient(135deg,#1a2b6b 0%,#2454c7 100%)",padding:"16px 16px 20px",textAlign:"left" }}>
         <div style={{ fontFamily:"'Barlow Condensed',sans-serif",fontSize:"1.5rem",fontWeight:800,color:"#fff",marginBottom:2 }}>Account</div>
         {user ? (
           <div style={{ display:"flex",alignItems:"center",gap:12,marginTop:10 }}>
             <div style={{ width:52,height:52,borderRadius:"50%",background:"#2ecc71",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:"1.4rem",color:"#0a0f0d",flexShrink:0 }}>
               {user.name[0].toUpperCase()}
             </div>
-            <div style={{ flex:1,minWidth:0 }}>
+            <div style={{ flex:1,minWidth:0,textAlign:"left" }}>
               <div style={{ fontWeight:700,fontSize:"1rem",color:"#fff",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{user.name}</div>
               <div style={{ fontSize:"0.76rem",color:"rgba(255,255,255,0.7)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{user.email}</div>
               {profile?.phone && <div style={{ fontSize:"0.74rem",color:"rgba(255,255,255,0.6)",marginTop:1 }}>📞 {profile.phone}</div>}
@@ -1938,7 +1938,7 @@ function AccountPage({ user, onLogin, onLogout, cart, showToast }) {
 
             {activeSection === "orders" && (
               <div>
-                <div style={{ fontSize:"0.8rem",color:"#7aab8a",marginBottom:12 }}>{enquiries.length} enquir{enquiries.length!==1?"ies":"y"} recorded</div>
+                <div style={{ fontSize:"0.8rem",color:"#7aab8a",marginBottom:12,textAlign:"left" }}>{enquiries.length} enquir{enquiries.length!==1?"ies":"y"} recorded</div>
                 {enquiries.length === 0 ? (
                   <div style={{ textAlign:"center",padding:"40px 20px",color:"#7aab8a" }}>
                     <div style={{ fontSize:"3rem",opacity:.3,marginBottom:10 }}>📦</div>
@@ -1947,7 +1947,7 @@ function AccountPage({ user, onLogin, onLogout, cart, showToast }) {
                   </div>
                 ) : enquiries.map(enq => (
                   <div key={enq.id} style={{ background:"#131f16",border:"1px solid rgba(46,204,113,0.1)",borderRadius:12,padding:"14px 16px",marginBottom:10 }}>
-                    <div style={{ display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8 }}>
+                    <div style={{ display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8,textAlign:"left" }}>
                       <div>
                         <div style={{ fontSize:"0.72rem",color:"#7aab8a" }}>#{enq.id} · {new Date(enq.created_at).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"})}</div>
                         <div style={{ fontFamily:"'Barlow Condensed',sans-serif",fontSize:"1.1rem",fontWeight:800,color:"#fff",marginTop:2 }}>{formatINR(enq.total_amount)}</div>
@@ -1957,7 +1957,7 @@ function AccountPage({ user, onLogin, onLogout, cart, showToast }) {
                       </span>
                     </div>
                     {Array.isArray(enq.items) && enq.items.map((item,i) => (
-                      <div key={i} style={{ display:"flex",justifyContent:"space-between",fontSize:"0.78rem",color:"#7aab8a",padding:"3px 0",borderTop: i===0?"1px solid rgba(46,204,113,0.08)":"none",marginTop: i===0?8:0 }}>
+                      <div key={i} style={{ display:"flex",justifyContent:"space-between",textAlign:"left",fontSize:"0.78rem",color:"#7aab8a",padding:"3px 0",borderTop: i===0?"1px solid rgba(46,204,113,0.08)":"none",marginTop: i===0?8:0 }}>
                         <span>{item.name} × {item.qty}</span>
                         <span style={{ color:"#fff" }}>{formatINR(item.price*item.qty)}</span>
                       </div>
@@ -1970,7 +1970,7 @@ function AccountPage({ user, onLogin, onLogout, cart, showToast }) {
             {activeSection === "profile" && (
               <div>
                 <div style={{ background:"#131f16",border:"1px solid rgba(46,204,113,0.1)",borderRadius:12,padding:"16px",marginBottom:12 }}>
-                  <div style={{ fontSize:"0.88rem",fontWeight:700,color:"#fff",marginBottom:14 }}>Personal Information</div>
+                  <div style={{ fontSize:"0.88rem",fontWeight:700,color:"#fff",marginBottom:14,textAlign:"left" }}>Personal Information</div>
                   {[["Full Name", user.name],["Email", user.email]].map(([label,val]) => (
                     <div key={label} style={{ marginBottom:12 }}>
                       <div style={{ fontSize:"0.7rem",color:"#7aab8a",fontWeight:700,textTransform:"uppercase",letterSpacing:".07em",marginBottom:4 }}>{label}</div>
@@ -2028,7 +2028,7 @@ function CartPage({ cart, user, showAuth, showToast, updateCartQty, removeFromCa
 
   return (
     <div style={{ background:"#f5f7fa",minHeight:"100vh",paddingBottom:100,fontFamily:"'DM Sans',sans-serif" }}>
-      <div style={{ background:"linear-gradient(135deg,#1a2b6b 0%,#2454c7 100%)",padding:"16px 16px 14px" }}>
+      <div style={{ background:"linear-gradient(135deg,#1a2b6b 0%,#2454c7 100%)",padding:"16px 16px 14px",textAlign:"left" }}>
         <div style={{ fontFamily:"'Barlow Condensed',sans-serif",fontSize:"1.5rem",fontWeight:800,color:"#fff" }}>My Cart</div>
         <div style={{ fontSize:"0.78rem",color:"rgba(255,255,255,0.8)",marginTop:2 }}>{cart.reduce((s,i)=>s+i.qty,0)} items</div>
       </div>
@@ -2047,7 +2047,7 @@ function CartPage({ cart, user, showAuth, showToast, updateCartQty, removeFromCa
                 <div style={{ width:72,height:72,borderRadius:10,overflow:"hidden",background:"#f3f4f6",flexShrink:0 }}>
                   {item.image && <img src={item.image} alt={item.name} style={{ width:"100%",height:"100%",objectFit:"cover" }} />}
                 </div>
-                <div style={{ flex:1 }}>
+                <div style={{ flex:1,textAlign:"left" }}>
                   <div style={{ fontSize:"0.84rem",fontWeight:600,color:"#111827",marginBottom:3,lineHeight:1.3 }}>{item.name}</div>
                   <div style={{ fontFamily:"'Barlow Condensed',sans-serif",fontSize:"1rem",fontWeight:800,color:"#2454c7",marginBottom:8 }}>{formatINR(item.price*item.qty)}</div>
                   <div style={{ display:"flex",alignItems:"center",gap:8 }}>
@@ -2085,7 +2085,7 @@ function CartPage({ cart, user, showAuth, showToast, updateCartQty, removeFromCa
                   fontFamily:"'DM Sans',sans-serif",fontWeight:600,fontSize:"0.82rem",cursor:"pointer"
                 }}>🗑 Clear Cart</button>
               )}
-              <div style={{ fontSize:"0.73rem",color:"#6b7280",textAlign:"center",marginTop:8 }}>
+              <div style={{ fontSize:"0.73rem",color:"#6b7280",textAlign:"left",marginTop:8 }}>
                 {user ? `Signed in as ${user.name}` : "Sign in to enquire"}
               </div>
             </div>
