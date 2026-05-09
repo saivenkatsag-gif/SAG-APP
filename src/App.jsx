@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react";
 const SUPABASE_URL = "https://mkhopakdgqbibtvtpuhg.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1raG9wYWtkZ3FiaWJ0dnRwdWhnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwNTczODcsImV4cCI6MjA5MTYzMzM4N30.oJSHnjo82-zJ7sMoENC2VXSTxia3_TTGBJJf7heZ7FA";
 const LOGO = "https://framerusercontent.com/images/J2SsjH2XcUHn6jAVX44tSmKJ8.png";
+const ADMIN_EMAIL = "saivenkat.sag@gmail.com";
 
 // ─── SUPABASE AUTH HELPERS ─────────────────────────────────────
 const sbHeaders = {
@@ -683,8 +684,8 @@ function HomePage({ user, cart, setCart, showAuth, showToast, onTabChange, banne
             </div>
           </div>
           <div style={{ display:"flex",alignItems:"center",gap:8 }}>
-            {/* Banner admin hint */}
-            {localUser && (
+            {/* Banner admin hint — admin only */}
+            {localUser?.email === ADMIN_EMAIL && (
               <button onClick={() => setBannerAdminOpen(true)} title="Manage Banners" style={{
                 background:"rgba(255,255,255,0.12)",border:"none",borderRadius:8,padding:"6px 10px",
                 color:"#fff",fontSize:"0.7rem",fontWeight:700,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"
@@ -1284,21 +1285,20 @@ function BottomNav({ activeTab, onTabChange, cartCount }) {
   );
 }
 
-// ─── ADMIN PAGE (preserved) ───────────────────────────────────
-// (Admin page styles & logic preserved from original)
+// ─── ADMIN PAGE (full portal) ─────────────────────────────────
 const adminCSS = `
   .admin-layout{display:flex;min-height:100vh;}
   .admin-sidebar{width:240px;background:#101810;border-right:1px solid rgba(30,53,34,1);display:flex;flex-direction:column;position:fixed;top:0;bottom:0;left:0;z-index:50;}
-  .admin-sidebar-logo{padding:22px 20px;border-bottom:1px solid rgba(30,53,34,1);display:flex;align-items:center;gap:10px;}
+  .admin-sidebar-logo{padding:20px 18px;border-bottom:1px solid rgba(30,53,34,1);display:flex;align-items:center;gap:10px;}
   .admin-sidebar-logo img{height:34px;}
   .admin-sidebar-logo span{font-family:'Barlow Condensed',sans-serif;font-size:0.9rem;font-weight:800;color:#fff;line-height:1.2;}
-  .admin-nav{flex:1;padding:20px 12px;display:flex;flex-direction:column;gap:4px;}
-  .admin-nav-label{font-size:0.66rem;font-weight:800;color:#7aab8a;letter-spacing:.12em;text-transform:uppercase;padding:0 10px;margin-bottom:8px;margin-top:8px;display:block;}
-  .admin-link{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;background:none;border:none;font-family:'DM Sans',sans-serif;font-size:0.86rem;font-weight:500;color:#7aab8a;transition:all .2s;text-align:left;width:100%;}
+  .admin-nav{flex:1;padding:16px 10px;display:flex;flex-direction:column;gap:2px;overflow-y:auto;}
+  .admin-nav-label{font-size:0.63rem;font-weight:800;color:#7aab8a;letter-spacing:.12em;text-transform:uppercase;padding:0 10px;margin-bottom:6px;margin-top:10px;display:block;}
+  .admin-link{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;background:none;border:none;font-family:'DM Sans',sans-serif;font-size:0.85rem;font-weight:500;color:#7aab8a;transition:all .2s;text-align:left;width:100%;}
   .admin-link:hover{background:#131f16;color:#e8f5ec;}
   .admin-link.active{background:rgba(46,204,113,0.16);color:#2ecc71;font-weight:700;}
   .admin-link-icon{font-size:1rem;width:20px;text-align:center;}
-  .admin-link-badge{margin-left:auto;background:#131f16;border-radius:20px;padding:1px 8px;font-size:0.68rem;font-weight:700;}
+  .admin-link-badge{margin-left:auto;background:#1a3a22;border-radius:20px;padding:1px 8px;font-size:0.68rem;font-weight:700;color:#2ecc71;}
   .admin-sidebar-footer{padding:14px 12px;border-top:1px solid rgba(30,53,34,1);}
   .admin-user{display:flex;align-items:center;gap:10px;}
   .admin-avatar{width:32px;height:32px;border-radius:50%;background:#2ecc71;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-weight:800;color:#0a0f0d;font-size:0.9rem;flex-shrink:0;}
@@ -1307,178 +1307,684 @@ const adminCSS = `
   .logout-btn{margin-left:auto;background:none;border:none;color:#7aab8a;cursor:pointer;font-size:1rem;transition:color .2s;}
   .logout-btn:hover{color:#e05050;}
   .admin-main{margin-left:240px;flex:1;background:#0a0f0d;}
-  .admin-topbar{display:flex;align-items:center;justify-content:space-between;padding:18px 32px;border-bottom:1px solid rgba(30,53,34,1);background:#101810;position:sticky;top:0;z-index:10;}
-  .admin-topbar-title{font-family:'Barlow Condensed',sans-serif;font-size:1.25rem;font-weight:800;color:#fff;}
+  .admin-topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 28px;border-bottom:1px solid rgba(30,53,34,1);background:#101810;position:sticky;top:0;z-index:10;}
+  .admin-topbar-title{font-family:'Barlow Condensed',sans-serif;font-size:1.2rem;font-weight:800;color:#fff;}
+  .admin-topbar-right{display:flex;align-items:center;gap:10px;}
   .live-badge{display:flex;align-items:center;gap:6px;font-size:0.75rem;font-weight:700;color:#2ecc71;background:rgba(46,204,113,0.1);border:1px solid rgba(46,204,113,0.3);border-radius:20px;padding:4px 10px;}
   .live-dot{width:6px;height:6px;border-radius:50%;background:#2ecc71;animation:pulse 1.5s infinite;}
   @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.4)}}
-  .dash-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px;}
-  .dash-stat{background:#131f16;border:1px solid rgba(30,53,34,1);border-radius:16px;padding:20px 18px;transition:all .2s;}
-  .dash-stat:hover{border-color:#2ecc71;}
-  .dash-stat-icon{font-size:1.5rem;margin-bottom:8px;}
-  .dash-stat-num{font-family:'Barlow Condensed',sans-serif;font-size:2rem;font-weight:800;color:#fff;}
-  .dash-stat-label{font-size:0.8rem;color:#7aab8a;margin-top:5px;}
-  .apps-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px;}
+  .admin-content{padding:24px 28px;}
+  .dash-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px;}
+  @media(max-width:900px){.dash-stats{grid-template-columns:repeat(2,1fr);}.admin-sidebar{width:200px;}.admin-main{margin-left:200px;}}
+  .dash-stat{background:#131f16;border:1px solid rgba(30,53,34,1);border-radius:16px;padding:18px 16px;transition:all .2s;cursor:pointer;}
+  .dash-stat:hover{border-color:#2ecc71;transform:translateY(-2px);}
+  .dash-stat-icon{font-size:1.4rem;margin-bottom:8px;}
+  .dash-stat-num{font-family:'Barlow Condensed',sans-serif;font-size:2.2rem;font-weight:800;color:#fff;line-height:1;}
+  .dash-stat-label{font-size:0.78rem;color:#7aab8a;margin-top:6px;}
+  .dash-stat-trend{font-size:0.72rem;margin-top:4px;color:#2ecc71;}
+  .apps-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;}
   .app-card{background:#131f16;border:1px solid rgba(30,53,34,1);border-radius:13px;overflow:hidden;transition:all .2s;}
-  .app-card:hover{border-color:#2ecc71;}
-  .app-card-visual{height:150px;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#101810;}
+  .app-card:hover{border-color:rgba(46,204,113,0.5);}
+  .app-card-visual{height:140px;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#101810;}
   .app-card-visual img{width:100%;height:100%;object-fit:cover;}
-  .emoji-ph{font-size:4.5rem;opacity:0.22;}
-  .card-status-badge{position:absolute;top:10px;right:10px;border-radius:20px;padding:3px 9px;font-size:0.7rem;font-weight:700;}
+  .emoji-ph{font-size:4rem;opacity:0.2;}
+  .card-status-badge{position:absolute;top:8px;right:8px;border-radius:20px;padding:3px 9px;font-size:0.68rem;font-weight:700;}
   .badge-active{background:rgba(46,204,113,0.15);border:1px solid #2ecc71;color:#2ecc71;}
   .badge-inactive{background:rgba(224,80,80,0.15);border:1px solid #e05050;color:#e05050;}
-  .app-card-body{padding:14px 16px 16px;}
-  .app-card-emoji{font-size:1.5rem;margin-bottom:6px;}
-  .app-card-title{font-family:'Barlow Condensed',sans-serif;font-size:1.1rem;font-weight:800;color:#fff;margin-bottom:4px;}
-  .app-card-desc{font-size:0.8rem;color:#7aab8a;line-height:1.5;margin-bottom:12px;}
-  .app-card-actions{display:flex;gap:8px;}
-  .admin-btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:40px;font-family:'DM Sans',sans-serif;font-weight:700;font-size:0.83rem;cursor:pointer;border:none;transition:all .2s;}
+  .badge-offer{position:absolute;top:8px;left:8px;background:rgba(255,149,0,0.2);border:1px solid #ff9500;color:#ff9500;border-radius:20px;padding:3px 8px;font-size:0.65rem;font-weight:700;}
+  .badge-new{position:absolute;bottom:8px;left:8px;background:rgba(46,204,113,0.2);border:1px solid #2ecc71;color:#2ecc71;border-radius:20px;padding:2px 7px;font-size:0.63rem;font-weight:700;}
+  .app-card-body{padding:13px 14px 14px;}
+  .app-card-title{font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:800;color:#fff;margin-bottom:2px;line-height:1.2;}
+  .app-card-cat{font-size:0.73rem;color:#7aab8a;margin-bottom:8px;}
+  .app-card-actions{display:flex;gap:7px;flex-wrap:wrap;}
+  .admin-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:40px;font-family:'DM Sans',sans-serif;font-weight:700;font-size:0.82rem;cursor:pointer;border:none;transition:all .2s;}
   .admin-btn.green{background:#2ecc71;color:#0a0f0d;}
-  .admin-btn.green:hover{background:#1a9c52;}
-  .admin-btn.red{background:rgba(224,80,80,0.15);border:1px solid #e05050;color:#e05050;}
-  .admin-btn.blue{background:rgba(58,154,217,0.15);border:1px solid #3a9ad9;color:#3a9ad9;}
-  .admin-btn.sm{padding:6px 13px;font-size:0.77rem;}
-  .modal-overlay{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;padding:20px;}
-  .modal-box{background:#131f16;border:1px solid rgba(46,204,113,0.25);border-radius:16px;padding:28px;width:100%;max-width:480px;position:relative;max-height:90vh;overflow-y:auto;}
-  .modal-field{margin-bottom:14px;}
-  .modal-field label{font-size:0.72rem;color:#7aab8a;font-weight:700;letter-spacing:.08em;text-transform:uppercase;display:block;margin-bottom:5px;}
-  .modal-field input,.modal-field textarea,.modal-field select{width:100%;padding:10px 13px;background:#0a0f0d;border:1.5px solid rgba(46,204,113,0.2);border-radius:10px;color:#fff;font-family:'DM Sans',sans-serif;font-size:0.9rem;outline:none;box-sizing:border-box;}
-  .modal-field textarea{min-height:80px;resize:vertical;}
+  .admin-btn.green:hover{background:#27ae60;}
+  .admin-btn.red{background:rgba(224,80,80,0.12);border:1px solid #e05050;color:#e05050;}
+  .admin-btn.red:hover{background:rgba(224,80,80,0.25);}
+  .admin-btn.blue{background:rgba(58,154,217,0.12);border:1px solid #3a9ad9;color:#3a9ad9;}
+  .admin-btn.blue:hover{background:rgba(58,154,217,0.25);}
+  .admin-btn.orange{background:rgba(255,149,0,0.12);border:1px solid #ff9500;color:#ff9500;}
+  .admin-btn.sm{padding:5px 11px;font-size:0.75rem;}
+  .modal-overlay{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.88);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:20px;}
+  .modal-box{background:#131f16;border:1px solid rgba(46,204,113,0.25);border-radius:18px;padding:26px;width:100%;max-width:500px;position:relative;max-height:90vh;overflow-y:auto;}
+  .modal-box::-webkit-scrollbar{width:4px;}.modal-box::-webkit-scrollbar-track{background:transparent;}.modal-box::-webkit-scrollbar-thumb{background:rgba(46,204,113,0.3);border-radius:2px;}
+  .modal-title{font-family:'Barlow Condensed',sans-serif;font-size:1.35rem;font-weight:800;color:#fff;margin-bottom:20px;}
+  .modal-field{margin-bottom:13px;}
+  .modal-field label{font-size:0.7rem;color:#7aab8a;font-weight:700;letter-spacing:.08em;text-transform:uppercase;display:block;margin-bottom:5px;}
+  .modal-field input,.modal-field textarea,.modal-field select{width:100%;padding:10px 13px;background:#0a0f0d;border:1.5px solid rgba(46,204,113,0.2);border-radius:10px;color:#fff;font-family:'DM Sans',sans-serif;font-size:0.88rem;outline:none;box-sizing:border-box;transition:border-color .2s;}
+  .modal-field input:focus,.modal-field textarea:focus,.modal-field select:focus{border-color:rgba(46,204,113,0.5);}
+  .modal-field textarea{min-height:70px;resize:vertical;}
+  .modal-field select option{background:#0a0f0d;}
   .section-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
-  .section-hdr h3{font-family:'Barlow Condensed',sans-serif;font-size:1.3rem;font-weight:800;color:#fff;}
+  .section-hdr h3{font-family:'Barlow Condensed',sans-serif;font-size:1.3rem;font-weight:800;color:#fff;margin:0;}
+  .admin-table{width:100%;border-collapse:collapse;font-size:0.83rem;}
+  .admin-table th{text-align:left;padding:10px 14px;font-size:0.68rem;font-weight:800;color:#7aab8a;letter-spacing:.1em;text-transform:uppercase;border-bottom:1px solid rgba(30,53,34,1);}
+  .admin-table td{padding:12px 14px;border-bottom:1px solid rgba(30,53,34,0.6);color:#e8f5ec;vertical-align:middle;}
+  .admin-table tr:hover td{background:rgba(46,204,113,0.04);}
+  .admin-table tr:last-child td{border-bottom:none;}
+  .user-avatar-sm{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#1a4d2e,#2ecc71);display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-weight:800;color:#fff;font-size:0.82rem;flex-shrink:0;}
+  .banner-preview{height:54px;border-radius:10px;display:flex;align-items:center;padding:0 14px;gap:10px;min-width:180px;}
+  .banner-emoji{font-size:1.5rem;}
+  .banner-info .banner-title{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:0.88rem;color:#fff;}
+  .banner-info .banner-sub{font-size:0.7rem;color:rgba(255,255,255,0.75);margin-top:1px;}
+  .offer-tag{display:inline-flex;align-items:center;gap:4px;background:rgba(255,149,0,0.15);border:1px solid rgba(255,149,0,0.4);color:#ff9500;border-radius:20px;padding:3px 9px;font-size:0.73rem;font-weight:700;}
+  .search-bar{display:flex;align-items:center;gap:10px;background:#131f16;border:1px solid rgba(46,204,113,0.15);border-radius:12px;padding:9px 14px;margin-bottom:18px;}
+  .search-bar input{background:none;border:none;outline:none;color:#fff;font-family:'DM Sans',sans-serif;font-size:0.88rem;flex:1;}
+  .search-bar input::placeholder{color:#7aab8a;}
+  .filter-chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+  .chip{padding:5px 13px;border-radius:20px;font-size:0.78rem;font-weight:600;cursor:pointer;border:1px solid rgba(46,204,113,0.2);background:transparent;color:#7aab8a;font-family:'DM Sans',sans-serif;transition:all .2s;}
+  .chip.active{background:rgba(46,204,113,0.15);border-color:#2ecc71;color:#2ecc71;}
+  .chip:hover{border-color:#2ecc71;color:#e8f5ec;}
+  .empty-state{text-align:center;padding:48px 20px;color:#7aab8a;}
+  .empty-state .es-icon{font-size:3rem;margin-bottom:12px;}
+  .empty-state .es-title{font-family:'Barlow Condensed',sans-serif;font-size:1.2rem;font-weight:800;color:#fff;margin-bottom:6px;}
+  .card-table{background:#131f16;border:1px solid rgba(30,53,34,1);border-radius:14px;overflow:hidden;}
+  .gradient-preview{height:32px;border-radius:6px;margin-top:6px;}
+  .tab-pills{display:flex;background:#101810;border-radius:40px;padding:3px;margin-bottom:20px;width:fit-content;}
+  .tab-pill{padding:7px 18px;border-radius:40px;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:0.82rem;font-weight:600;transition:all .2s;color:#7aab8a;background:transparent;}
+  .tab-pill.active{background:rgba(46,204,113,0.2);color:#2ecc71;}
 `;
 
-// Minimal AdminPage preserved from original
-function AdminPage() {
-  const [authed, setAuthed] = useState(() => sessionStorage.getItem("sag_admin") === "1");
+// ─── ADMIN SUPABASE HELPERS ────────────────────────────────────
+async function sbUpsertProduct(product, accessToken) {
+  const payload = {
+    name: product.name, price: Number(product.price),
+    original_price: Number(product.originalPrice)||null,
+    image: product.image, is_new: !!product.isNew, is_offer: !!product.isOffer,
+    status: product.status, category: product.category, wa_num: product.waNum||"919390238537",
+    updated_at: new Date().toISOString(),
+  };
+  if (product.id && typeof product.id === "number" && product.id < 1e12) {
+    // existing row – patch by id
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/products?id=eq.${product.id}`, {
+      method: "PATCH",
+      headers: { ...sbHeaders, Authorization: `Bearer ${accessToken||SUPABASE_KEY}`, Prefer: "return=representation" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error("Update failed");
+    return res.json();
+  } else {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/products`, {
+      method: "POST",
+      headers: { ...sbHeaders, Authorization: `Bearer ${accessToken||SUPABASE_KEY}`, Prefer: "return=representation" },
+      body: JSON.stringify({ ...payload, created_at: new Date().toISOString() }),
+    });
+    if (!res.ok) throw new Error("Insert failed");
+    return res.json();
+  }
+}
+
+async function sbDeleteProduct(id) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/products?id=eq.${id}`, {
+    method: "DELETE",
+    headers: { ...sbHeaders },
+  });
+  if (!res.ok) throw new Error("Delete failed");
+}
+
+async function sbGetBanners() {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/banners?order=sort_order.asc&select=*`, { headers: sbHeaders });
+  if (!res.ok) return null;
+  return res.json();
+}
+async function sbUpsertBanner(banner) {
+  const payload = { title:banner.title, subtitle:banner.subtitle, badge:banner.badge, bg:banner.bg, emoji:banner.emoji, cta:banner.cta, sort_order:banner.sort_order||0, active:banner.active!==false };
+  if (banner.db_id) {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/banners?id=eq.${banner.db_id}`, {
+      method:"PATCH", headers:{...sbHeaders,Prefer:"return=representation"}, body:JSON.stringify({...payload,updated_at:new Date().toISOString()}),
+    });
+    return res.ok ? res.json() : null;
+  } else {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/banners`, {
+      method:"POST", headers:{...sbHeaders,Prefer:"return=representation"}, body:JSON.stringify({...payload,created_at:new Date().toISOString()}),
+    });
+    return res.ok ? res.json() : null;
+  }
+}
+async function sbDeleteBanner(id) {
+  await fetch(`${SUPABASE_URL}/rest/v1/banners?id=eq.${id}`, { method:"DELETE", headers:sbHeaders });
+}
+
+// ─── ADMIN: BANNER SECTION ─────────────────────────────────────
+function AdminBanners({ showToast }) {
+  const [banners, setBanners] = useState(DEFAULT_BANNERS.map((b,i) => ({...b, sort_order:i, active:true})));
+  const [editIdx, setEditIdx] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const emptyForm = { title:"", subtitle:"", badge:"", bg:"linear-gradient(135deg,#0d3a8e 0%,#1a56cc 60%,#0d3a8e 100%)", emoji:"🚁", cta:"Shop Now", active:true };
+  const [form, setForm] = useState(emptyForm);
+
+  useEffect(() => {
+    sbGetBanners().then(rows => {
+      if (rows && rows.length) setBanners(rows.map(r => ({ id:r.id, db_id:r.id, title:r.title, subtitle:r.subtitle, badge:r.badge, bg:r.bg, emoji:r.emoji, cta:r.cta, active:r.active!==false, sort_order:r.sort_order||0 })));
+    }).catch(()=>{});
+  }, []);
+
+  const openEdit = (i) => { setEditIdx(i); setForm(i===-1 ? emptyForm : {...banners[i]}); };
+
+  const saveForm = async () => {
+    if (!form.title.trim()) return;
+    setLoading(true);
+    try {
+      if (editIdx === -1) {
+        const newB = { ...form, sort_order: banners.length };
+        const rows = await sbUpsertBanner(newB);
+        const saved = rows && rows[0] ? { ...newB, db_id: rows[0].id, id: rows[0].id } : { ...newB, id: Date.now() };
+        setBanners(b => [...b, saved]);
+        showToast("success", "✅ Banner added!");
+      } else {
+        const updated = { ...banners[editIdx], ...form };
+        await sbUpsertBanner(updated);
+        setBanners(b => b.map((x,i) => i===editIdx ? updated : x));
+        showToast("success", "✅ Banner updated!");
+      }
+    } catch { showToast("error", "Failed to save banner"); }
+    setLoading(false); setEditIdx(null);
+  };
+
+  const deleteBanner = async (i) => {
+    if (!confirm(`Delete "${banners[i].title}"?`)) return;
+    const b = banners[i];
+    if (b.db_id) { try { await sbDeleteBanner(b.db_id); } catch {} }
+    setBanners(arr => arr.filter((_,x)=>x!==i));
+    showToast("success","Banner deleted.");
+  };
+
+  const toggleActive = async (i) => {
+    const updated = { ...banners[i], active: !banners[i].active };
+    setBanners(b => b.map((x,j)=>j===i?updated:x));
+    if (updated.db_id) { try { await sbUpsertBanner(updated); } catch {} }
+  };
+
+  if (editIdx !== null) return (
+    <div>
+      <button onClick={()=>setEditIdx(null)} style={{ display:"flex",alignItems:"center",gap:6,background:"none",border:"none",color:"#7aab8a",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontSize:"0.85rem",marginBottom:20,padding:0 }}>← Back to Banners</button>
+      <div style={{ background:"#131f16",border:"1px solid rgba(46,204,113,0.2)",borderRadius:16,padding:24,maxWidth:560 }}>
+        <div className="modal-title">{editIdx===-1?"Add Banner":"Edit Banner"}</div>
+        {[["Title","title","text","e.g. SALE IS LIVE"],["Subtitle","subtitle","text","e.g. Up to 20% off on Drones"],["Badge","badge","text","e.g. LIMITED TIME"],["Emoji","emoji","text","e.g. 🚁"],["CTA Button","cta","text","e.g. Shop Now"]].map(([lbl,key,type,ph])=>(
+          <div key={key} className="modal-field"><label>{lbl}</label><input type={type} placeholder={ph} value={form[key]||""} onChange={e=>setForm(f=>({...f,[key]:e.target.value}))} /></div>
+        ))}
+        <div className="modal-field">
+          <label>Background CSS Gradient</label>
+          <input value={form.bg} onChange={e=>setForm(f=>({...f,bg:e.target.value}))} placeholder="linear-gradient(135deg,#0d3a8e 0%,...)" style={{ fontFamily:"monospace",fontSize:"0.8rem" }} />
+          <div className="gradient-preview" style={{ background:form.bg }} />
+        </div>
+        <div style={{ display:"flex",gap:10,marginTop:20 }}>
+          <button className="admin-btn green" onClick={saveForm} style={{ flex:1,justifyContent:"center" }} disabled={loading}>{loading?"Saving…":"Save Banner"}</button>
+          <button className="admin-btn" onClick={()=>setEditIdx(null)} style={{ flex:1,justifyContent:"center",background:"rgba(255,255,255,0.05)",color:"#e8f5ec",border:"1px solid rgba(255,255,255,0.1)" }}>Cancel</button>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div>
+      <div className="section-hdr">
+        <h3>🖼 Banners ({banners.length})</h3>
+        <button className="admin-btn green" onClick={()=>openEdit(-1)}>+ Add Banner</button>
+      </div>
+      <div style={{ display:"flex",flexDirection:"column",gap:12 }}>
+        {banners.map((b,i) => (
+          <div key={b.id||i} style={{ background:"#131f16",border:"1px solid rgba(30,53,34,1)",borderRadius:14,padding:"14px 18px",display:"flex",alignItems:"center",gap:16,flexWrap:"wrap" }}>
+            <div className="banner-preview" style={{ background:b.bg }}>
+              <span className="banner-emoji">{b.emoji}</span>
+              <div className="banner-info">
+                <div className="banner-title">{b.title}</div>
+                <div className="banner-sub">{b.subtitle}</div>
+              </div>
+            </div>
+            <div style={{ flex:1,minWidth:120 }}>
+              <div style={{ fontSize:"0.8rem",color:"#7aab8a",marginBottom:4 }}>Badge: <span style={{ color:"#fff" }}>{b.badge}</span></div>
+              <div style={{ fontSize:"0.8rem",color:"#7aab8a" }}>CTA: <span style={{ color:"#2ecc71" }}>{b.cta}</span></div>
+            </div>
+            <div style={{ display:"flex",alignItems:"center",gap:8 }}>
+              <label style={{ display:"flex",alignItems:"center",gap:6,cursor:"pointer",fontSize:"0.78rem",color:b.active?"#2ecc71":"#7aab8a" }}>
+                <input type="checkbox" checked={!!b.active} onChange={()=>toggleActive(i)} style={{ accentColor:"#2ecc71" }} /> {b.active?"Live":"Hidden"}
+              </label>
+              <button className="admin-btn blue sm" onClick={()=>openEdit(i)}>✏️ Edit</button>
+              <button className="admin-btn red sm" onClick={()=>deleteBanner(i)}>🗑️</button>
+            </div>
+          </div>
+        ))}
+        {banners.length===0 && <div className="empty-state"><div className="es-icon">🖼</div><div className="es-title">No Banners Yet</div><p>Add your first banner to showcase on the home page.</p></div>}
+      </div>
+    </div>
+  );
+}
+
+// ─── ADMIN: OFFERS SECTION ─────────────────────────────────────
+function AdminOffers({ products, setProducts, showToast }) {
+  const offers = products.filter(p=>p.isOffer);
+  const nonOffers = products.filter(p=>!p.isOffer);
+
+  const toggleOffer = async (p) => {
+    const updated = { ...p, isOffer: !p.isOffer };
+    setProducts(prev => prev.map(x=>x.id===p.id?updated:x));
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/products?id=eq.${p.id}`, {
+        method:"PATCH", headers:{...sbHeaders,Prefer:"return=representation"}, body:JSON.stringify({ is_offer:updated.isOffer, updated_at:new Date().toISOString() })
+      });
+      showToast(res.ok?"success":"error", res.ok?(updated.isOffer?"✅ Added to offers!":"Removed from offers."):"Failed to update.");
+    } catch { showToast("error","Network error."); }
+  };
+
+  return (
+    <div>
+      <div className="section-hdr">
+        <h3>🏷️ Offers Management</h3>
+        <span style={{ fontSize:"0.83rem",color:"#7aab8a" }}>{offers.length} active offer{offers.length!==1?"s":""}</span>
+      </div>
+      <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:20 }}>
+        <div>
+          <div style={{ fontFamily:"'Barlow Condensed',sans-serif",fontSize:"1rem",fontWeight:800,color:"#2ecc71",marginBottom:12 }}>🏷️ On Offer ({offers.length})</div>
+          <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
+            {offers.map(p=>(
+              <div key={p.id} style={{ background:"#131f16",border:"1px solid rgba(255,149,0,0.25)",borderRadius:12,padding:"12px 14px",display:"flex",alignItems:"center",gap:12 }}>
+                <div style={{ width:44,height:44,borderRadius:8,overflow:"hidden",background:"#101810",flexShrink:0 }}>{p.image&&<img src={p.image} alt="" style={{ width:"100%",height:"100%",objectFit:"cover" }} />}</div>
+                <div style={{ flex:1,minWidth:0 }}>
+                  <div style={{ fontSize:"0.83rem",fontWeight:700,color:"#fff",lineHeight:1.3,marginBottom:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{p.name}</div>
+                  <div style={{ fontSize:"0.78rem",color:"#2ecc71",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700 }}>{formatINR(p.price)} {p.originalPrice&&<span style={{ color:"#7aab8a",textDecoration:"line-through",fontWeight:400,fontSize:"0.75rem" }}>{formatINR(p.originalPrice)}</span>}</div>
+                  {p.originalPrice && <div style={{ fontSize:"0.7rem",color:"#ff9500",marginTop:1 }}>{discount(p.price,p.originalPrice)}% off</div>}
+                </div>
+                <button className="admin-btn red sm" onClick={()=>toggleOffer(p)}>Remove</button>
+              </div>
+            ))}
+            {offers.length===0 && <div style={{ color:"#7aab8a",fontSize:"0.83rem",padding:14,textAlign:"center" }}>No offers active</div>}
+          </div>
+        </div>
+        <div>
+          <div style={{ fontFamily:"'Barlow Condensed',sans-serif",fontSize:"1rem",fontWeight:800,color:"#7aab8a",marginBottom:12 }}>📦 Not on Offer ({nonOffers.length})</div>
+          <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
+            {nonOffers.map(p=>(
+              <div key={p.id} style={{ background:"#131f16",border:"1px solid rgba(30,53,34,1)",borderRadius:12,padding:"12px 14px",display:"flex",alignItems:"center",gap:12 }}>
+                <div style={{ width:44,height:44,borderRadius:8,overflow:"hidden",background:"#101810",flexShrink:0 }}>{p.image&&<img src={p.image} alt="" style={{ width:"100%",height:"100%",objectFit:"cover" }} />}</div>
+                <div style={{ flex:1,minWidth:0 }}>
+                  <div style={{ fontSize:"0.83rem",fontWeight:700,color:"#fff",lineHeight:1.3,marginBottom:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{p.name}</div>
+                  <div style={{ fontSize:"0.78rem",color:"#2ecc71",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700 }}>{formatINR(p.price)}</div>
+                </div>
+                <button className="admin-btn orange sm" onClick={()=>toggleOffer(p)}>+ Offer</button>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── ADMIN: USERS SECTION ──────────────────────────────────────
+function AdminUsers({ showToast }) {
+  const [users, setUsers] = useState([]);
+  const [enquiries, setEnquiries] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState("users");
+  const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    Promise.all([sbGetAllProfiles(), sbGetAllEnquiries()]).then(([profiles, enqs]) => {
+      setUsers(profiles||[]); setEnquiries(enqs||[]); setLoading(false);
+    }).catch(()=>setLoading(false));
+  }, []);
+
+  const filteredUsers = users.filter(u => {
+    const q = search.toLowerCase();
+    return !q || (u.full_name||"").toLowerCase().includes(q) || (u.email||"").toLowerCase().includes(q);
+  });
+
+  const filteredEnqs = enquiries.filter(e => {
+    const q = search.toLowerCase();
+    return !q || (e.message||"").toLowerCase().includes(q) || (e.user_id||"").includes(q);
+  });
+
+  return (
+    <div>
+      <div className="section-hdr">
+        <h3>👥 User Management</h3>
+        <span style={{ fontSize:"0.83rem",color:"#7aab8a" }}>{users.length} registered user{users.length!==1?"s":""}</span>
+      </div>
+      <div className="tab-pills">
+        {[["users",`👤 Users (${users.length})`],["enquiries",`💬 Enquiries (${enquiries.length})`]].map(([id,lbl])=>(
+          <button key={id} className={`tab-pill${tab===id?" active":""}`} onClick={()=>setTab(id)}>{lbl}</button>
+        ))}
+      </div>
+      <div className="search-bar">
+        <span style={{ color:"#7aab8a" }}>🔍</span>
+        <input placeholder={tab==="users"?"Search by name or email…":"Search enquiries…"} value={search} onChange={e=>setSearch(e.target.value)} />
+        {search && <button onClick={()=>setSearch("")} style={{ background:"none",border:"none",color:"#7aab8a",cursor:"pointer",fontSize:"1rem" }}>✕</button>}
+      </div>
+      {loading ? (
+        <div style={{ textAlign:"center",padding:"40px 0",color:"#7aab8a" }}>Loading…</div>
+      ) : tab==="users" ? (
+        <div className="card-table">
+          <table className="admin-table">
+            <thead><tr><th>User</th><th>Email</th><th>Phone</th><th>Joined</th><th>Enquiries</th></tr></thead>
+            <tbody>
+              {filteredUsers.map(u => {
+                const userEnqs = enquiries.filter(e=>e.user_id===u.id).length;
+                const initials = (u.full_name||u.email||"U").split(" ").map(w=>w[0]).join("").toUpperCase().slice(0,2);
+                return (
+                  <tr key={u.id}>
+                    <td><div style={{ display:"flex",alignItems:"center",gap:10 }}><div className="user-avatar-sm">{initials}</div><div style={{ fontWeight:600,color:"#fff",fontSize:"0.85rem" }}>{u.full_name||"—"}</div></div></td>
+                    <td style={{ color:"#7aab8a",fontSize:"0.82rem" }}>{u.email||"—"}</td>
+                    <td style={{ color:"#7aab8a",fontSize:"0.82rem" }}>{u.phone||"—"}</td>
+                    <td style={{ color:"#7aab8a",fontSize:"0.78rem" }}>{u.created_at?new Date(u.created_at).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"}):"—"}</td>
+                    <td><span style={{ fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,color:userEnqs>0?"#2ecc71":"#7aab8a",fontSize:"1rem" }}>{userEnqs}</span></td>
+                  </tr>
+                );
+              })}
+              {filteredUsers.length===0 && <tr><td colSpan={5}><div className="empty-state"><div className="es-icon">👤</div><div className="es-title">No users found</div></div></td></tr>}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className="card-table">
+          <table className="admin-table">
+            <thead><tr><th>User</th><th>Message / Items</th><th>Total</th><th>Date</th></tr></thead>
+            <tbody>
+              {filteredEnqs.map((e,i) => {
+                const user = users.find(u=>u.id===e.user_id);
+                const name = user ? (user.full_name||user.email||"User") : e.user_id?.slice(0,8)+"…";
+                const initials = name.split(" ").map(w=>w[0]).join("").toUpperCase().slice(0,2);
+                let items = null;
+                try { items = typeof e.items==="string" ? JSON.parse(e.items) : e.items; } catch {}
+                return (
+                  <tr key={e.id||i}>
+                    <td><div style={{ display:"flex",alignItems:"center",gap:10 }}><div className="user-avatar-sm" style={{ background:"linear-gradient(135deg,#1a3d8e,#3a9ad9)" }}>{initials}</div><div style={{ fontWeight:600,color:"#fff",fontSize:"0.85rem" }}>{name}</div></div></td>
+                    <td style={{ maxWidth:280 }}>
+                      {items && Array.isArray(items) ? (
+                        <div style={{ fontSize:"0.78rem",color:"#7aab8a" }}>{items.map(it=>`${it.name} ×${it.qty}`).join(", ")}</div>
+                      ) : (
+                        <div style={{ fontSize:"0.78rem",color:"#7aab8a",whiteSpace:"pre-wrap" }}>{e.message||"—"}</div>
+                      )}
+                    </td>
+                    <td style={{ fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,color:"#2ecc71",fontSize:"1rem" }}>{e.total ? formatINR(e.total) : "—"}</td>
+                    <td style={{ color:"#7aab8a",fontSize:"0.78rem" }}>{e.created_at?new Date(e.created_at).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"}):"—"}</td>
+                  </tr>
+                );
+              })}
+              {filteredEnqs.length===0 && <tr><td colSpan={4}><div className="empty-state"><div className="es-icon">💬</div><div className="es-title">No enquiries yet</div></div></td></tr>}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── ADMIN: PRODUCTS SECTION ───────────────────────────────────
+function AdminProducts({ products, setProducts, showToast }) {
+  const [showModal, setShowModal] = useState(false);
+  const [editProduct, setEditProduct] = useState(null);
+  const [search, setSearch] = useState("");
+  const [filterCat, setFilterCat] = useState("All");
+  const [filterStatus, setFilterStatus] = useState("All");
+  const [saving, setSaving] = useState(false);
+
+  const cats = ["All","Drones","Batteries","Flight Controller","Accessories"];
+  const statuses = ["All","In Stock","Out of Stock"];
+
+  const filtered = products.filter(p => {
+    const q = search.toLowerCase();
+    if (q && !p.name.toLowerCase().includes(q) && !(p.category||"").toLowerCase().includes(q)) return false;
+    if (filterCat!=="All" && p.category!==filterCat) return false;
+    if (filterStatus==="In Stock" && p.status==="outofstock") return false;
+    if (filterStatus==="Out of Stock" && p.status!=="outofstock") return false;
+    return true;
+  });
+
+  const handleSave = async (p) => {
+    setSaving(true);
+    try {
+      const rows = await sbUpsertProduct(p);
+      const saved = rows && rows[0] ? { ...p, id: rows[0].id } : p;
+      const idx = products.findIndex(x=>x.id===p.id);
+      if (idx!==-1) { const n=[...products]; n[idx]=saved; setProducts(n); }
+      else setProducts(prev=>[...prev, saved]);
+      showToast("success","✅ Product saved to database!");
+      setShowModal(false);
+    } catch (e) {
+      showToast("error","Failed to save: "+e.message);
+    }
+    setSaving(false);
+  };
+
+  const handleDelete = async (p) => {
+    if (!confirm(`Delete "${p.name}"?`)) return;
+    try {
+      await sbDeleteProduct(p.id);
+      setProducts(a=>a.filter(x=>x.id!==p.id));
+      showToast("success","🗑️ Deleted.");
+    } catch { showToast("error","Delete failed."); }
+  };
+
+  const toggleStatus = async (p) => {
+    const updated = { ...p, status: p.status==="outofstock"?"instock":"outofstock" };
+    setProducts(prev=>prev.map(x=>x.id===p.id?updated:x));
+    try {
+      await fetch(`${SUPABASE_URL}/rest/v1/products?id=eq.${p.id}`, {
+        method:"PATCH", headers:{...sbHeaders,Prefer:"return=representation"}, body:JSON.stringify({ status:updated.status, updated_at:new Date().toISOString() })
+      });
+      showToast("success", updated.status==="instock"?"Marked In Stock":"Marked Out of Stock");
+    } catch { showToast("error","Failed to update status."); }
+  };
+
+  return (
+    <div>
+      <div className="section-hdr">
+        <h3>🛒 Products ({products.length})</h3>
+        <button className="admin-btn green" onClick={()=>{setEditProduct(null);setShowModal(true);}}>+ Add Product</button>
+      </div>
+      <div className="search-bar">
+        <span style={{ color:"#7aab8a" }}>🔍</span>
+        <input placeholder="Search products…" value={search} onChange={e=>setSearch(e.target.value)} />
+        {search && <button onClick={()=>setSearch("")} style={{ background:"none",border:"none",color:"#7aab8a",cursor:"pointer",fontSize:"1rem" }}>✕</button>}
+      </div>
+      <div className="filter-chips">
+        {cats.map(c=><button key={c} className={`chip${filterCat===c?" active":""}`} onClick={()=>setFilterCat(c)}>{c}</button>)}
+        <div style={{ width:1,background:"rgba(46,204,113,0.2)",margin:"0 4px" }} />
+        {statuses.map(s=><button key={s} className={`chip${filterStatus===s?" active":""}`} onClick={()=>setFilterStatus(s)}>{s}</button>)}
+      </div>
+      {filtered.length===0 ? (
+        <div className="empty-state"><div className="es-icon">📦</div><div className="es-title">No products found</div><p>Try changing your filters.</p></div>
+      ) : (
+        <div className="apps-grid">
+          {filtered.map(p => (
+            <div key={p.id} className="app-card">
+              <div className="app-card-visual">
+                {p.image?<img src={p.image} alt={p.name} />:<div className="emoji-ph">📦</div>}
+                <span className={`card-status-badge ${p.status!=="outofstock"?"badge-active":"badge-inactive"}`}>{p.status!=="outofstock"?"In Stock":"Out of Stock"}</span>
+                {p.isOffer && <span className="badge-offer">🏷️ Offer</span>}
+                {p.isNew && <span className="badge-new">✨ New</span>}
+              </div>
+              <div className="app-card-body">
+                <div className="app-card-title">{p.name}</div>
+                <div className="app-card-cat">{p.category}</div>
+                <div style={{ fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:"1.1rem",color:"#2ecc71",marginBottom:4 }}>{formatINR(p.price)}</div>
+                {p.originalPrice && <div style={{ fontSize:"0.75rem",color:"#7aab8a",marginBottom:10 }}>MRP: <span style={{ textDecoration:"line-through" }}>{formatINR(p.originalPrice)}</span> <span style={{ color:"#ff9500" }}>({discount(p.price,p.originalPrice)}% off)</span></div>}
+                <div className="app-card-actions">
+                  <button className="admin-btn blue sm" onClick={()=>{setEditProduct(p);setShowModal(true);}}>✏️ Edit</button>
+                  <button className="admin-btn sm" onClick={()=>toggleStatus(p)} style={{ background:"rgba(46,204,113,0.08)",border:"1px solid rgba(46,204,113,0.3)",color:"#2ecc71" }}>{p.status==="outofstock"?"✅":"⛔"}</button>
+                  <button className="admin-btn red sm" onClick={()=>handleDelete(p)}>🗑️</button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      {showModal && <ProductFormModal product={editProduct} saving={saving} onSave={handleSave} onClose={()=>setShowModal(false)} />}
+    </div>
+  );
+}
+
+// ─── ADMIN: DASHBOARD ──────────────────────────────────────────
+function AdminDashboard({ products, users, enquiries, setAdminPage }) {
+  const inStock = products.filter(p=>p.status!=="outofstock").length;
+  const outStock = products.filter(p=>p.status==="outofstock").length;
+  const offers = products.filter(p=>p.isOffer).length;
+  const newArrivals = products.filter(p=>p.isNew).length;
+
+  const stats = [
+    { icon:"📦", label:"Total Products", val:products.length, page:"products", trend:"Manage inventory" },
+    { icon:"✅", label:"In Stock", val:inStock, page:"products", trend:`${outStock} out of stock` },
+    { icon:"🏷️", label:"Active Offers", val:offers, page:"offers", trend:`${newArrivals} new arrivals` },
+    { icon:"👥", label:"Registered Users", val:users, page:"users", trend:"View all users" },
+    { icon:"💬", label:"Total Enquiries", val:enquiries, page:"users", trend:"View enquiries" },
+    { icon:"🖼", label:"Banners", val:"—", page:"banners", trend:"Manage home banners" },
+  ];
+
+  return (
+    <div>
+      <div style={{ marginBottom:28 }}>
+        <div style={{ fontFamily:"'Barlow Condensed',sans-serif",fontSize:"1.6rem",fontWeight:800,color:"#fff",marginBottom:4 }}>Welcome back, Admin 👋</div>
+        <div style={{ fontSize:"0.85rem",color:"#7aab8a" }}>Here's a snapshot of SAG Drone Technologies.</div>
+      </div>
+      <div style={{ display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:14,marginBottom:28 }}>
+        {stats.map(s=>(
+          <div key={s.label} className="dash-stat" onClick={()=>setAdminPage(s.page)}>
+            <div className="dash-stat-icon">{s.icon}</div>
+            <div className="dash-stat-num">{s.val}</div>
+            <div className="dash-stat-label">{s.label}</div>
+            <div className="dash-stat-trend">{s.trend}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:16 }}>
+        <div style={{ background:"#131f16",border:"1px solid rgba(30,53,34,1)",borderRadius:14,padding:"18px 20px" }}>
+          <div style={{ fontFamily:"'Barlow Condensed',sans-serif",fontSize:"1rem",fontWeight:800,color:"#fff",marginBottom:14 }}>📊 Inventory by Category</div>
+          {["Drones","Batteries","Flight Controller","Accessories"].map(cat => {
+            const cnt = products.filter(p=>p.category===cat).length;
+            const pct = products.length ? Math.round(cnt/products.length*100) : 0;
+            return (
+              <div key={cat} style={{ marginBottom:12 }}>
+                <div style={{ display:"flex",justifyContent:"space-between",fontSize:"0.8rem",color:"#7aab8a",marginBottom:4 }}>
+                  <span>{cat}</span><span style={{ color:"#fff",fontWeight:600 }}>{cnt}</span>
+                </div>
+                <div style={{ height:6,background:"rgba(46,204,113,0.1)",borderRadius:3,overflow:"hidden" }}>
+                  <div style={{ height:"100%",width:`${pct}%`,background:"linear-gradient(90deg,#1a9c52,#2ecc71)",borderRadius:3,transition:"width .6s" }} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <div style={{ background:"#131f16",border:"1px solid rgba(30,53,34,1)",borderRadius:14,padding:"18px 20px" }}>
+          <div style={{ fontFamily:"'Barlow Condensed',sans-serif",fontSize:"1rem",fontWeight:800,color:"#fff",marginBottom:14 }}>⚡ Quick Actions</div>
+          {[["+ Add Product","products","green"],["🏷️ Manage Offers","offers","orange"],["🖼 Edit Banners","banners","blue"],["👥 View Users","users",""]].map(([lbl,page,cls])=>(
+            <button key={page} className={`admin-btn ${cls} sm`} onClick={()=>setAdminPage(page)} style={{ width:"100%",justifyContent:"center",marginBottom:8,padding:"11px" }}>{lbl}</button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── ADMIN PAGE ROOT ───────────────────────────────────────────
+function AdminPage({ autoAuthed = false }) {
+  const [authed, setAuthed] = useState(() => autoAuthed || sessionStorage.getItem("sag_admin") === "1");
   const [pw, setPw] = useState("");
   const [err, setErr] = useState("");
   const [adminPage, setAdminPage] = useState("dashboard");
   const [products, setProducts] = useState(STATIC_PRODUCTS);
-  const [showProductModal, setShowProductModal] = useState(false);
-  const [editProduct, setEditProduct] = useState(null);
+  const [users, setUsers] = useState([]);
+  const [enquiries, setEnquiries] = useState([]);
   const [toast, setToast] = useState({ show:false,type:"success",msg:"" });
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const showToast = (type, msg) => { setToast({show:true,type,msg}); setTimeout(()=>setToast(t=>({...t,show:false})),3000); };
+  const showToast = (type, msg) => { setToast({show:true,type,msg}); setTimeout(()=>setToast(t=>({...t,show:false})),3200); };
 
   useEffect(() => {
+    if (!authed) return;
     fetch(`${SUPABASE_URL}/rest/v1/products?order=created_at.asc&select=*`, {
       headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
-    }).then(r => r.ok ? r.json() : null)
+    }).then(r=>r.ok?r.json():null)
       .then(rows => { if (rows&&rows.length) setProducts(rows.map(r => ({ id:r.id,name:r.name,price:r.price,originalPrice:r.original_price,image:r.image,isNew:r.is_new,isOffer:r.is_offer,status:r.status,category:r.category,waNum:r.wa_num||"919390238537" }))); })
       .catch(()=>{});
-  }, []);
+    Promise.all([sbGetAllProfiles(), sbGetAllEnquiries()]).then(([p,e])=>{ setUsers(p||[]); setEnquiries(e||[]); }).catch(()=>{});
+  }, [authed]);
 
   if (!authed) return (
     <div style={{ minHeight:"100vh",background:"#0a0f0d",display:"flex",alignItems:"center",justifyContent:"center",padding:20 }}>
-      <div style={{ background:"#131f16",border:"1px solid rgba(46,204,113,0.2)",borderRadius:16,padding:"32px 28px",width:"100%",maxWidth:360,textAlign:"center" }}>
-        <img src={LOGO} alt="SAG" style={{ height:40,marginBottom:16 }} />
-        <div style={{ fontFamily:"'Barlow Condensed',sans-serif",fontSize:"1.5rem",fontWeight:800,color:"#fff",marginBottom:18 }}>Admin Access</div>
-        <input type="password" placeholder="Enter admin password" value={pw} onChange={e=>setPw(e.target.value)}
-          onKeyDown={e=>e.key==="Enter"&&(pw==="sag@admin2025"?(sessionStorage.setItem("sag_admin","1"),setAuthed(true)):setErr("Wrong password"))}
-          style={{ width:"100%",padding:"11px 14px",background:"#0a0f0d",border:"1.5px solid rgba(46,204,113,0.2)",borderRadius:10,color:"#fff",fontFamily:"'DM Sans',sans-serif",fontSize:"0.9rem",outline:"none",boxSizing:"border-box",marginBottom:10 }} />
-        {err && <div style={{ color:"#e05050",fontSize:"0.82rem",marginBottom:8 }}>{err}</div>}
-        <button onClick={()=>pw==="sag@admin2025"?(sessionStorage.setItem("sag_admin","1"),setAuthed(true)):setErr("Wrong password")}
-          style={{ width:"100%",padding:"12px",background:"#2ecc71",color:"#0a0f0d",border:"none",borderRadius:40,fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:"0.93rem",cursor:"pointer" }}>
-          Enter Admin →
+      <div style={{ background:"#131f16",border:"1px solid rgba(46,204,113,0.2)",borderRadius:20,padding:"36px 28px",width:"100%",maxWidth:380,textAlign:"center" }}>
+        <img src={LOGO} alt="SAG" style={{ height:44,marginBottom:16,borderRadius:8 }} />
+        <div style={{ fontFamily:"'Barlow Condensed',sans-serif",fontSize:"1.8rem",fontWeight:800,color:"#fff",marginBottom:6 }}>Admin Portal</div>
+        <div style={{ fontSize:"0.82rem",color:"#7aab8a",marginBottom:28 }}>SAG Drone Technologies</div>
+        <input type="password" placeholder="Enter admin password" value={pw} onChange={e=>{setPw(e.target.value);setErr("");}}
+          onKeyDown={e=>e.key==="Enter"&&(pw==="sag@admin2025"?(sessionStorage.setItem("sag_admin","1"),setAuthed(true)):setErr("Incorrect password. Please try again."))}
+          style={{ width:"100%",padding:"13px 16px",background:"#0a0f0d",border:"1.5px solid rgba(46,204,113,0.2)",borderRadius:12,color:"#fff",fontFamily:"'DM Sans',sans-serif",fontSize:"0.92rem",outline:"none",boxSizing:"border-box",marginBottom:10,letterSpacing:4 }} />
+        {err && <div style={{ color:"#e05050",fontSize:"0.82rem",marginBottom:10 }}>{err}</div>}
+        <button onClick={()=>pw==="sag@admin2025"?(sessionStorage.setItem("sag_admin","1"),setAuthed(true)):setErr("Incorrect password. Please try again.")}
+          style={{ width:"100%",padding:"13px",background:"#2ecc71",color:"#0a0f0d",border:"none",borderRadius:40,fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:"0.95rem",cursor:"pointer" }}>
+          Enter Admin Portal →
         </button>
       </div>
     </div>
   );
 
-  const inStock = products.filter(p=>p.status!=="outofstock").length;
-  const outStock = products.filter(p=>p.status==="outofstock").length;
-  const offers = products.filter(p=>p.isOffer).length;
+  const pageTitle = { dashboard:"Dashboard", products:"Products", offers:"Offers", banners:"Banners", users:"Users" };
+  const navItems = [
+    { group:"Overview", items:[["dashboard","📊","Dashboard"]] },
+    { group:"Catalog", items:[["products","🛒","Products"],["offers","🏷️","Offers"]] },
+    { group:"Content", items:[["banners","🖼","Banners"]] },
+    { group:"CRM", items:[["users","👥","Users"]] },
+  ];
 
   return (
     <div className="admin-layout">
       <style>{adminCSS}</style>
       <aside className="admin-sidebar">
-        <div className="admin-sidebar-logo"><img src={LOGO} alt="SAG" /><span>SAG Admin</span></div>
+        <div className="admin-sidebar-logo">
+          <img src={LOGO} alt="SAG" />
+          <span>SAG Admin<br /><span style={{ fontSize:"0.68rem",color:"#7aab8a",fontFamily:"'DM Sans',sans-serif",fontWeight:400 }}>Control Panel</span></span>
+        </div>
         <nav className="admin-nav">
-          <span className="admin-nav-label">Overview</span>
-          {[["dashboard","📊","Dashboard"],["products","🛒","Products"]].map(([page,icon,label]) => (
-            <button key={page} className={`admin-link${adminPage===page?" active":""}`} onClick={()=>setAdminPage(page)}>
-              <span className="admin-link-icon">{icon}</span>{label}
-            </button>
+          {navItems.map(({ group, items }) => (
+            <div key={group}>
+              <span className="admin-nav-label">{group}</span>
+              {items.map(([page,icon,label]) => (
+                <button key={page} className={`admin-link${adminPage===page?" active":""}`} onClick={()=>setAdminPage(page)}>
+                  <span className="admin-link-icon">{icon}</span>{label}
+                  {page==="offers" && <span className="admin-link-badge">{products.filter(p=>p.isOffer).length}</span>}
+                  {page==="users" && <span className="admin-link-badge">{users.length}</span>}
+                </button>
+              ))}
+            </div>
           ))}
         </nav>
         <div className="admin-sidebar-footer">
           <div className="admin-user">
             <div className="admin-avatar">A</div>
             <div><div className="admin-user-name">Admin</div><div className="admin-user-role">Super Admin</div></div>
-            <button className="logout-btn" onClick={()=>{sessionStorage.removeItem("sag_admin");setAuthed(false);}}>⏏</button>
+            <button className="logout-btn" title="Sign out" onClick={()=>{sessionStorage.removeItem("sag_admin");setAuthed(false);}}>⏏</button>
           </div>
         </div>
       </aside>
       <main className="admin-main">
         <div className="admin-topbar">
-          <div className="admin-topbar-title">{adminPage==="dashboard"?"Dashboard":"Products"}</div>
-          <div className="live-badge"><div className="live-dot" />LIVE</div>
+          <div className="admin-topbar-title">{pageTitle[adminPage]||"Admin"}</div>
+          <div className="admin-topbar-right">
+            <div style={{ fontSize:"0.75rem",color:"#7aab8a" }}>{new Date().toLocaleDateString("en-IN",{weekday:"short",day:"numeric",month:"short"})}</div>
+            <div className="live-badge"><div className="live-dot" />LIVE</div>
+          </div>
         </div>
-        <div style={{ padding:28 }}>
-          {adminPage === "dashboard" && (
-            <div>
-              <div className="dash-stats">
-                {[["📦","Total Products",products.length,""],["✅","In Stock",inStock,""],["⛔","Out of Stock",outStock,""],["🏷️","On Offer",offers,""]].map(([icon,label,val]) => (
-                  <div key={label} className="dash-stat">
-                    <div className="dash-stat-icon">{icon}</div>
-                    <div className="dash-stat-num">{val}</div>
-                    <div className="dash-stat-label">{label}</div>
-                  </div>
-                ))}
-              </div>
-              <div style={{ background:"#131f16",border:"1px solid rgba(30,53,34,1)",borderRadius:12,padding:"16px 20px" }}>
-                <div style={{ fontFamily:"'Barlow Condensed',sans-serif",fontSize:"1rem",fontWeight:800,color:"#fff",marginBottom:4 }}>📢 Tip</div>
-                <div style={{ fontSize:"0.82rem",color:"#7aab8a",lineHeight:1.6 }}>Use the Products section to manage inventory. To add promotional banners, sign in to the customer app and tap "🖼 Banners" at the top.</div>
-              </div>
-            </div>
-          )}
-          {adminPage === "products" && (
-            <div>
-              <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:18 }}>
-                <div style={{ fontFamily:"'Barlow Condensed',sans-serif",fontSize:"1.2rem",fontWeight:800,color:"#fff" }}>🛒 Products ({products.length})</div>
-                <button className="admin-btn green" onClick={()=>{setEditProduct(null);setShowProductModal(true);}}>+ Add Product</button>
-              </div>
-              <div className="apps-grid">
-                {products.map(p => (
-                  <div key={p.id} className="app-card">
-                    <div className="app-card-visual">{p.image?<img src={p.image} alt={p.name} />:<div className="emoji-ph">📦</div>}<span className={`card-status-badge ${p.status!=="outofstock"?"badge-active":"badge-inactive"}`}>{p.status!=="outofstock"?"In Stock":"Out of Stock"}</span></div>
-                    <div className="app-card-body">
-                      <div className="app-card-title">{p.name}</div>
-                      <div style={{ fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:"1.1rem",color:"#2ecc71",marginBottom:10 }}>{formatINR(p.price)}</div>
-                      <div className="app-card-actions">
-                        <button className="admin-btn blue sm" onClick={()=>{setEditProduct(p);setShowProductModal(true);}}>✏️ Edit</button>
-                        <button className="admin-btn red sm" onClick={()=>{if(confirm(`Delete "${p.name}"?`)){setProducts(a=>a.filter(x=>x.id!==p.id));showToast("success","Deleted.");}}} >🗑️ Del</button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+        <div className="admin-content">
+          {adminPage==="dashboard" && <AdminDashboard products={products} users={users.length} enquiries={enquiries.length} setAdminPage={setAdminPage} />}
+          {adminPage==="products" && <AdminProducts products={products} setProducts={setProducts} showToast={showToast} />}
+          {adminPage==="offers" && <AdminOffers products={products} setProducts={setProducts} showToast={showToast} />}
+          {adminPage==="banners" && <AdminBanners showToast={showToast} />}
+          {adminPage==="users" && <AdminUsers showToast={showToast} />}
         </div>
       </main>
-      {showProductModal && (
-        <ProductFormModal product={editProduct} onSave={p => {
-          const idx = products.findIndex(x=>x.id===p.id);
-          if (idx!==-1) { const n=[...products]; n[idx]=p; setProducts(n); }
-          else setProducts(prev=>[...prev,{...p,id:Date.now()}]);
-          showToast("success","✅ Product saved!"); setShowProductModal(false);
-        }} onClose={()=>setShowProductModal(false)} />
-      )}
-      <div style={{ position:"fixed",bottom:24,right:24,zIndex:99999,background:toast.type==="success"?"#1a4a2a":"#4a1a1a",border:`1px solid ${toast.type==="success"?"#2ecc71":"#e05050"}`,borderRadius:12,padding:"10px 18px",color:"#fff",fontSize:"0.85rem",fontFamily:"'DM Sans',sans-serif",transition:"all .35s",transform:toast.show?"translateY(0)":"translateY(20px)",opacity:toast.show?1:0,pointerEvents:toast.show?"all":"none" }}>{toast.msg}</div>
+      <div style={{ position:"fixed",bottom:24,right:24,zIndex:99999,background:toast.type==="success"?"#1a4a2a":"#4a1a1a",border:`1px solid ${toast.type==="success"?"#2ecc71":"#e05050"}`,borderRadius:12,padding:"11px 20px",color:"#fff",fontSize:"0.85rem",fontFamily:"'DM Sans',sans-serif",transition:"all .35s",transform:toast.show?"translateY(0)":"translateY(20px)",opacity:toast.show?1:0,pointerEvents:toast.show?"all":"none",boxShadow:"0 10px 30px rgba(0,0,0,0.5)" }}>{toast.msg}</div>
     </div>
   );
 }
 
-function ProductFormModal({ product, onSave, onClose }) {
+function ProductFormModal({ product, onSave, onClose, saving }) {
   const [form, setForm] = useState(product || { name:"",price:"",originalPrice:"",image:"",category:"Drones",status:"instock",isNew:false,isOffer:false,waNum:"919390238537" });
   const set = (k,v) => setForm(f=>({...f,[k]:v}));
   return (
     <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
       <div className="modal-box">
-        <div style={{ fontFamily:"'Barlow Condensed',sans-serif",fontSize:"1.3rem",fontWeight:800,color:"#fff",marginBottom:18 }}>{product?"Edit Product":"Add Product"}</div>
+        <div className="modal-title">{product?"Edit Product":"Add Product"}</div>
         {[["Product Name","name","text","e.g. SAG Agri Drone 10L"],["Price (₹)","price","number","e.g. 750000"],["Original Price (₹)","originalPrice","number","e.g. 900000"],["Image URL","image","text","https://..."],["WhatsApp Number","waNum","text","919390238537"]].map(([label,key,type,ph]) => (
           <div key={key} className="modal-field">
             <label>{label}</label>
@@ -1505,7 +2011,7 @@ function ProductFormModal({ product, onSave, onClose }) {
           ))}
         </div>
         <div style={{ display:"flex",gap:10 }}>
-          <button onClick={()=>onSave({...form,price:Number(form.price),originalPrice:Number(form.originalPrice)||null})} style={{ flex:1,padding:"12px",background:"#2ecc71",color:"#0a0f0d",border:"none",borderRadius:40,fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:"0.9rem",cursor:"pointer" }}>Save Product</button>
+          <button onClick={()=>onSave({...form,price:Number(form.price),originalPrice:Number(form.originalPrice)||null})} disabled={saving} style={{ flex:1,padding:"12px",background:"#2ecc71",color:"#0a0f0d",border:"none",borderRadius:40,fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:"0.9rem",cursor:saving?"wait":"pointer",opacity:saving?0.7:1 }}>{saving?"Saving…":"Save Product"}</button>
           <button onClick={onClose} style={{ flex:1,padding:"12px",background:"rgba(255,255,255,0.05)",color:"#e8f5ec",border:"1px solid rgba(255,255,255,0.1)",borderRadius:40,fontFamily:"'DM Sans',sans-serif",fontWeight:600,cursor:"pointer" }}>Cancel</button>
         </div>
       </div>
@@ -1543,7 +2049,7 @@ export default function App() {
 
   if (showAdmin) return (
     <div>
-      <AdminPage />
+      <AdminPage autoAuthed={user?.email === ADMIN_EMAIL} />
       <div style={{ position:"fixed",bottom:20,right:20,zIndex:9999 }}>
         <button onClick={()=>setShowAdmin(false)} style={{ background:"#131f16",border:"1px solid rgba(46,204,113,0.3)",color:"#7aab8a",padding:"8px 14px",borderRadius:40,fontSize:"0.75rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif" }}>← Back to App</button>
       </div>
@@ -1577,10 +2083,12 @@ export default function App() {
           user={user} showAuth={()=>{setModalProduct(null);setTab("account");}} />
       )}
 
-      {/* Admin shortcut */}
-      <div style={{ position:"fixed",bottom:72,right:16,zIndex:99 }}>
-        <button onClick={()=>setShowAdmin(true)} style={{ background:"rgba(10,15,13,0.9)",border:"1px solid rgba(46,204,113,0.2)",color:"#7aab8a",padding:"7px 13px",borderRadius:40,fontSize:"0.72rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",backdropFilter:"blur(6px)" }}>⚙ Admin</button>
-      </div>
+      {/* Admin shortcut — only visible to the admin account */}
+      {user?.email === ADMIN_EMAIL && (
+        <div style={{ position:"fixed",bottom:72,right:16,zIndex:99 }}>
+          <button onClick={()=>setShowAdmin(true)} style={{ background:"rgba(10,15,13,0.9)",border:"1px solid rgba(46,204,113,0.2)",color:"#7aab8a",padding:"7px 13px",borderRadius:40,fontSize:"0.72rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",backdropFilter:"blur(6px)" }}>⚙ Admin</button>
+        </div>
+      )}
     </div>
   );
 }
