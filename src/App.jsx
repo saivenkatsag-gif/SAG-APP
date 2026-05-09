@@ -1584,129 +1584,172 @@ function ProductCard({ p, onClick, onAddCart, user, compact }) {
 
 // ─── CATEGORIES PAGE ──────────────────────────────────────────
 function CategoriesPage({ products: propProducts, onProductClick, onAddCart, user }) {
-  const [products, setProducts] = useState(propProducts && propProducts.length ? propProducts : STATIC_PRODUCTS);
-  const [loading, setLoading] = useState(true);
+  const [products, setProducts]   = useState(propProducts && propProducts.length ? propProducts : STATIC_PRODUCTS);
+  const [catObjs, setCatObjs]     = useState([]);   // full category objects from Supabase
+  const [loading, setLoading]     = useState(true);
   const [activeCat, setActiveCat] = useState("All");
 
-  const cats = ["All","Drones","Batteries","Flight Controller","Accessories"];
-  const catDescs = {
-    "Drones": "DGCA-certified agricultural drones",
-    "Batteries": "High-capacity LiPo batteries & chargers",
-    "Flight Controller": "Precision FC kits for AG drones",
-    "Accessories": "Pumps, transmitters, motors & more",
-  };
-
-  // Fetch directly from Supabase so Categories page always has data
+  // ── Fetch BOTH categories and products from Supabase in parallel ──
   useEffect(() => {
-    fetch(`${SUPABASE_URL}/rest/v1/products?order=created_at.asc&select=*`, {
-      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
-    })
-      .then(r => r.ok ? r.json() : null)
-      .then(rows => {
-        if (rows && rows.length) {
-          setProducts(rows.map(r => ({
+    const fetchProducts = fetch(
+      `${SUPABASE_URL}/rest/v1/products?order=created_at.asc&select=*`,
+      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
+    ).then(r => r.ok ? r.json() : null);
+
+    const fetchCats = sbGetCategories();
+
+    Promise.all([fetchProducts, fetchCats])
+      .then(([productRows, catRows]) => {
+        if (productRows && productRows.length) {
+          setProducts(productRows.map(r => ({
             id: r.id, name: r.name, price: r.price, originalPrice: r.original_price,
             image: r.image, isNew: r.is_new, isOffer: r.is_offer, status: r.status,
             category: r.category, waNum: r.wa_num || "919390238537"
           })));
+        }
+        if (catRows && catRows.length) {
+          setCatObjs(catRows.filter(c => c.active !== false));
+        } else {
+          // Fallback: derive unique category names from products
+          const names = [...new Set((productRows || STATIC_PRODUCTS).map(p => p.category).filter(Boolean))];
+          setCatObjs(names.map((n, i) => ({ name: n, icon: CATEGORY_ICONS[n] || "📦", description: "", sort_order: i })));
         }
         setLoading(false);
       })
       .catch(() => setLoading(false));
   }, []);
 
-  // Keep in sync if parent passes updated products
+  // Keep in sync if parent passes freshly-loaded products
   useEffect(() => {
     if (propProducts && propProducts.length) setProducts(propProducts);
   }, [propProducts]);
 
-  const displayCats = activeCat === "All"
-    ? ["Drones","Batteries","Flight Controller","Accessories"]
+  // Which category names to render in the content area
+  const displayCatNames = activeCat === "All"
+    ? catObjs.map(c => c.name)
     : [activeCat];
+
+  // Helper: look up icon from catObjs first, then CATEGORY_ICONS fallback
+  const iconFor  = (name) => catObjs.find(c => c.name === name)?.icon || CATEGORY_ICONS[name] || "📦";
+  const descFor  = (name) => catObjs.find(c => c.name === name)?.description || "";
 
   return (
     <div style={{ background:"#f5f7fa",minHeight:"100vh",paddingBottom:70,fontFamily:"'DM Sans',sans-serif" }}>
+      <style>{`@keyframes catpulse{0%,100%{opacity:1}50%{opacity:.45}}`}</style>
 
-      {/* Header */}
+      {/* ── Header ── */}
       <div style={{ background:"linear-gradient(135deg,#1a2b6b 0%,#2454c7 100%)",padding:"16px 16px 0" }}>
         <div style={{ fontFamily:"'Barlow Condensed',sans-serif",fontSize:"1.5rem",fontWeight:800,color:"#fff" }}>Categories</div>
         <div style={{ fontSize:"0.78rem",color:"rgba(255,255,255,0.8)",marginTop:2,marginBottom:12 }}>Browse by product type</div>
 
-        {/* Category filter pills */}
-        <div style={{ display:"flex",gap:8,overflowX:"auto",paddingBottom:12,scrollbarWidth:"none" }}>
-          {cats.map(cat => (
-            <button key={cat} onClick={() => setActiveCat(cat)} style={{
-              flexShrink:0,display:"flex",alignItems:"center",gap:6,
-              background: activeCat===cat ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.1)",
-              border: activeCat===cat ? "2px solid #fff" : "2px solid transparent",
-              borderRadius:20,padding:"6px 14px",cursor:"pointer",transition:"all .2s",
-            }}>
-              <span style={{ fontSize:"1rem" }}>{CATEGORY_ICONS[cat]||"📦"}</span>
-              <span style={{ fontSize:"0.72rem",fontWeight:700,color:"#fff",whiteSpace:"nowrap",fontFamily:"'DM Sans',sans-serif" }}>{cat}</span>
-            </button>
-          ))}
+        {/* Filter pills — All + every category from Supabase */}
+        <div style={{ display:"flex",gap:8,overflowX:"auto",paddingBottom:12,scrollbarWidth:"none",msOverflowStyle:"none" }}>
+          {/* All pill */}
+          <button onClick={() => setActiveCat("All")} style={{
+            flexShrink:0,display:"flex",alignItems:"center",gap:6,
+            background: activeCat==="All" ? "rgba(255,255,255,0.28)" : "rgba(255,255,255,0.1)",
+            border: activeCat==="All" ? "2px solid #fff" : "2px solid transparent",
+            borderRadius:20,padding:"6px 14px",cursor:"pointer",transition:"all .2s",
+          }}>
+            <span style={{ fontSize:"1rem" }}>🏪</span>
+            <span style={{ fontSize:"0.72rem",fontWeight:700,color:"#fff",whiteSpace:"nowrap",fontFamily:"'DM Sans',sans-serif" }}>All</span>
+          </button>
+
+          {/* Dynamic category pills */}
+          {loading
+            ? [1,2,3,4].map(i => (
+                <div key={i} style={{ flexShrink:0,width:90,height:32,borderRadius:20,background:"rgba(255,255,255,0.15)",animation:"catpulse 1.4s infinite" }} />
+              ))
+            : catObjs.map(cat => (
+                <button key={cat.name} onClick={() => setActiveCat(cat.name)} style={{
+                  flexShrink:0,display:"flex",alignItems:"center",gap:6,
+                  background: activeCat===cat.name ? "rgba(255,255,255,0.28)" : "rgba(255,255,255,0.1)",
+                  border: activeCat===cat.name ? "2px solid #fff" : "2px solid transparent",
+                  borderRadius:20,padding:"6px 14px",cursor:"pointer",transition:"all .2s",
+                }}>
+                  <span style={{ fontSize:"1rem" }}>{cat.icon || "📦"}</span>
+                  <span style={{ fontSize:"0.72rem",fontWeight:700,color:"#fff",whiteSpace:"nowrap",fontFamily:"'DM Sans',sans-serif" }}>{cat.name}</span>
+                </button>
+              ))
+          }
         </div>
       </div>
 
-      {/* Content */}
+      {/* ── Content ── */}
       <div style={{ padding:"14px 14px" }}>
         {loading ? (
-          // Skeleton loader
           <div style={{ display:"flex",flexDirection:"column",gap:20 }}>
             {[1,2,3].map(i => (
               <div key={i}>
                 <div style={{ display:"flex",alignItems:"center",gap:10,marginBottom:10 }}>
-                  <div style={{ width:40,height:40,borderRadius:"50%",background:"#e5e7eb",animation:"pulse 1.5s infinite" }} />
+                  <div style={{ width:42,height:42,borderRadius:12,background:"#e5e7eb",animation:"catpulse 1.4s infinite" }} />
                   <div>
-                    <div style={{ width:120,height:16,background:"#e5e7eb",borderRadius:6,marginBottom:6 }} />
-                    <div style={{ width:80,height:12,background:"#f3f4f6",borderRadius:6 }} />
+                    <div style={{ width:130,height:16,background:"#e5e7eb",borderRadius:6,marginBottom:6,animation:"catpulse 1.4s infinite" }} />
+                    <div style={{ width:90,height:12,background:"#f3f4f6",borderRadius:6,animation:"catpulse 1.4s infinite" }} />
                   </div>
                 </div>
                 <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:10 }}>
-                  {[1,2].map(j => (
-                    <div key={j} style={{ height:280,background:"#e5e7eb",borderRadius:14 }} />
-                  ))}
+                  {[1,2].map(j => <div key={j} style={{ height:280,background:"#e5e7eb",borderRadius:14,animation:"catpulse 1.4s infinite" }} />)}
                 </div>
               </div>
             ))}
-            <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}`}</style>
           </div>
         ) : (
-          displayCats.map(cat => {
-            const items = products.filter(p => p.category === cat);
-            if (!items.length) return null;
-            return (
-              <div key={cat} style={{ marginBottom:22 }}>
-                {/* Category header */}
-                <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10 }}>
-                  <div style={{ display:"flex",alignItems:"center",gap:10 }}>
+          <>
+            {/* Total count bar */}
+            <div style={{ fontSize:"0.78rem",color:"#6b7280",marginBottom:14,display:"flex",alignItems:"center",gap:6 }}>
+              <span style={{ fontWeight:700,color:"#374151" }}>
+                {activeCat === "All"
+                  ? `${products.length} product${products.length!==1?"s":""} across ${catObjs.length} categor${catObjs.length!==1?"ies":"y"}`
+                  : `${products.filter(p=>p.category===activeCat).length} product${products.filter(p=>p.category===activeCat).length!==1?"s":""} in ${activeCat}`
+                }
+              </span>
+            </div>
+
+            {displayCatNames.map(name => {
+              const items = products.filter(p => p.category === name);
+              if (!items.length) return null;
+              return (
+                <div key={name} style={{ marginBottom:26 }}>
+                  {/* Category header */}
+                  <div style={{ display:"flex",alignItems:"center",gap:12,marginBottom:12,
+                    padding:"10px 14px",background:"#fff",borderRadius:14,
+                    boxShadow:"0 1px 4px rgba(0,0,0,0.06)",border:"1px solid #e8edf5" }}>
                     <div style={{
-                      width:42,height:42,borderRadius:12,
+                      width:46,height:46,borderRadius:12,flexShrink:0,
                       background:"linear-gradient(135deg,#1a2b6b,#2454c7)",
-                      display:"flex",alignItems:"center",justifyContent:"center",
-                      fontSize:"1.3rem",flexShrink:0
-                    }}>{CATEGORY_ICONS[cat]}</div>
-                    <div>
-                      <div style={{ fontFamily:"'Barlow Condensed',sans-serif",fontSize:"1.15rem",fontWeight:800,color:"#111827" }}>{cat}</div>
-                      <div style={{ fontSize:"0.73rem",color:"#6b7280" }}>{catDescs[cat]} · {items.length} item{items.length!==1?"s":""}</div>
+                      display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.4rem"
+                    }}>{iconFor(name)}</div>
+                    <div style={{ flex:1,minWidth:0 }}>
+                      <div style={{ fontFamily:"'Barlow Condensed',sans-serif",fontSize:"1.2rem",fontWeight:800,color:"#111827" }}>{name}</div>
+                      <div style={{ fontSize:"0.72rem",color:"#6b7280",marginTop:1 }}>
+                        {descFor(name) || name}
+                        {" · "}
+                        <span style={{ fontWeight:600,color:"#2454c7" }}>{items.length} item{items.length!==1?"s":""}</span>
+                      </div>
                     </div>
                   </div>
+                  <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:10 }}>
+                    {items.map(p => (
+                      <ProductCard key={p.id} p={p}
+                        onClick={() => onProductClick(p)}
+                        onAddCart={() => onAddCart(p)}
+                        user={user} />
+                    ))}
+                  </div>
                 </div>
-                <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:10 }}>
-                  {items.map(p => <ProductCard key={p.id} p={p} onClick={() => onProductClick(p)} onAddCart={() => onAddCart(p)} user={user} />)}
-                </div>
-              </div>
-            );
-          })
-        )}
+              );
+            })}
 
-        {/* Empty state — only shown after loading */}
-        {!loading && displayCats.every(cat => !products.filter(p => p.category === cat).length) && (
-          <div style={{ textAlign:"center",padding:"60px 20px",color:"#9ca3af" }}>
-            <div style={{ fontSize:"3rem",marginBottom:12,opacity:.4 }}>📭</div>
-            <div style={{ fontFamily:"'Barlow Condensed',sans-serif",fontSize:"1.3rem",fontWeight:800,color:"#374151",marginBottom:6 }}>No products found</div>
-            <div style={{ fontSize:"0.85rem" }}>Check back soon for new arrivals.</div>
-          </div>
+            {/* Empty state */}
+            {displayCatNames.every(name => !products.filter(p => p.category === name).length) && (
+              <div style={{ textAlign:"center",padding:"60px 20px",color:"#9ca3af" }}>
+                <div style={{ fontSize:"3rem",marginBottom:12,opacity:.4 }}>📭</div>
+                <div style={{ fontFamily:"'Barlow Condensed',sans-serif",fontSize:"1.3rem",fontWeight:800,color:"#374151",marginBottom:6 }}>No products here yet</div>
+                <div style={{ fontSize:"0.85rem" }}>Products assigned to this category will appear here.</div>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
