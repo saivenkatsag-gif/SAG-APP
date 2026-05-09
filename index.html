@@ -1,16 +1,2668 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SAG Drone Technologies</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SAG Payroll — Samtulana Antarjala Gathaka Pvt Ltd</title>
+<!-- EmailJS SDK for OTP email delivery -->
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<!-- PDF generation -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink:#0D1117;--ink2:#1C2333;--ink3:#2D3748;
+  --paper:#F7F6F2;--paper2:#EDECEA;--paper3:#E2E0DB;
+  --gold:#C9A84C;--gold2:#E8C96A;--gold-dim:rgba(201,168,76,.12);--gold-mid:rgba(201,168,76,.25);
+  --teal:#2A9D8F;--teal-dim:rgba(42,157,143,.1);
+  --red:#E63946;--red-dim:rgba(230,57,70,.1);
+  --green:#2D6A4F;--green-dim:rgba(45,106,79,.1);
+  --tx:#0D1117;--mu:#6B7280;--mu2:#9CA3AF;
+  --r:10px;--ff:'IBM Plex Sans',sans-serif;--fm:'IBM Plex Mono',monospace;--fd:'Playfair Display',serif;
+  --shadow:0 2px 12px rgba(13,17,23,.08),0 1px 3px rgba(13,17,23,.06);
+  --shadow-lg:0 8px 32px rgba(13,17,23,.12),0 2px 8px rgba(13,17,23,.08);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--paper);color:var(--tx);font-family:var(--ff);-webkit-font-smoothing:antialiased;min-height:100vh}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--paper2)}
+::-webkit-scrollbar-thumb{background:var(--paper3);border-radius:10px}
+
+/* SIDEBAR */
+.layout{display:flex;min-height:100vh}
+.sidebar{width:260px;flex-shrink:0;background:var(--ink);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto}
+.sb-logo{padding:28px 24px 20px;border-bottom:1px solid rgba(255,255,255,.07)}
+.sb-logo-name{font-family:var(--fd);font-size:17px;font-weight:700;color:#fff;line-height:1.2;letter-spacing:-.01em}
+.sb-logo-sub{font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-top:4px;font-weight:500}
+.sb-logo-badge{display:inline-block;margin-top:8px;font-size:8px;letter-spacing:.12em;text-transform:uppercase;background:var(--gold-mid);border:1px solid rgba(201,168,76,.3);color:var(--gold2);padding:3px 8px;border-radius:4px;font-family:var(--fm)}
+.sb-section{padding:20px 16px 8px;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.25);font-weight:600}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 16px;margin:1px 8px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;color:rgba(255,255,255,.55);transition:all .18s;border:1px solid transparent}
+.nav-item:hover{background:rgba(255,255,255,.06);color:rgba(255,255,255,.85)}
+.nav-item.active{background:var(--gold-dim);border-color:rgba(201,168,76,.2);color:var(--gold2)}
+.nav-icon{width:16px;height:16px;flex-shrink:0;opacity:.7}
+.nav-item.active .nav-icon{opacity:1}
+.sb-footer{margin-top:auto;padding:16px;border-top:1px solid rgba(255,255,255,.07)}
+.sb-user{display:flex;align-items:center;gap:10px}
+.sb-avatar{width:32px;height:32px;border-radius:50%;background:var(--gold-mid);border:1px solid rgba(201,168,76,.3);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--gold2);flex-shrink:0}
+.sb-user-name{font-size:12px;font-weight:600;color:#fff}
+.sb-user-role{font-size:10px;color:rgba(255,255,255,.35)}
+
+/* MAIN */
+.main{flex:1;display:flex;flex-direction:column;min-width:0;overflow-x:hidden}
+.topbar{background:#fff;border-bottom:1px solid var(--paper3);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;gap:1rem;position:sticky;top:0;z-index:50}
+.topbar-title{font-family:var(--fd);font-size:20px;font-weight:700;letter-spacing:-.01em}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.month-select{font-family:var(--ff);font-size:12px;font-weight:500;background:var(--paper);border:1px solid var(--paper3);border-radius:8px;color:var(--tx);padding:7px 12px;cursor:pointer;outline:none}
+.month-select:focus{border-color:var(--gold)}
+.top-btn{font-family:var(--ff);font-size:12px;font-weight:600;padding:7px 14px;border-radius:8px;cursor:pointer;transition:all .18s;border:none;white-space:nowrap}
+.top-btn.primary{background:var(--ink);color:#fff}
+.top-btn.primary:hover{background:var(--ink2)}
+.top-btn.gold{background:var(--gold);color:#fff}
+.top-btn.gold:hover{background:var(--gold2);color:var(--ink)}
+.top-btn.ghost{background:transparent;border:1px solid var(--paper3);color:var(--mu)}
+.top-btn.ghost:hover{border-color:var(--mu2);color:var(--tx)}
+.top-btn:disabled{opacity:.5;cursor:not-allowed}
+.content{flex:1;padding:28px}
+
+/* PAGES */
+.page{display:none}
+.page.active{display:block}
+
+/* KPI */
+.kpi-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
+.kpi-card{background:#fff;border:1px solid var(--paper3);border-radius:var(--r);padding:18px 20px;position:relative;overflow:hidden;transition:box-shadow .2s}
+.kpi-card:hover{box-shadow:var(--shadow)}
+.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.kpi-card.k-gold::before{background:var(--gold)}
+.kpi-card.k-teal::before{background:var(--teal)}
+.kpi-card.k-red::before{background:var(--red)}
+.kpi-card.k-ink::before{background:var(--ink)}
+.kpi-label{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);font-weight:600;margin-bottom:8px}
+.kpi-value{font-family:var(--fm);font-size:22px;font-weight:500;letter-spacing:-.02em;color:var(--tx)}
+.kpi-sub{font-size:11px;color:var(--mu);margin-top:4px}
+
+/* SECTION */
+.sec-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:1rem;flex-wrap:wrap}
+.sec-title{font-family:var(--fd);font-size:18px;font-weight:700;letter-spacing:-.01em}
+.sec-sub{font-size:12px;color:var(--mu);margin-top:2px}
+
+/* TABLE */
+.tbl-wrap{background:#fff;border:1px solid var(--paper3);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow)}
+.tbl-wrap table{width:100%;border-collapse:collapse}
+.tbl-wrap thead th{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);font-weight:600;padding:12px 16px;border-bottom:1px solid var(--paper3);text-align:left;background:var(--paper);white-space:nowrap}
+.tbl-wrap thead th.r{text-align:right}
+.tbl-wrap tbody tr{border-bottom:1px solid var(--paper2);transition:background .15s}
+.tbl-wrap tbody tr:last-child{border-bottom:none}
+.tbl-wrap tbody tr:hover{background:var(--paper)}
+.tbl-wrap tbody td{padding:12px 16px;font-size:13px;color:var(--tx);white-space:nowrap}
+.tbl-wrap tbody td.r{text-align:right;font-family:var(--fm);font-size:12px}
+.tbl-wrap tbody td.mu{color:var(--mu)}
+
+/* BADGES */
+.badge{display:inline-block;font-size:9px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border-radius:4px;font-family:var(--fm)}
+.badge-green{background:var(--green-dim);color:var(--green)}
+.badge-gold{background:var(--gold-dim);color:var(--gold)}
+.badge-red{background:var(--red-dim);color:var(--red)}
+.badge-teal{background:var(--teal-dim);color:var(--teal)}
+.badge-ink{background:rgba(13,17,23,.08);color:var(--ink3)}
+
+/* ICON BTNS */
+.icon-btn{background:none;border:none;cursor:pointer;padding:5px 8px;border-radius:6px;color:var(--mu);transition:all .15s;font-size:14px}
+.icon-btn:hover{background:var(--paper2);color:var(--tx)}
+.icon-btn.danger:hover{background:var(--red-dim);color:var(--red)}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(13,17,23,.55);z-index:200;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(3px)}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:14px;width:100%;max-width:600px;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:var(--shadow-lg);animation:modalIn .2s ease}
+@keyframes modalIn{from{opacity:0;transform:translateY(16px) scale(.98)}to{opacity:1;transform:none}}
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid var(--paper3)}
+.modal-title{font-family:var(--fd);font-size:18px;font-weight:700}
+.modal-close{background:none;border:none;cursor:pointer;font-size:18px;color:var(--mu);padding:4px;border-radius:6px;transition:color .15s}
+.modal-close:hover{color:var(--red)}
+.modal-body{overflow-y:auto;padding:24px;display:flex;flex-direction:column;gap:16px}
+.modal-foot{padding:16px 24px;border-top:1px solid var(--paper3);display:flex;justify-content:flex-end;gap:10px}
+
+/* FORM */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-grid.cols3{grid-template-columns:1fr 1fr 1fr}
+.form-grid.cols1{grid-template-columns:1fr}
+.field{display:flex;flex-direction:column;gap:5px}
+.field.span2{grid-column:1/-1}
+.field label{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);font-weight:600}
+.field input,.field select,.field textarea{font-family:var(--ff);font-size:13px;background:var(--paper);border:1px solid var(--paper3);border-radius:8px;color:var(--tx);padding:9px 12px;outline:none;transition:border-color .2s;width:100%}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--gold);background:#fff}
+.field textarea{resize:vertical;min-height:60px}
+.field input[type=number]{font-family:var(--fm)}
+
+/* PAYSLIP */
+.payslip{background:#fff;font-family:var(--ff);max-width:700px;margin:0 auto}
+.ps-header{background:var(--ink);padding:24px 28px;display:flex;align-items:center;justify-content:space-between}
+.ps-co-name{font-family:var(--fd);font-size:18px;color:#fff;font-weight:700}
+.ps-co-sub{font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--gold2);margin-top:3px}
+.ps-badge{background:var(--gold);color:#fff;font-size:10px;font-weight:700;padding:5px 12px;border-radius:4px;letter-spacing:.06em;text-transform:uppercase;font-family:var(--fm)}
+.ps-meta{display:grid;grid-template-columns:1fr 1fr;gap:0;border-bottom:2px solid var(--gold)}
+.ps-meta-block{padding:14px 20px;background:var(--paper)}
+.ps-meta-block:first-child{border-right:1px solid var(--paper3)}
+.ps-meta-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;font-size:12px}
+.ps-meta-row:last-child{margin-bottom:0}
+.ps-meta-label{color:var(--mu);font-weight:500}
+.ps-meta-val{font-family:var(--fm);font-weight:500;color:var(--tx);font-size:11px}
+.ps-section-title{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--mu);font-weight:600;padding:10px 20px 6px;background:var(--paper);border-bottom:1px solid var(--paper3);border-top:1px solid var(--paper3)}
+.ps-line{display:flex;justify-content:space-between;align-items:center;padding:8px 20px;font-size:13px;border-bottom:1px solid var(--paper2)}
+.ps-line:last-child{border-bottom:none}
+.ps-line-label{color:var(--tx)}
+.ps-line-val{font-family:var(--fm);font-size:12px;font-weight:500}
+.ps-line-val.green{color:var(--green)}
+.ps-line-val.red{color:var(--red)}
+.ps-totals{display:grid;grid-template-columns:1fr 1fr 1fr;background:var(--ink);padding:16px 20px;gap:10px}
+.ps-total-block{text-align:center}
+.ps-total-label{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.4);font-weight:600}
+.ps-total-val{font-family:var(--fm);font-size:16px;font-weight:500;color:#fff;margin-top:3px}
+.ps-total-val.gold{color:var(--gold2)}
+.ps-footer-note{padding:12px 20px;font-size:10px;color:var(--mu);text-align:center;border-top:1px solid var(--paper3);line-height:1.6}
+.ps-emp-info{padding:14px 20px;background:#fff;border-bottom:1px solid var(--paper3)}
+.ps-emp-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.ps-emp-row{font-size:12px;display:flex;gap:6px}
+.ps-emp-key{color:var(--mu);min-width:100px;flex-shrink:0}
+.ps-emp-val{font-weight:500;color:var(--tx)}
+
+/* DASHBOARD */
+.dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:24px}
+.dash-card{background:#fff;border:1px solid var(--paper3);border-radius:var(--r);padding:20px;box-shadow:var(--shadow)}
+.dash-card-title{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);font-weight:600;margin-bottom:14px}
+.activity-list{display:flex;flex-direction:column;gap:0}
+.activity-item{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--paper2)}
+.activity-item:last-child{border-bottom:none}
+.activity-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.activity-dot.green{background:var(--green)}
+.activity-dot.gold{background:var(--gold)}
+.activity-dot.red{background:var(--red)}
+.activity-text{font-size:12px;color:var(--tx);flex:1}
+.activity-time{font-size:10px;color:var(--mu2);font-family:var(--fm);white-space:nowrap}
+.dept-bar-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.dept-bar-label{font-size:11px;color:var(--tx);width:90px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dept-bar-track{flex:1;height:6px;background:var(--paper2);border-radius:4px;overflow:hidden}
+.dept-bar-fill{height:100%;border-radius:4px;background:var(--gold);transition:width .6s cubic-bezier(.4,0,.2,1)}
+.dept-bar-val{font-family:var(--fm);font-size:11px;color:var(--mu);width:60px;text-align:right;flex-shrink:0}
+
+/* TOAST */
+#toast{position:fixed;bottom:20px;right:20px;z-index:999;font-family:var(--ff);font-size:12px;font-weight:500;padding:10px 18px;border-radius:8px;box-shadow:var(--shadow-lg);transform:translateY(40px);opacity:0;transition:all .25s;pointer-events:none}
+#toast.show{transform:none;opacity:1}
+#toast.ok{background:var(--ink);color:#fff;border-left:3px solid var(--gold)}
+#toast.err{background:var(--ink);color:#fff;border-left:3px solid var(--red)}
+
+/* CONFIRM BAR — lives at content level, always visible */
+#confirmBar{display:none;align-items:center;gap:10px;background:var(--red-dim);border:1px solid rgba(230,57,70,.25);border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:12px}
+#confirmBar.show{display:flex}
+#confirmBar .cbmsg{flex:1;color:var(--red);font-weight:500}
+.cb-btn{font-family:var(--ff);font-size:11px;font-weight:600;padding:5px 12px;border-radius:6px;cursor:pointer;border:none}
+.cb-yes{background:var(--red);color:#fff}
+.cb-no{background:transparent;border:1px solid rgba(230,57,70,.3);color:var(--red)}
+
+/* SYNC STATUS BAR */
+#syncBar{display:none;align-items:center;gap:8px;padding:7px 12px;border-radius:8px;margin-bottom:14px;font-size:11px;font-family:var(--fm);border:1px solid var(--paper3)}
+#syncBar.show{display:flex}
+#syncBar.syncing{background:rgba(42,157,143,.08);border-color:rgba(42,157,143,.3);color:var(--teal)}
+#syncBar.ok{background:var(--green-dim);border-color:rgba(45,106,79,.25);color:var(--green)}
+#syncBar.err{background:var(--red-dim);border-color:rgba(230,57,70,.25);color:var(--red)}
+.sdot{width:7px;height:7px;border-radius:50%;background:currentColor;flex-shrink:0}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+.sdot.pulse{animation:blink .8s infinite}
+
+/* SEARCH */
+.search-wrap{position:relative;flex:1;max-width:280px}
+.search-wrap input{width:100%;background:var(--paper);border:1px solid var(--paper3);border-radius:8px;padding:7px 12px 7px 32px;font-family:var(--ff);font-size:12px;color:var(--tx);outline:none;transition:border-color .2s}
+.search-wrap input:focus{border-color:var(--gold);background:#fff}
+.search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--mu);font-size:13px;pointer-events:none}
+
+/* TABS */
+.tabs{display:flex;gap:0;border-bottom:2px solid var(--paper3);margin-bottom:20px}
+.tab{font-size:12px;font-weight:600;padding:8px 16px;cursor:pointer;color:var(--mu);border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .18s}
+.tab.active{color:var(--gold);border-bottom-color:var(--gold)}
+.tab-pane{display:none}
+.tab-pane.active{display:block}
+
+/* PRINT */
+@media print{
+  .no-print{display:none!important}
+  body{background:#fff}
+  .payslip{box-shadow:none;max-width:100%;margin:0}
+  .modal-overlay{position:static;background:none;backdrop-filter:none;padding:0}
+  .modal{box-shadow:none;max-height:none;overflow:visible;border-radius:0}
+  .modal-head,.modal-foot{display:none}
+  .modal-body{overflow:visible;padding:0}
+}
+
+/* RESPONSIVE */
+@media(max-width:900px){.sidebar{width:220px}.kpi-strip{grid-template-columns:1fr 1fr}.dash-grid{grid-template-columns:1fr}}
+@media(max-width:680px){.sidebar{display:none}.kpi-strip{grid-template-columns:1fr 1fr}.content{padding:16px}.topbar{padding:12px 16px}.form-grid{grid-template-columns:1fr}}
+
+/* EMPTY STATE */
+.empty-state{text-align:center;padding:48px 20px;color:var(--mu)}
+.empty-state .es-icon{font-size:32px;margin-bottom:10px;opacity:.4}
+.empty-state p{font-size:13px}
+
+/* SETTINGS */
+.settings-section{background:#fff;border:1px solid var(--paper3);border-radius:var(--r);padding:20px;margin-bottom:16px}
+.settings-section-title{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);font-weight:600;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--paper2)}
+.setting-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--paper2);gap:20px}
+.setting-row:last-child{border-bottom:none}
+.setting-info{flex:1}
+.setting-label{font-size:13px;font-weight:500;color:var(--tx)}
+.setting-desc{font-size:11px;color:var(--mu);margin-top:2px}
+.toggle-wrap label{display:flex;align-items:center;cursor:pointer;gap:8px;font-size:12px;color:var(--mu)}
+.toggle-wrap input[type=checkbox]{width:34px;height:18px;appearance:none;background:var(--paper3);border-radius:9px;position:relative;cursor:pointer;transition:background .2s;flex-shrink:0}
+.toggle-wrap input[type=checkbox]:checked{background:var(--gold)}
+.toggle-wrap input[type=checkbox]::after{content:'';position:absolute;width:14px;height:14px;background:#fff;border-radius:50%;top:2px;left:2px;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.toggle-wrap input[type=checkbox]:checked::after{transform:translateX(16px)}
+.run-banner{background:var(--ink);border-radius:var(--r);padding:20px 24px;display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:24px;flex-wrap:wrap}
+.run-banner-left{display:flex;flex-direction:column;gap:4px}
+.run-banner-title{font-family:var(--fd);font-size:16px;font-weight:700;color:#fff}
+.run-banner-sub{font-size:11px;color:rgba(255,255,255,.45)}
+.run-progress{flex:1;max-width:300px;margin:0 20px}
+.run-progress-bar{height:5px;background:rgba(255,255,255,.1);border-radius:3px;overflow:hidden}
+.run-progress-fill{height:100%;background:var(--gold);border-radius:3px;width:0%;transition:width .5s ease}
+.run-progress-label{font-size:10px;color:rgba(255,255,255,.4);margin-top:5px;font-family:var(--fm)}
+
+/* ALERT BANNER */
+.alert-banner{display:flex;align-items:center;gap:10px;background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.3);border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:12px;color:var(--ink3)}
+.alert-banner .ab-icon{font-size:16px;flex-shrink:0}
+.alert-banner .ab-text{flex:1}
+.alert-banner .ab-link{font-size:11px;font-weight:600;color:var(--gold);cursor:pointer;text-decoration:underline;white-space:nowrap}
+
+/* PROFILE MODAL */
+.profile-tabs{display:flex;gap:0;border-bottom:2px solid var(--paper3);margin:0 -24px 20px;padding:0 24px}
+.profile-tab{font-size:12px;font-weight:600;padding:8px 16px;cursor:pointer;color:var(--mu);border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .18s}
+.profile-tab.active{color:var(--gold);border-bottom-color:var(--gold)}
+.profile-hist-row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--paper2);font-size:12px}
+.profile-hist-row:last-child{border-bottom:none}
+.ytd-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.ytd-card{background:var(--paper);border:1px solid var(--paper3);border-radius:8px;padding:12px 14px}
+.ytd-card-label{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);font-weight:600;margin-bottom:4px}
+.ytd-card-val{font-family:var(--fm);font-size:16px;font-weight:500}
+/* DARK MODE */
+body.dark{--ink:#E8EAF0;--ink2:#BFC5D1;--ink3:#A0A8B8;--paper:#161B22;--paper2:#1C2333;--paper3:#2D3748;--tx:#E8EAF0;--mu:#8B9AB0;--mu2:#5A6A80;--shadow:0 2px 12px rgba(0,0,0,.3);--shadow-lg:0 8px 32px rgba(0,0,0,.4)}
+body.dark .sidebar{background:#0D1117;border-right:1px solid rgba(255,255,255,.05)}
+body.dark .topbar,body.dark .modal,body.dark .settings-section,body.dark .tbl-wrap,body.dark .kpi-card,body.dark .dash-card{background:#1C2333;border-color:#2D3748}
+body.dark .tbl-wrap thead th{background:#161B22}
+body.dark .tbl-wrap tbody tr:hover{background:#232B3A}
+body.dark .kpi-value{color:#E8EAF0}
+body.dark .field input,body.dark .field select,body.dark .field textarea,body.dark .month-select,body.dark .search-wrap input{background:#161B22;border-color:#2D3748;color:#E8EAF0}
+body.dark .top-btn.ghost{background:transparent;border-color:#2D3748;color:#8B9AB0}
+body.dark .top-btn.ghost:hover{background:#232B3A;color:#E8EAF0}
+body.dark #toast.ok,body.dark #toast.err{background:#232B3A}
+body.dark .alert-banner{background:rgba(201,168,76,.08);border-color:rgba(201,168,76,.2)}
+body.dark .ytd-card{background:#161B22;border-color:#2D3748}
+body.dark textarea{background:#161B22;border-color:#2D3748;color:#E8EAF0}
+
+/* SPARKLINE */
+.spark-bar{display:inline-block;background:var(--gold);border-radius:2px;vertical-align:bottom;transition:height .4s}
+.spark-wrap{display:flex;align-items:flex-end;gap:4px;height:40px;padding:4px 0}
+
+/* INCREMENT MODAL */
+.increment-history{font-size:12px;margin-top:10px}
+.increment-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--paper2);align-items:center}
+.increment-row:last-child{border-bottom:none}
+
+/* LOP INPUT */
+.lop-input{width:52px;font-family:var(--fm);font-size:11px;background:var(--paper);border:1px solid var(--paper3);border-radius:5px;padding:4px 6px;text-align:center;outline:none;color:var(--tx)}
+.lop-input:focus{border-color:var(--gold)}
+
+/* SALARY CALCULATOR */
+.calc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px}
+.calc-cell{background:var(--paper);border:1px solid var(--paper3);border-radius:8px;padding:10px 12px}
+.calc-cell-label{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);font-weight:600;margin-bottom:4px}
+.calc-cell-val{font-family:var(--fm);font-size:15px;font-weight:500}
+.calc-cell-sub{font-size:10px;color:var(--mu2);margin-top:2px}
+
+/* KEYBOARD HELP */
+.kbd{display:inline-block;font-family:var(--fm);font-size:10px;background:var(--paper2);border:1px solid var(--paper3);border-radius:4px;padding:2px 6px;color:var(--mu);margin-right:4px}
+
+/* BONUS INPUT */
+.bonus-input-wrap{background:rgba(201,168,76,.08);border:1px solid rgba(201,168,76,.2);border-radius:8px;padding:12px 14px;margin-top:8px}
+
+/* PRINT SCOPE — only print payslip content */
+@media print{
+  body > *{display:none!important}
+  #printTarget{display:block!important;position:static!important;background:#fff}
+}
+#printTarget{display:none}
+/* ── LOGIN SCREEN ── */
+#loginScreen{position:fixed;inset:0;z-index:9999;background:var(--ink);display:flex;align-items:center;justify-content:center;font-family:var(--ff)}
+#loginScreen.hidden{display:none}
+.login-card{background:#fff;border-radius:16px;padding:44px 40px;width:100%;max-width:420px;box-shadow:0 24px 80px rgba(0,0,0,.4);position:relative;overflow:hidden}
+.login-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--gold),var(--gold2))}
+.login-logo{text-align:center;margin-bottom:28px}
+.login-logo-name{font-family:var(--fd);font-size:20px;font-weight:800;color:var(--ink);line-height:1.2}
+.login-logo-sub{font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-top:4px;font-weight:600}
+.login-title{font-family:var(--fd);font-size:22px;font-weight:700;color:var(--ink);margin-bottom:6px}
+.login-sub{font-size:12px;color:var(--mu);margin-bottom:24px}
+.login-field{margin-bottom:16px}
+.login-field label{display:block;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);font-weight:600;margin-bottom:6px}
+.login-field input{width:100%;background:var(--paper);border:1.5px solid var(--paper3);border-radius:9px;font-family:var(--ff);font-size:13px;color:var(--tx);padding:11px 14px;outline:none;transition:border-color .2s,background .2s}
+.login-field input:focus{border-color:var(--gold);background:#fff}
+.login-btn{width:100%;background:var(--ink);color:#fff;border:none;border-radius:9px;font-family:var(--ff);font-size:13px;font-weight:600;padding:12px;cursor:pointer;transition:background .18s;letter-spacing:.02em;margin-top:4px}
+.login-btn:hover{background:var(--ink2)}
+.login-btn.gold{background:var(--gold);color:#fff}
+.login-btn.gold:hover{background:var(--gold2);color:var(--ink)}
+.login-btn:disabled{opacity:.5;cursor:not-allowed}
+.login-err{background:var(--red-dim);border:1px solid rgba(230,57,70,.25);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--red);font-weight:500;margin-bottom:14px;display:none}
+.login-err.show{display:block}
+.login-ok{background:var(--green-dim);border:1px solid rgba(45,106,79,.2);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--green);font-weight:500;margin-bottom:14px;display:none}
+.login-ok.show{display:block}
+.otp-inputs{display:flex;gap:10px;justify-content:center;margin:16px 0}
+.otp-inputs input{width:46px;height:52px;text-align:center;font-family:var(--fm);font-size:22px;font-weight:600;border:1.5px solid var(--paper3);border-radius:9px;background:var(--paper);color:var(--ink);outline:none;transition:border-color .2s}
+.otp-inputs input:focus{border-color:var(--gold);background:#fff}
+.otp-resend{font-size:11px;color:var(--mu);text-align:center;margin-top:10px}
+.otp-resend span{color:var(--gold);cursor:pointer;font-weight:600}
+.login-step{display:none}
+.login-step.active{display:block}
+/* ── ADMIN PANEL ── */
+.admin-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:24px}
+.admin-card{background:#fff;border:1px solid var(--paper3);border-radius:var(--r);padding:20px 22px;position:relative;overflow:hidden;transition:box-shadow .2s}
+.admin-card:hover{box-shadow:var(--shadow)}
+.admin-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.admin-card.ac-gold::before{background:var(--gold)}
+.admin-card.ac-red::before{background:var(--red)}
+.admin-card.ac-teal::before{background:var(--teal)}
+.admin-card.ac-ink::before{background:var(--ink)}
+.admin-card-title{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);font-weight:600;margin-bottom:12px}
+.admin-user-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--paper2)}
+.admin-user-row:last-child{border-bottom:none}
+.admin-user-avatar{width:34px;height:34px;border-radius:50%;background:var(--gold-mid);border:1px solid rgba(201,168,76,.3);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--gold2);flex-shrink:0}
+.admin-user-info{flex:1;min-width:0}
+.admin-user-name{font-size:13px;font-weight:600;color:var(--tx)}
+.admin-user-meta{font-size:10px;color:var(--mu);font-family:var(--fm);margin-top:1px}
+.admin-log-row{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--paper2);font-size:12px}
+.admin-log-row:last-child{border-bottom:none}
+.admin-log-time{font-family:var(--fm);font-size:10px;color:var(--mu2);white-space:nowrap;padding-top:1px}
+.admin-log-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:4px}
+.perm-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--paper2)}
+.perm-row:last-child{border-bottom:none}
+.perm-label{font-size:13px;font-weight:500;color:var(--tx)}
+.perm-desc{font-size:11px;color:var(--mu);margin-top:2px}
+</style>
+</head>
+<body>
+<!-- ══ LOGIN SCREEN ══════════════════════════════════════ -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="login-logo-name">SAG Payroll</div>
+      <div class="login-logo-sub">Samtulana Antarjala Gathaka</div>
+    </div>
+    <!-- STEP 1: Email -->
+    <div class="login-step active" id="loginStep1">
+      <div class="login-title">Admin Login</div>
+      <div class="login-sub">Enter your admin email to receive a verification code. First-time? Your email will be registered as Super Admin.</div>
+      <div class="login-err" id="loginErr1"></div>
+      <div class="login-field">
+        <label>Admin Email</label>
+        <input type="email" id="loginEmail" placeholder="admin@company.com" autocomplete="email">
+      </div>
+      <button class="login-btn gold" onclick="sendOTP()">Send Verification Code →</button>
+    </div>
+    <!-- STEP 2: OTP -->
+    <div class="login-step" id="loginStep2">
+      <div class="login-title">Check Your Email</div>
+      <div class="login-sub" id="otpSubText">We sent a 6-digit code to your email. Check your inbox.</div>
+      <div class="login-ok" id="loginOk2"></div>
+      <div class="login-err" id="loginErr2"></div>
+      <div class="otp-inputs">
+        <input type="text" maxlength="1" id="otp0" oninput="otpInput(0)" onkeydown="otpKey(event,0)">
+        <input type="text" maxlength="1" id="otp1" oninput="otpInput(1)" onkeydown="otpKey(event,1)">
+        <input type="text" maxlength="1" id="otp2" oninput="otpInput(2)" onkeydown="otpKey(event,2)">
+        <input type="text" maxlength="1" id="otp3" oninput="otpInput(3)" onkeydown="otpKey(event,3)">
+        <input type="text" maxlength="1" id="otp4" oninput="otpInput(4)" onkeydown="otpKey(event,4)">
+        <input type="text" maxlength="1" id="otp5" oninput="otpInput(5)" onkeydown="otpKey(event,5)">
+      </div>
+      <button class="login-btn gold" id="verifyOtpBtn" onclick="verifyOTP()">Verify &amp; Sign In</button>
+      <div class="otp-resend">Didn&apos;t receive? <span onclick="resendOTP()" id="resendLink">Resend code</span> <span id="resendTimer" style="display:none;color:var(--mu)"></span></div>
+      <div style="text-align:center;margin-top:12px">
+        <span style="font-size:11px;color:var(--mu);cursor:pointer" onclick="backToEmail()">← Use a different email</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="layout">
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sb-logo">
+    <div class="sb-logo-name">Samtulana Antarjala<br>Gathaka Pvt Ltd</div>
+    <div class="sb-logo-sub">SAG — Payroll System</div>
+    <div class="sb-logo-badge">v3.0 · FY 2025–26</div>
+  </div>
+  <div class="sb-section">Main</div>
+  <div class="nav-item active" onclick="showPage('dashboard',this)">
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+    Dashboard
+  </div>
+  <div class="nav-item" onclick="showPage('employees',this)">
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/><path d="M16 3.13a4 4 0 010 7.75"/><path d="M21 21v-2a4 4 0 00-3-3.87"/></svg>
+    Employees
+  </div>
+  <div class="nav-item" onclick="showPage('payroll',this)">
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><path d="M7 15h.01M11 15h2"/></svg>
+    Run Payroll
+  </div>
+  <div class="nav-item" onclick="showPage('payslips',this)">
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+    Payslips
+  </div>
+  <div class="nav-item" onclick="showPage('whatsapp',this)">
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
+    WhatsApp
+    <span id="waBadge" style="display:none;margin-left:auto;background:#25D366;color:#fff;border-radius:10px;padding:1px 7px;font-size:9px;font-family:var(--fm)">0</span>
+  </div>
+  <div class="sb-section">Config</div>
+  <div class="nav-item" onclick="showPage('salary',this)">
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+    Salary Structure
+  </div>
+  <div class="nav-item" onclick="showPage('settings',this)">
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+    Settings
+  </div>
+  <div class="nav-item" onclick="showPage('admin',this)" id="adminNavItem">
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+    Admin Panel
+  </div>
+  <div class="sb-footer">
+    <div class="sb-user">
+      <div class="sb-avatar" id="sidebarAvatar">AD</div>
+      <div style="flex:1;min-width:0"><div class="sb-user-name" id="sidebarName">Admin</div><div class="sb-user-role" id="sidebarEmail">admin@sag.com</div></div>
+    </div>
+    <button onclick="logout()" style="width:100%;margin-top:10px;background:rgba(230,57,70,.12);border:1px solid rgba(230,57,70,.2);color:#ff8a9a;border-radius:7px;padding:7px;font-family:var(--ff);font-size:11px;font-weight:600;cursor:pointer;transition:all .18s" onmouseover="this.style.background='rgba(230,57,70,.2)'" onmouseout="this.style.background='rgba(230,57,70,.12)'">← Logout</button>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+  <div class="topbar no-print">
+    <div class="topbar-title" id="pageTitle">Dashboard</div>
+    <div class="topbar-right">
+      <button class="top-btn ghost" id="darkToggleBtn" onclick="toggleDark()" title="Toggle dark mode" style="font-size:15px;padding:6px 10px">🌙</button>
+      <button class="top-btn ghost" onclick="openModal('shortcutModal')" title="Keyboard shortcuts (Alt+/)" style="font-size:12px;padding:6px 10px">⌨️</button>
+      <select class="month-select" id="globalMonth" onchange="onMonthChange()">
+        <option value="0">January 2025</option><option value="1">February 2025</option>
+        <option value="2">March 2025</option><option value="3">April 2025</option>
+        <option value="4" selected>May 2025</option><option value="5">June 2025</option>
+        <option value="6">July 2025</option><option value="7">August 2025</option>
+        <option value="8">September 2025</option><option value="9">October 2025</option>
+        <option value="10">November 2025</option><option value="11">December 2025</option>
+      </select>
+      <button class="top-btn gold" onclick="showRunPayroll()">▶ Run Payroll</button>
+      <button class="top-btn primary" onclick="openAddEmployee()">+ Add Employee</button>
+    </div>
+  </div>
+
+  <div class="content">
+    <!-- Confirm bar OUTSIDE page divs so it is always in visible container -->
+    <div id="confirmBar">
+      <span class="cbmsg" id="confirmMsg"></span>
+      <button class="cb-btn cb-yes" id="confirmYes">Confirm</button>
+      <button class="cb-btn cb-no" onclick="hideConfirm()">Cancel</button>
+    </div>
+    <!-- Sync bar -->
+    <div id="syncBar"><span class="sdot pulse" id="sdot"></span><span id="syncMsg">Connecting…</span></div>
+
+    <!-- DASHBOARD -->
+    <div class="page active" id="page-dashboard">
+      <div class="kpi-strip">
+        <div class="kpi-card k-gold"><div class="kpi-label">Total Payroll</div><div class="kpi-value" id="kpiPayroll">₹0</div><div class="kpi-sub" id="kpiPayrollSub">Current month</div></div>
+        <div class="kpi-card k-teal"><div class="kpi-label">Employees</div><div class="kpi-value" id="kpiEmpCount">0</div><div class="kpi-sub">Active on payroll</div></div>
+        <div class="kpi-card k-ink"><div class="kpi-label">Payslips Issued</div><div class="kpi-value" id="kpiPayslips">0</div><div class="kpi-sub" id="kpiPayslipsSub">This month</div></div>
+        <div class="kpi-card k-red"><div class="kpi-label">Total Deductions</div><div class="kpi-value" id="kpiDeductions">₹0</div><div class="kpi-sub">PF + Tax + Other</div></div>
+      </div>
+      <div class="kpi-strip" style="grid-template-columns:1fr 1fr;margin-bottom:24px">
+        <div class="kpi-card" style="border-top:3px solid #25D366"><div class="kpi-label">WhatsApp Coverage</div><div class="kpi-value" id="kpiWaCoverage" style="color:#25D366">0 / 0</div><div class="kpi-sub" id="kpiWaSub">Employees with numbers</div></div>
+        <div class="kpi-card k-teal"><div class="kpi-label">Payslips Sent (WhatsApp)</div><div class="kpi-value" id="kpiWaSent">0</div><div class="kpi-sub" id="kpiWaSentSub">This session</div></div>
+      </div>
+      <div class="dash-grid">
+        <div class="dash-card"><div class="dash-card-title">Department Payroll Split</div><div id="deptBars"></div></div>
+        <div class="dash-card"><div class="dash-card-title">Recent Activity</div><div class="activity-list" id="activityList"></div></div>
+        <div class="dash-card" style="grid-column:1/-1">
+          <div class="dash-card-title" style="display:flex;justify-content:space-between;align-items:center">
+            Monthly Payroll Trend
+            <span style="font-size:10px;color:var(--mu);font-weight:400" id="trendRange"></span>
+          </div>
+          <div id="trendChart" style="display:flex;align-items:flex-end;gap:6px;height:64px;margin-top:8px"></div>
+          <div id="trendLabels" style="display:flex;gap:6px;margin-top:4px"></div>
+        </div>
+      </div>
+      <div class="sec-head">
+        <div><div class="sec-title">Quick Payslip View</div><div class="sec-sub">Last 5 payslips issued</div></div>
+        <button class="top-btn ghost" onclick="showPage('payslips',document.querySelector('[onclick*=payslips]'))">View All →</button>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Employee</th><th>Department</th><th>Month</th><th class="r">Gross</th><th class="r">Deductions</th><th class="r">Net Pay</th><th>Status</th><th></th></tr></thead>
+          <tbody id="recentPayslipsBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- EMPLOYEES -->
+    <div class="page" id="page-employees">
+      <div class="sec-head">
+        <div><div class="sec-title">Employee Directory</div><div class="sec-sub" id="empCountLabel">0 employees</div></div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <div class="search-wrap"><span class="search-icon">🔍</span><input id="empSearch" placeholder="Search employees…" oninput="renderEmployees()"></div>
+          <button class="top-btn ghost" onclick="openTrashBin()" title="Trash Bin">🗑 Trash <span id="trashCount" style="display:none;background:var(--red);color:#fff;border-radius:10px;padding:1px 6px;font-size:10px;margin-left:2px">0</span></button>
+          <button class="top-btn primary" onclick="openAddEmployee()">+ Add Employee</button>
+        </div>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Name</th><th>Designation</th><th>Department</th><th>Join Date</th><th class="r">Basic Salary</th><th>WhatsApp</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="empBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- PAYROLL -->
+    <div class="page" id="page-payroll">
+      <div id="waMissingAlert" style="display:none" class="alert-banner">
+        <span class="ab-icon">📱</span>
+        <span class="ab-text" id="waMissingText">Some employees don't have WhatsApp numbers — payslips won't be sent to them.</span>
+        <span class="ab-link" onclick="showPage('employees',document.querySelector('[onclick*=employees]'))">Fix now →</span>
+      </div>
+      <div class="run-banner">
+        <div class="run-banner-left">
+          <div class="run-banner-title">Monthly Payroll Run</div>
+          <div class="run-banner-sub" id="payrollBannerSub">Select month and click Run to generate payslips</div>
+        </div>
+        <div class="run-progress" id="runProgressWrap" style="display:none">
+          <div class="run-progress-bar"><div class="run-progress-fill" id="runProgressFill"></div></div>
+          <div class="run-progress-label" id="runProgressLabel">Processing…</div>
+        </div>
+        <button class="top-btn gold" onclick="runPayroll()">▶ Run Payroll for <span id="runMonthLabel">May 2025</span></button>
+      </div>
+      <div class="tabs">
+        <div class="tab active" onclick="switchTab('payrollTab','pending',this)">Pending</div>
+        <div class="tab" onclick="switchTab('payrollTab','processed',this)">Processed</div>
+      </div>
+      <div id="payrollTab-pending" class="tab-pane active">
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th><input type="checkbox" id="selectAll" onclick="toggleSelectAll()"></th><th>Employee</th><th>Department</th><th class="r">Basic</th><th class="r">HRA</th><th class="r">Allowances</th><th class="r">PF</th><th class="r">TDS</th><th class="r">Absent Days</th><th class="r">Net Pay</th><th>Action</th></tr></thead>
+            <tbody id="pendingPayrollBody"></tbody>
+          </table>
+        </div>
+        <div style="margin-top:12px;display:flex;justify-content:flex-end;gap:8px">
+          <button class="top-btn ghost" onclick="renderPayrollPending()">↺ Refresh</button>
+          <button class="top-btn gold" onclick="runSelectedPayroll()">Issue Selected Payslips</button>
+        </div>
+      </div>
+      <div id="payrollTab-processed" class="tab-pane">
+        <div style="display:flex;justify-content:flex-end;margin-bottom:10px;gap:8px">
+          <button class="top-btn ghost" onclick="exportPayrollCSV()">⬇ Export CSV</button>
+          <button class="top-btn" style="background:#25D366;color:#fff" onclick="sendAllCurrentMonthWa()">💬 Send All WhatsApp</button>
+          <button class="top-btn" style="background:#0072C6;color:#fff" onclick="sendEmailToAllForMonth(MONTHS_LABEL[currentMonth])">✉ Send All Emails</button>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Employee</th><th>Month</th><th class="r">Gross</th><th class="r">Net Pay</th><th>Issued On</th><th>Payment</th><th>Actions</th></tr></thead>
+            <tbody id="processedPayrollBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAYSLIPS -->
+    <div class="page" id="page-payslips">
+      <div class="sec-head">
+        <div><div class="sec-title">Payslip Archive</div><div class="sec-sub" id="payslipCountLabel">0 payslips issued</div></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <div class="search-wrap"><span class="search-icon">🔍</span><input id="payslipSearch" placeholder="Search by name or month…" oninput="renderPayslips()"></div>
+          <select class="month-select" id="payslipMonthFilter" onchange="renderPayslips()">
+            <option value="">All Months</option>
+            <option value="January 2025">January 2025</option><option value="February 2025">February 2025</option>
+            <option value="March 2025">March 2025</option><option value="April 2025">April 2025</option>
+            <option value="May 2025">May 2025</option><option value="June 2025">June 2025</option>
+            <option value="July 2025">July 2025</option><option value="August 2025">August 2025</option>
+            <option value="September 2025">September 2025</option><option value="October 2025">October 2025</option>
+            <option value="November 2025">November 2025</option><option value="December 2025">December 2025</option>
+          </select>
+          <select class="month-select" id="payslipDeptFilter" onchange="renderPayslips()">
+            <option value="">All Departments</option>
+            <option>Engineering</option><option>Sales</option><option>Marketing</option>
+            <option>HR</option><option>Finance</option><option>Operations</option><option>Design</option><option>Legal</option>
+          </select>
+          <button class="top-btn ghost" onclick="exportPayslipsCSV()">⬇ CSV</button>
+          <button class="top-btn" style="background:#25D366;color:#fff" onclick="sendMonthWhatsappBulk()">💬 Send Month via WhatsApp</button>
+          <button class="top-btn" style="background:#0072C6;color:#fff" onclick="sendEmailToAllForMonth(document.getElementById('payslipMonthFilter').value||MONTHS_LABEL[currentMonth])">✉ Send Month via Email</button>
+        </div>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Employee</th><th>EMP ID</th><th>Department</th><th>Month</th><th class="r">Gross</th><th class="r">Deductions</th><th class="r">Net Pay</th><th>Issued On</th><th>Actions</th></tr></thead>
+          <tbody id="payslipBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- WHATSAPP PAGE -->
+    <div class="page" id="page-whatsapp">
+      <div class="sec-head">
+        <div>
+          <div class="sec-title">💬 WhatsApp Dispatch</div>
+          <div class="sec-sub" id="waPageSub">Manage payslip delivery via WhatsApp</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <select class="month-select" id="waPageMonth" onchange="renderWhatsappPage()">
+            <option value="January 2025">January 2025</option><option value="February 2025">February 2025</option>
+            <option value="March 2025">March 2025</option><option value="April 2025">April 2025</option>
+            <option value="May 2025" selected>May 2025</option><option value="June 2025">June 2025</option>
+            <option value="July 2025">July 2025</option><option value="August 2025">August 2025</option>
+            <option value="September 2025">September 2025</option><option value="October 2025">October 2025</option>
+            <option value="November 2025">November 2025</option><option value="December 2025">December 2025</option>
+          </select>
+          <button class="top-btn" style="background:#25D366;color:#fff" onclick="sendAllForWaPage()">💬 Send All for Month</button>
+        </div>
+      </div>
+      <!-- Coverage summary strip -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px" id="waCoverageStrip">
+      </div>
+      <!-- Employee WhatsApp status table -->
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Employee</th>
+              <th>WhatsApp No.</th>
+              <th>Payslip Status</th>
+              <th>Sent via WhatsApp</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="waPageBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ADMIN PANEL -->
+    <div class="page" id="page-admin">
+      <div class="kpi-strip">
+        <div class="kpi-card k-gold"><div class="kpi-label">Admin Users</div><div class="kpi-value" id="adminKpiUsers">1</div><div class="kpi-sub">Active admins</div></div>
+        <div class="kpi-card k-teal"><div class="kpi-label">Last Login</div><div class="kpi-value" style="font-size:14px" id="adminKpiLastLogin">—</div><div class="kpi-sub">Current session</div></div>
+        <div class="kpi-card k-ink"><div class="kpi-label">Login Method</div><div class="kpi-value" style="font-size:14px">OTP</div><div class="kpi-sub">Email verification</div></div>
+        <div class="kpi-card k-red"><div class="kpi-label">Session</div><div class="kpi-value" style="font-size:14px" id="adminKpiSession">Active</div><div class="kpi-sub" id="adminKpiSessionSub">Authenticated</div></div>
+      </div>
+      <div class="admin-grid">
+        <div class="admin-card ac-gold" style="grid-column:1/-1">
+          <div class="admin-card-title">Admin Users</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+            <span style="font-size:12px;color:var(--mu)">Manage who has admin access to this system</span>
+            <button class="top-btn gold" style="font-size:11px;padding:6px 14px" onclick="openAddAdmin()">+ Add Admin</button>
+          </div>
+          <div id="adminUsersList"></div>
+        </div>
+        <div class="admin-card ac-teal" style="grid-column:1/-1">
+          <div class="admin-card-title">Login Audit Log</div>
+          <div id="auditLogList"></div>
+        </div>
+        <div class="admin-card ac-ink" style="grid-column:1/-1">
+          <div class="admin-card-title">System Permissions</div>
+          <div class="perm-row"><div><div class="perm-label">Employee Management</div><div class="perm-desc">Add, edit and delete employee records</div></div><span class="badge badge-green">Enabled</span></div>
+          <div class="perm-row"><div><div class="perm-label">Payroll Processing</div><div class="perm-desc">Run and issue payslips</div></div><span class="badge badge-green">Enabled</span></div>
+          <div class="perm-row"><div><div class="perm-label">Payslip Download</div><div class="perm-desc">Print and download payslips</div></div><span class="badge badge-green">Enabled</span></div>
+          <div class="perm-row"><div><div class="perm-label">Settings Access</div><div class="perm-desc">Modify company and system settings</div></div><span class="badge badge-green">Enabled</span></div>
+          <div class="perm-row"><div><div class="perm-label">Data Export</div><div class="perm-desc">Export employee and payroll data</div></div><span class="badge badge-gold">Admin Only</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SALARY STRUCTURE -->
+    <div class="page" id="page-salary">
+      <div class="sec-head"><div><div class="sec-title">Salary Structure Config</div><div class="sec-sub">Define components, percentages & deduction rules</div></div></div>
+      <div class="settings-section">
+        <div class="settings-section-title">Earnings Components (% of Basic)</div>
+        <div class="setting-row"><div class="setting-info"><div class="setting-label">House Rent Allowance (HRA)</div><div class="setting-desc">Standard HRA applied to all employees</div></div><input type="number" id="hraPercent" value="40" min="0" max="100" style="width:80px;font-family:var(--fm);text-align:right;background:var(--paper);border:1px solid var(--paper3);border-radius:6px;padding:6px 10px;outline:none" oninput="saveSettings()"> %</div>
+        <div class="setting-row"><div class="setting-info"><div class="setting-label">Transport Allowance</div><div class="setting-desc">Fixed or % of basic</div></div><input type="number" id="taPercent" value="10" min="0" max="100" style="width:80px;font-family:var(--fm);text-align:right;background:var(--paper);border:1px solid var(--paper3);border-radius:6px;padding:6px 10px;outline:none" oninput="saveSettings()"> %</div>
+        <div class="setting-row"><div class="setting-info"><div class="setting-label">Special Allowance</div><div class="setting-desc">Discretionary allowance</div></div><input type="number" id="saPercent" value="5" min="0" max="100" style="width:80px;font-family:var(--fm);text-align:right;background:var(--paper);border:1px solid var(--paper3);border-radius:6px;padding:6px 10px;outline:none" oninput="saveSettings()"> %</div>
+      </div>
+      <div class="settings-section">
+        <div class="settings-section-title">Deductions</div>
+        <div class="setting-row"><div class="setting-info"><div class="setting-label">Employee PF Contribution</div><div class="setting-desc">Provident Fund deducted from employee salary</div></div><input type="number" id="pfPercent" value="12" min="0" max="100" style="width:80px;font-family:var(--fm);text-align:right;background:var(--paper);border:1px solid var(--paper3);border-radius:6px;padding:6px 10px;outline:none" oninput="saveSettings()"> %</div>
+        <div class="setting-row"><div class="setting-info"><div class="setting-label">Professional Tax (PT)</div><div class="setting-desc">Monthly professional tax deduction</div></div>₹<input type="number" id="ptAmount" value="200" min="0" style="width:80px;font-family:var(--fm);text-align:right;background:var(--paper);border:1px solid var(--paper3);border-radius:6px;padding:6px 10px;outline:none" oninput="saveSettings()"></div>
+        <div class="setting-row"><div class="setting-info"><div class="setting-label">TDS / Income Tax Rate</div><div class="setting-desc">Flat monthly TDS rate on gross</div></div><input type="number" id="tdsPercent" value="5" min="0" max="40" style="width:80px;font-family:var(--fm);text-align:right;background:var(--paper);border:1px solid var(--paper3);border-radius:6px;padding:6px 10px;outline:none" oninput="saveSettings()"> %</div>
+        <div class="setting-row"><div class="setting-info"><div class="setting-label">ESI Contribution</div><div class="setting-desc">Employee State Insurance (applies to salary ≤ ₹21,000)</div></div><input type="number" id="esiPercent" value="0.75" min="0" max="10" step="0.01" style="width:80px;font-family:var(--fm);text-align:right;background:var(--paper);border:1px solid var(--paper3);border-radius:6px;padding:6px 10px;outline:none" oninput="saveSettings()"> %</div>
+      </div>
+      <div class="settings-section">
+        <div class="settings-section-title">Payslip Automation</div>
+        <div class="setting-row"><div class="setting-info"><div class="setting-label">Auto-generate on 1st of each month</div><div class="setting-desc">Payslips will be automatically created at midnight on the 1st</div></div><div class="toggle-wrap"><label><input type="checkbox" id="autoGenToggle" checked onchange="saveSettings()"></label></div></div>
+        <div class="setting-row"><div class="setting-info"><div class="setting-label">Include LOP (Loss of Pay) calculation</div><div class="setting-desc">Deduct proportionally for absent days</div></div><div class="toggle-wrap"><label><input type="checkbox" id="lopToggle" onchange="saveSettings()"></label></div></div>
+      </div>
+      <div class="settings-section">
+        <div class="settings-section-title">🧮 Live Salary Calculator</div>
+        <div class="setting-row" style="align-items:flex-start;flex-wrap:wrap;gap:12px">
+          <div class="setting-info"><div class="setting-label">Test basic salary</div><div class="setting-desc">Enter any CTC / basic to instantly preview the full breakdown using current structure settings</div></div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:13px;color:var(--mu)">₹</span>
+            <input type="number" id="calcBasicInput" placeholder="60000" min="0" oninput="runSalaryCalc()"
+              style="width:120px;font-family:var(--fm);font-size:13px;background:var(--paper);border:1px solid var(--paper3);border-radius:8px;padding:8px 12px;outline:none;color:var(--tx)">
+            <span style="font-size:12px;color:var(--mu)">/month</span>
+          </div>
+        </div>
+        <div id="calcResult" style="display:none">
+          <div class="calc-grid" id="calcGrid"></div>
+          <div style="margin-top:10px;background:var(--ink);border-radius:8px;padding:12px 16px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+            <div><div style="font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.35);font-weight:600">Gross Earnings</div><div id="calcGross" style="font-family:var(--fm);font-size:16px;color:#fff;margin-top:3px"></div></div>
+            <div><div style="font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.35);font-weight:600">Total Deductions</div><div id="calcDed" style="font-family:var(--fm);font-size:16px;color:#ff8a9a;margin-top:3px"></div></div>
+            <div><div style="font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.35);font-weight:600">Net Take-Home</div><div id="calcNet" style="font-family:var(--fm);font-size:18px;color:var(--gold2);font-weight:600;margin-top:3px"></div></div>
+          </div>
+          <div id="calcAnnual" style="margin-top:8px;font-size:11px;color:var(--mu);text-align:right"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="page" id="page-settings">
+      <div class="sec-head"><div class="sec-title">Company Settings</div></div>
+      <div class="settings-section">
+        <div class="settings-section-title">Database Connection</div>
+        <div class="setting-row">
+          <div class="setting-info"><div class="setting-label">Supabase Project URL</div><div class="setting-desc">Your project URL from Settings → API</div></div>
+          <input id="sbUrl" placeholder="https://xxxx.supabase.co" style="width:260px;font-family:var(--fm);font-size:11px;background:var(--paper);border:1px solid var(--paper3);border-radius:6px;padding:6px 10px;outline:none" oninput="saveSbConfig()">
+        </div>
+        <div class="setting-row">
+          <div class="setting-info"><div class="setting-label">Supabase Anon Key</div><div class="setting-desc">Your anon/public key (not the service_role key)</div></div>
+          <input id="sbKey" type="password" placeholder="eyJhbGci…" style="width:260px;font-family:var(--fm);font-size:11px;background:var(--paper);border:1px solid var(--paper3);border-radius:6px;padding:6px 10px;outline:none" oninput="saveSbConfig()">
+        </div>
+        <div class="setting-row" style="border-bottom:none">
+          <div class="setting-info"><div class="setting-label">Connection</div><div class="setting-desc" id="sbStatus">Not connected — enter credentials above</div></div>
+          <button class="top-btn gold" onclick="initSupabase()">Connect & Load</button>
+        </div>
+      </div>
+      <div class="settings-section">
+        <div class="settings-section-title">Company Information</div>
+        <div class="form-grid" style="margin-top:4px">
+          <div class="field span2"><label>Company Name</label><input id="companyName" value="Samtulana Antarjala Gathaka Pvt Ltd" oninput="saveSettings()"></div>
+          <div class="field"><label>Company PAN</label><input id="companyPAN" placeholder="AABCS1429B" oninput="saveSettings()"></div>
+          <div class="field"><label>Company TAN</label><input id="companyTAN" placeholder="PNEA12345E" oninput="saveSettings()"></div>
+          <div class="field"><label>EPFO Registration No.</label><input id="epfoReg" placeholder="AP/HYD/1234567" oninput="saveSettings()"></div>
+          <div class="field"><label>ESI Registration No.</label><input id="esiReg" placeholder="51-000-000" oninput="saveSettings()"></div>
+          <div class="field span2"><label>Registered Address</label><textarea id="companyAddress" rows="2" oninput="saveSettings()">Hyderabad, Andhra Pradesh, India</textarea></div>
+        </div>
+      </div>
+      <div class="settings-section">
+        <div class="settings-section-title">Payroll Period</div>
+        <div class="form-grid">
+          <div class="field"><label>Pay Period Start</label><select id="payStart" oninput="saveSettings()"><option value="1">1st of month</option><option value="26">26th of prev month</option></select></div>
+          <div class="field"><label>Pay Date</label><select id="payDate" oninput="saveSettings()"><option value="1">1st</option><option value="5">5th</option><option value="7">7th</option><option value="10">10th</option></select></div>
+          <div class="field"><label>Financial Year Start</label><select id="fyStart" oninput="saveSettings()"><option value="3">April (Indian FY)</option><option value="0">January</option></select></div>
+          <div class="field"><label>Currency</label><select id="currency" oninput="saveSettings()"><option value="₹">₹ INR</option><option value="$">$ USD</option></select></div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-top:4px">
+        <button class="top-btn gold" onclick="saveSettings();toast('Settings saved','ok')">Save Settings</button>
+      </div>
+      <div class="settings-section" style="margin-top:16px">
+        <div class="settings-section-title">💬 WhatsApp Notifications</div>
+        <div class="setting-row">
+          <div class="setting-info"><div class="setting-label">WhatsApp coverage</div><div class="setting-desc" id="waCoverageDesc">Loading…</div></div>
+          <button class="top-btn ghost" onclick="showPage('employees',document.querySelector('[onclick*=employees]'));renderEmployees()">Manage Employees →</button>
+        </div>
+        <div class="setting-row" style="flex-direction:column;align-items:flex-start;gap:10px;border-bottom:none">
+          <div class="setting-info">
+            <div class="setting-label">Custom message template</div>
+            <div class="setting-desc">Leave blank to use the default template. Available placeholders: <span style="font-family:var(--fm);color:var(--gold);font-size:10px">{name} {fname} {month} {company} {gross} {net} {deductions} {basic} {hra} {pf} {tds}</span></div>
+          </div>
+          <textarea id="waMsgTemplate" rows="7" placeholder="Dear {fname},
+
+Your payslip for {month} is ready.
+
+Net Pay: {net}
+
+Regards,
+{company}" oninput="saveSettings()" style="width:100%;font-family:var(--fm);font-size:12px;background:var(--paper);border:1px solid var(--paper3);border-radius:8px;padding:10px 12px;outline:none;resize:vertical;color:var(--tx);line-height:1.6"></textarea>
+          <div style="display:flex;gap:8px">
+            <button class="top-btn ghost" onclick="previewWaTemplate()">👁 Preview message</button>
+            <button class="top-btn ghost" onclick="resetWaTemplate()">↺ Reset to default</button>
+          </div>
+        </div>
+      </div>
+      <div class="settings-section" style="margin-top:16px">
+        <div class="settings-section-title">✉ Email Payslip Delivery</div>
+        <div class="setting-row">
+          <div class="setting-info">
+            <div class="setting-label">EmailJS Payslip Template ID</div>
+            <div class="setting-desc">Create a payslip template in your EmailJS dashboard and paste its Template ID here. The template receives: <span style="font-family:var(--fm);color:var(--gold);font-size:10px">to_email, to_name, emp_id, month, gross, net_pay, deductions, basic, hra, pf, tds, esi, pt, sa, ta, pay_date, company, address</span> as variables.</div>
+          </div>
+          <input id="ejPayslipTpl" placeholder="template_payslip" style="width:200px;font-family:var(--fm);font-size:11px;background:var(--paper);border:1px solid var(--paper3);border-radius:6px;padding:6px 10px;outline:none" oninput="saveEjPayslipTpl()">
+        </div>
+        <div class="setting-row" style="border-bottom:none">
+          <div class="setting-info">
+            <div class="setting-label">Email coverage</div>
+            <div class="setting-desc" id="emailCoverageDesc">Loading…</div>
+          </div>
+          <button class="top-btn ghost" onclick="showPage('employees',document.querySelector('[onclick*=employees]'));renderEmployees()">Manage Employees →</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</main>
+</div><!-- /layout -->
+
+<!-- PRINT TARGET (isolated payslip print) -->
+<div id="printTarget"></div>
+
+<!-- KEYBOARD SHORTCUT HELP MODAL -->
+<div class="modal-overlay" id="shortcutModal">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-head">
+      <div class="modal-title">⌨️ Keyboard Shortcuts</div>
+      <button class="modal-close" onclick="closeModal('shortcutModal')">✕</button>
+    </div>
+    <div class="modal-body" style="gap:6px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+        <div style="background:var(--paper);border-radius:8px;padding:10px 12px">
+          <div style="font-size:10px;color:var(--mu);font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px">Navigation</div>
+          <div style="font-size:12px;line-height:2.2">
+            <div><span class="kbd">Alt+D</span>Dashboard</div>
+            <div><span class="kbd">Alt+E</span>Employees</div>
+            <div><span class="kbd">Alt+P</span>Payroll</div>
+            <div><span class="kbd">Alt+L</span>Payslips</div>
+            <div><span class="kbd">Alt+W</span>WhatsApp</div>
+            <div><span class="kbd">Alt+S</span>Settings</div>
+          </div>
+        </div>
+        <div style="background:var(--paper);border-radius:8px;padding:10px 12px">
+          <div style="font-size:10px;color:var(--mu);font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px">Actions</div>
+          <div style="font-size:12px;line-height:2.2">
+            <div><span class="kbd">Esc</span>Close modal</div>
+            <div><span class="kbd">Alt+N</span>Add employee</div>
+            <div><span class="kbd">Alt+R</span>Run payroll</div>
+            <div><span class="kbd">Alt+/</span>This help</div>
+            <div><span class="kbd">Alt+K</span>Dark mode</div>
+          </div>
+        </div>
+      </div>
+      <p style="font-size:11px;color:var(--mu);margin-top:4px">Tip: Click any employee name (shown in gold) to open their full profile.</p>
+    </div>
+  </div>
+</div>
+
+<!-- BONUS / ONE-TIME PAYMENT MODAL -->
+<div class="modal-overlay" id="bonusModal">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-head">
+      <div>
+        <div class="modal-title">🎁 One-Time Payment</div>
+        <div style="font-size:11px;color:var(--mu);margin-top:3px" id="bonusEmpName"></div>
+      </div>
+      <button class="modal-close" onclick="closeModal('bonusModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="field"><label>Amount (₹)</label><input id="bonusAmount" type="number" min="0" placeholder="5000" oninput="updateBonusPreview()"></div>
+        <div class="field"><label>Type</label>
+          <select id="bonusType" onchange="updateBonusPreview()">
+            <option value="bonus">Performance Bonus</option>
+            <option value="incentive">Sales Incentive</option>
+            <option value="festival">Festival Bonus</option>
+            <option value="advance">Salary Advance</option>
+            <option value="reimbursement">Reimbursement</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="field span2"><label>Note (appears on payslip)</label><input id="bonusNote" placeholder="e.g. Diwali bonus 2025"></div>
+      </div>
+      <div id="bonusPreview" class="bonus-input-wrap" style="display:none">
+        <div style="font-size:10px;color:var(--gold);font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px">Payment Summary</div>
+        <div id="bonusPreviewContent" style="font-size:13px"></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="top-btn ghost" onclick="closeModal('bonusModal')">Cancel</button>
+      <button class="top-btn gold" onclick="sendBonusWhatsapp()">💬 Send via WhatsApp</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODALS -->
+<div class="modal-overlay" id="empModal">
+  <div class="modal" style="max-width:640px">
+    <div class="modal-head">
+      <div class="modal-title" id="empModalTitle">Add Employee</div>
+      <button class="modal-close" onclick="closeModal('empModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="empEditId">
+      <div class="form-grid">
+        <div class="field"><label>First Name</label><input id="empFirstName" placeholder="Ravi"></div>
+        <div class="field"><label>Last Name</label><input id="empLastName" placeholder="Kumar"></div>
+        <div class="field"><label>Employee ID</label><input id="empId" placeholder="SAG-001" style="font-family:var(--fm)"></div>
+        <div class="field"><label>Designation</label><input id="empDesig" placeholder="Software Engineer"></div>
+        <div class="field"><label>Department</label>
+          <select id="empDept"><option>Engineering</option><option>Sales</option><option>Marketing</option><option>HR</option><option>Finance</option><option>Operations</option><option>Design</option><option>Legal</option></select>
+        </div>
+        <div class="field"><label>Join Date</label><input id="empJoin" type="date"></div>
+        <div class="field"><label>Basic Salary (₹)</label><input id="empBasic" type="number" placeholder="40000" oninput="updateSalaryPreview()"></div>
+        <div class="field"><label>PAN Number</label><input id="empPAN" placeholder="ABCDE1234F" style="font-family:var(--fm)"></div>
+        <div class="field"><label>Account No.</label><input id="empAcc" placeholder="XXXXXXXXXX" style="font-family:var(--fm)"></div>
+        <div class="field"><label>IFSC Code</label><input id="empIFSC" placeholder="SBIN0001234" style="font-family:var(--fm)"></div>
+        <div class="field"><label>Bank Name</label><input id="empBank" placeholder="State Bank of India"></div>
+        <div class="field"><label>WhatsApp Number</label><input id="empWhatsapp" placeholder="919876543210" style="font-family:var(--fm)" title="Country code + number, no + or spaces. E.g. 919876543210"></div>
+        <div class="field"><label>Email Address</label><input id="empEmail" type="email" placeholder="ravi@company.com"></div>
+        <div class="field"><label>Status</label><select id="empStatus"><option value="Active">Active</option><option value="On Leave">On Leave</option><option value="Inactive">Inactive</option></select></div>
+      </div>
+      <div style="background:var(--paper);border:1px solid var(--paper3);border-radius:8px;padding:12px 14px;margin-top:4px">
+        <div style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);font-weight:600;margin-bottom:8px">Salary Preview</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;font-size:12px" id="salaryPreview">
+          <div><div style="color:var(--mu);font-size:10px">Gross</div><div style="font-family:var(--fm);font-weight:500">—</div></div>
+          <div><div style="color:var(--mu);font-size:10px">Deductions</div><div style="font-family:var(--fm);font-weight:500">—</div></div>
+          <div><div style="color:var(--mu);font-size:10px">Net Pay</div><div style="font-family:var(--fm);font-weight:500;color:var(--green)">—</div></div>
+          <div><div style="color:var(--mu);font-size:10px">PF (Emp)</div><div style="font-family:var(--fm);font-weight:500">—</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="top-btn ghost" onclick="closeModal('empModal')">Cancel</button>
+      <button class="top-btn gold" id="saveEmpBtn" onclick="saveEmployee()">Save Employee</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="payslipModal">
+  <div class="modal" style="max-width:700px">
+    <div class="modal-head no-print">
+      <div class="modal-title">Payslip</div>
+      <div style="display:flex;gap:8px">
+        <button class="top-btn ghost" onclick="window.print()">🖨 Print</button>
+        <button class="top-btn primary" onclick="downloadPayslip()">⬇ Download PDF</button>
+        <button class="top-btn ghost" onclick="copyPayslipSummary()">📋 Copy</button>
+        <button class="top-btn" style="background:#25D366;color:#fff" id="sendWhatsappBtn" onclick="sendPayslipWhatsapp()">💬 WhatsApp</button>
+        <button class="top-btn" style="background:#0072C6;color:#fff" id="sendEmailBtn" onclick="sendPayslipEmail()">✉ Email</button>
+        <button class="modal-close" onclick="closeModal('payslipModal')">✕</button>
+      </div>
+    </div>
+    <div class="modal-body" id="payslipContent" style="padding:0"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- EMPLOYEE PROFILE MODAL -->
+<div class="modal-overlay" id="profileModal">
+  <div class="modal" style="max-width:700px">
+    <div class="modal-head">
+      <div>
+        <div class="modal-title" id="profileModalName">Employee Profile</div>
+        <div style="font-size:11px;color:var(--mu);margin-top:3px" id="profileModalSub"></div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="top-btn ghost" id="profileEditBtn" onclick="profileEdit()">✏ Edit</button>
+        <button class="top-btn ghost" style="color:var(--gold);border-color:rgba(201,168,76,.3)" id="profileBonusBtn" onclick="openBonus(_profileEmpId)">🎁 Bonus</button>
+        <button class="top-btn" style="background:#25D366;color:#fff" id="profileWaBtn" onclick="profileSendWa()">💬 WhatsApp</button>
+        <button class="modal-close" onclick="closeModal('profileModal')">✕</button>
+      </div>
+    </div>
+    <div class="modal-body" style="gap:0;padding:20px 24px">
+      <div class="profile-tabs">
+        <div class="profile-tab active" onclick="switchProfileTab('overview',this)">Overview</div>
+        <div class="profile-tab" onclick="switchProfileTab('history',this)">Payslip History</div>
+        <div class="profile-tab" onclick="switchProfileTab('ytd',this)">Year-to-Date</div>
+      </div>
+      <div id="profileTab-overview"></div>
+      <div id="profileTab-history" style="display:none"></div>
+      <div id="profileTab-ytd" style="display:none"></div>
+    </div>
+  </div>
+</div>
+
+
+<div class="modal-overlay" id="waPreviewModal">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-head">
+      <div class="modal-title">💬 Message Preview</div>
+      <button class="modal-close" onclick="closeModal('waPreviewModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="background:#e7fde7;border-radius:12px;padding:16px 18px;font-size:13px;line-height:1.7;white-space:pre-wrap;font-family:var(--ff);color:#1a1a1a;border:1px solid #c3eec3;max-height:380px;overflow-y:auto" id="waPreviewContent"></div>
+      <p style="font-size:11px;color:var(--mu);margin-top:8px">This is how the WhatsApp message will appear to employees. Edit the template in Settings to customise it.</p>
+    </div>
+    <div class="modal-foot">
+      <button class="top-btn ghost" onclick="closeModal('waPreviewModal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- SALARY INCREMENT MODAL -->
+<div class="modal-overlay" id="incrementModal">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-head">
+      <div>
+        <div class="modal-title">📈 Salary Revision</div>
+        <div style="font-size:11px;color:var(--mu);margin-top:3px" id="incrementEmpName"></div>
+      </div>
+      <button class="modal-close" onclick="closeModal('incrementModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:8px">
+        <div class="field"><label>Current Basic (₹)</label><input id="incrCurrentBasic" type="number" readonly style="opacity:.6;cursor:not-allowed"></div>
+        <div class="field"><label>New Basic (₹)</label><input id="incrNewBasic" type="number" placeholder="e.g. 85000" oninput="updateIncrementPreview()"></div>
+        <div class="field"><label>Effective From</label><input id="incrEffective" type="month"></div>
+        <div class="field"><label>Reason</label>
+          <select id="incrReason"><option>Annual Appraisal</option><option>Promotion</option><option>Market Correction</option><option>Performance Bonus Conversion</option><option>Other</option></select>
+        </div>
+        <div class="field span2"><label>Notes (optional)</label><input id="incrNotes" placeholder="e.g. Promoted to Senior Engineer"></div>
+      </div>
+      <div id="incrPreview" style="background:var(--paper);border:1px solid var(--paper3);border-radius:8px;padding:12px 14px;font-size:12px">
+        <div style="color:var(--mu);margin-bottom:6px;font-size:10px;letter-spacing:.08em;text-transform:uppercase;font-weight:600">Impact Preview</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px" id="incrPreviewGrid"><span style="color:var(--mu)">Enter new basic to preview</span></div>
+      </div>
+      <div style="margin-top:14px">
+        <div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--mu);font-weight:600;margin-bottom:8px">Revision History</div>
+        <div id="incrHistory" class="increment-history"></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="top-btn ghost" onclick="closeModal('incrementModal')">Cancel</button>
+      <button class="top-btn gold" onclick="applyIncrement()">Apply Revision</button>
+    </div>
+  </div>
+</div>
+<div class="modal-overlay" id="waDispatchModal">
+  <div class="modal" style="max-width:680px">
+    <div class="modal-head">
+      <div>
+        <div class="modal-title">💬 Send Payslips via WhatsApp</div>
+        <div style="font-size:11px;color:var(--mu);margin-top:3px">
+          <span id="waDispatchMonth"></span> · <span id="waDispatchCount"></span>
+        </div>
+      </div>
+      <button class="modal-close" onclick="closeModal('waDispatchModal')">✕</button>
+    </div>
+    <div class="modal-body" style="padding:0;max-height:420px;overflow-y:auto">
+      <div style="padding:12px 14px;background:var(--paper);border-bottom:1px solid var(--paper3);font-size:11px;color:var(--mu);display:flex;align-items:center;gap:8px">
+        <span>📱</span>
+        <span>Each click opens WhatsApp Web/App with the payslip message pre-filled. The employee's number must be saved in your phone for WhatsApp to open directly.</span>
+      </div>
+      <table style="width:100%;border-collapse:collapse">
+        <thead>
+          <tr>
+            <th style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);font-weight:600;padding:10px 14px;border-bottom:1px solid var(--paper3);text-align:left;background:var(--paper)">Employee</th>
+            <th style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);font-weight:600;padding:10px 14px;border-bottom:1px solid var(--paper3);text-align:left;background:var(--paper)">WhatsApp No.</th>
+            <th style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);font-weight:600;padding:10px 14px;border-bottom:1px solid var(--paper3);text-align:left;background:var(--paper)">Status</th>
+            <th style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);font-weight:600;padding:10px 14px;border-bottom:1px solid var(--paper3);text-align:left;background:var(--paper)">Action</th>
+          </tr>
+        </thead>
+        <tbody id="waTableBody"></tbody>
+      </table>
+    </div>
+    <div class="modal-foot" style="justify-content:space-between">
+      <button class="top-btn ghost" onclick="closeModal('waDispatchModal')">Close</button>
+      <button class="top-btn" style="background:#25D366;color:#fff" onclick="waSendAll()">💬 Send All</button>
+    </div>
+  </div>
+</div>
+
+<!-- DELETE CONFIRM MODAL -->
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-head">
+      <div class="modal-title" style="color:var(--red)">&#x26A0; Delete Employee</div>
+      <button class="modal-close" onclick="closeModal('deleteModal')">&#x2715;</button>
+    </div>
+    <div class="modal-body" style="gap:10px">
+      <p style="font-size:13px;color:var(--tx)" id="deleteModalMsg">Are you sure you want to delete this employee?</p>
+      <p style="font-size:12px;color:var(--mu)">The employee will be moved to Trash. You can restore them later from the Trash Bin.</p>
+    </div>
+    <div class="modal-foot">
+      <button class="top-btn ghost" onclick="closeModal('deleteModal')">Cancel</button>
+      <button class="top-btn" style="background:var(--red);color:#fff" id="deleteConfirmBtn">Delete &amp; Move to Trash</button>
+    </div>
+  </div>
+</div>
+
+<!-- TRASH BIN MODAL -->
+<div class="modal-overlay" id="trashModal">
+  <div class="modal" style="max-width:760px">
+    <div class="modal-head">
+      <div class="modal-title">&#x1F5D1; Trash Bin</div>
+      <button class="modal-close" onclick="closeModal('trashModal')">&#x2715;</button>
+    </div>
+    <div class="modal-body" style="padding:0">
+      <div id="trashBody" style="min-height:120px"></div>
+    </div>
+    <div class="modal-foot" style="justify-content:space-between">
+      <button class="top-btn ghost" style="color:var(--red);border-color:rgba(230,57,70,.3)" onclick="emptyTrash()">&#x1F5D1; Empty Trash</button>
+      <button class="top-btn ghost" onclick="closeModal('trashModal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// SAG PAYROLL — Clean consolidated JS (all features)
+// ═══════════════════════════════════════════════════════
+
+var SB_URL = 'https://krjqtxunsxtxgssczfqi.supabase.co';
+var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtyanF0eHVuc3h0eGdzc2N6ZnFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwNzUwOTcsImV4cCI6MjA5MTY1MTA5N30.HP6PQktruRGPVv75YTFagMeshnpxM0zhFJoP-8uDxoE';
+
+// ── SUPABASE REST HELPER ──────────────────────────────
+async function sb(path, opts) {
+  if (!SB_URL || !SB_KEY) throw new Error('Supabase not configured');
+  var headers = { 'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY };
+  if (opts && (opts.method==='POST'||opts.method==='PATCH')) headers['Prefer']='return=representation';
+  var res = await fetch(SB_URL+'/rest/v1/'+path, Object.assign({headers:headers},opts));
+  if (!res.ok) { var t=await res.text(); throw new Error(t); }
+  var ct=res.headers.get('content-type')||'';
+  return ct.includes('json')?res.json():null;
+}
+
+// ── STATE ─────────────────────────────────────────────
+var MONTHS_LABEL = ['January 2025','February 2025','March 2025','April 2025','May 2025','June 2025','July 2025','August 2025','September 2025','October 2025','November 2025','December 2025'];
+var currentMonth = 4;
+var settings = {
+  hraPercent:40,taPercent:10,saPercent:5,pfPercent:12,ptAmount:200,tdsPercent:5,esiPercent:0.75,
+  autoGen:true,lop:false,companyName:'Samtulana Antarjala Gathaka Pvt Ltd',
+  companyPAN:'',companyTAN:'',epfoReg:'',esiReg:'',
+  companyAddress:'Hyderabad, Andhra Pradesh, India',waMsgTemplate:''
+};
+var employees = [];
+var payslips  = [];
+var deletedEmployees = [];
+var waSentLog    = {};
+var emailSentLog = {};
+var paidLog      = {};
+var incrementHistory = {};
+var _editEmpId = null;
+var _confirmCb = null;
+var _sbReady   = false;
+var _waCurrentEmpId = null;
+var _waCurrentMonth = null;
+var _profileEmpId   = null;
+var _incrementEmpId = null;
+var _bonusEmpId     = null;
+
+// ── SAFE LOCALSTORAGE ─────────────────────────────────
+function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+function lsSet(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
+
+// ── SYNC BAR ──────────────────────────────────────────
+function showSync(state,msg,autohide){
+  var bar=document.getElementById('syncBar'),dot=document.getElementById('sdot');
+  bar.className='show '+state; document.getElementById('syncMsg').textContent=msg;
+  dot.className='sdot'+(state==='syncing'?' pulse':'');
+  if(autohide) setTimeout(function(){ bar.classList.remove('show'); },2500);
+}
+function hideSync(){ document.getElementById('syncBar').classList.remove('show'); }
+
+// ── INIT ──────────────────────────────────────────────
+window.onload = function() {
+  loadAdminUsers();
+  loadAuditLog();
+  initDark();
+  // Check for existing valid session
+  var sess = lsGet('sag_session');
+  if (sess) {
+    try {
+      var s = JSON.parse(sess);
+      if (s && s.email) {
+        _otpEmail = s.email;
+        _currentAdmin = _adminUsers.find(function(a){ return a.email.toLowerCase() === s.email.toLowerCase(); });
+        var initials = (s.name||'AD').split(' ').map(function(w){ return w[0]; }).join('').slice(0,2).toUpperCase();
+        document.getElementById('sidebarAvatar').textContent = initials;
+        document.getElementById('sidebarName').textContent = s.name || s.email;
+        document.getElementById('sidebarEmail').textContent = s.email;
+        document.getElementById('adminKpiLastLogin').textContent = s.time ? (s.time.split(',')[1]||s.time).trim() : '—';
+        document.getElementById('adminKpiSessionSub').textContent = s.email;
+        document.getElementById('loginScreen').classList.add('hidden');
+        appInit();
+        return;
+      }
+    } catch(e) {}
+  }
+  // No valid session — show login screen (already visible by default)
+};
+
+function saveSbConfig(){
+  SB_URL=document.getElementById('sbUrl').value.trim().replace(/\/$/,'');
+  SB_KEY=document.getElementById('sbKey').value.trim();
+  lsSet('sag_sb_url',SB_URL); lsSet('sag_sb_key',SB_KEY);
+}
+
+async function initSupabase(){
+  saveSbConfig();
+  if(!SB_URL||!SB_KEY){ toast('Enter Supabase URL and Key first','err'); return; }
+  showSync('syncing','Connecting to Supabase…');
+  document.getElementById('sbStatus').textContent='Connecting…';
+  try{
+    await loadFromCloud(); _sbReady=true;
+    showSync('ok','● Connected to Supabase — data synced',true);
+    document.getElementById('sbStatus').textContent='✓ Connected — '+employees.length+' employees, '+payslips.length+' payslips loaded';
+    renderAll(); toast('Connected to Supabase','ok');
+  }catch(e){
+    _sbReady=false;
+    showSync('err','⚠ Connection failed — '+(e.message||'check credentials'));
+    document.getElementById('sbStatus').textContent='✗ Failed: '+(e.message||'check URL and key');
+    toast('Connection failed: '+(e.message||'check credentials'),'err'); console.error(e);
+  }
+}
+
+async function loadFromCloud(){
+  var rows=await sb('sag_employees?order=created_at.asc',{method:'GET'});
+  employees=(rows||[]).map(function(r){
+    return {id:r.id,fname:r.fname,lname:r.lname,desig:r.desig,dept:r.dept,
+            join:r.join_date,basic:parseFloat(r.basic),pan:r.pan||'',
+            acc:r.acc||'',ifsc:r.ifsc||'',bank:r.bank||'',status:r.status,whatsapp:r.whatsapp||'',email:r.email||''};
+  });
+  var prows=await sb('sag_payslips?order=created_at.asc',{method:'GET'});
+  payslips=(prows||[]).map(function(r){
+    return {empId:r.emp_id,month:r.month,gross:parseFloat(r.gross),
+            deductions:parseFloat(r.deductions),netPay:parseFloat(r.net_pay),
+            issuedOn:r.issued_on,breakdown:r.breakdown};
+  });
+  var srows=await sb('sag_settings?key=eq.main',{method:'GET'});
+  if(srows&&srows[0]){ settings=Object.assign(settings,srows[0].value); applySettingsToUI(); lsSet('sag_settings',JSON.stringify(settings)); }
+}
+
+async function upsertEmployee(emp){
+  // Try with whatsapp column first; if Supabase returns a schema-cache error
+  // (PGRST204 — column not found), fall back to inserting without it so the
+  // rest of the record is still saved, and show a one-time migration hint.
+  var body={id:emp.id,fname:emp.fname,lname:emp.lname,desig:emp.desig,dept:emp.dept,
+            join_date:emp.join,basic:emp.basic,pan:emp.pan,acc:emp.acc,
+            ifsc:emp.ifsc,bank:emp.bank,status:emp.status,whatsapp:emp.whatsapp||'',email:emp.email||''};
+  await sb('sag_employees?id=eq.'+encodeURIComponent(emp.id),{method:'DELETE'});
+  try {
+    await sb('sag_employees',{method:'POST',body:JSON.stringify(body)});
+  } catch(e) {
+    // PGRST204 means the whatsapp column is missing from the Supabase schema cache.
+    // Save without it and prompt the admin to run the migration.
+    if(e.message && e.message.indexOf('whatsapp')>-1){
+      var bodyNoWa={id:emp.id,fname:emp.fname,lname:emp.lname,desig:emp.desig,dept:emp.dept,
+                    join_date:emp.join,basic:emp.basic,pan:emp.pan,acc:emp.acc,
+                    ifsc:emp.ifsc,bank:emp.bank,status:emp.status};
+      await sb('sag_employees',{method:'POST',body:JSON.stringify(bodyNoWa)});
+      // Surface a one-time migration hint in the toast area
+      setTimeout(function(){
+        toast('⚠ Employee saved — but WhatsApp column is missing in Supabase. Run: ALTER TABLE sag_employees ADD COLUMN IF NOT EXISTS whatsapp TEXT DEFAULT \'\';','err');
+      },600);
+    } else {
+      throw e; // re-throw unrelated errors
+    }
+  }
+}
+async function deleteEmployeeCloud(empId){ await sb('sag_employees?id=eq.'+encodeURIComponent(empId),{method:'DELETE'}); }
+async function upsertPayslip(ps){
+  var body={emp_id:ps.empId,month:ps.month,gross:ps.gross,deductions:ps.deductions,
+            net_pay:ps.netPay,issued_on:ps.issuedOn,breakdown:ps.breakdown};
+  await sb('sag_payslips',{method:'POST',body:JSON.stringify(body),headers:{
+    'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,
+    'Prefer':'resolution=merge-duplicates,return=representation'}})
+  .catch(function(){
+    return sb('sag_payslips?emp_id=eq.'+encodeURIComponent(ps.empId)+'&month=eq.'+encodeURIComponent(ps.month),{method:'DELETE'})
+      .then(function(){ return sb('sag_payslips',{method:'POST',body:JSON.stringify(body)}); });
+  });
+}
+async function saveSettingsCloud(){
+  try{
+    await sb('sag_settings?key=eq.main',{method:'DELETE'});
+    await sb('sag_settings',{method:'POST',body:JSON.stringify({key:'main',value:settings})});
+    showSync('ok','✓ Settings saved to cloud',true);
+  }catch(e){
+    showSync('err','⚠ Settings cloud save failed — '+((e&&e.message)||'unknown error'));
+    toast('Settings cloud save failed: '+((e&&e.message)||'check Supabase connection'),'err');
+    console.warn('Settings cloud save failed',e);
+  }
+}
+
+// ── SALARY CALC ───────────────────────────────────────
+function calcBreakdown(basic){
+  var s=settings;
+  var hra=Math.round(basic*s.hraPercent/100),ta=Math.round(basic*s.taPercent/100),sa=Math.round(basic*s.saPercent/100);
+  var gross=basic+hra+ta+sa,pf=Math.round(basic*s.pfPercent/100),pt=s.ptAmount,tds=Math.round(gross*s.tdsPercent/100);
+  var esi=basic<=21000?Math.round(gross*s.esiPercent/100):0,totalDeductions=pf+pt+tds+esi,net=gross-totalDeductions;
+  return {basic,hra,ta,sa,gross,pf,pt,tds,esi,totalDeductions,net};
+}
+function calcBreakdownWithLOP(basic,absentDays){
+  var adjBasic=Math.round(basic*Math.max(0,(30-(absentDays||0))/30));
+  var b=calcBreakdown(adjBasic); b.absentDays=absentDays||0; b.lopDeduction=basic-adjBasic; b.adjBasic=adjBasic; return b;
+}
+function getLOPDays(empId){ var el=document.getElementById('lop-'+empId); return el?(parseInt(el.value)||0):0; }
+function fmt(n){ return '₹'+Math.round(n).toLocaleString('en-IN'); }
+function fmtN(n){ return Math.round(n).toLocaleString('en-IN'); }
+
+// ── DEMO SEED ─────────────────────────────────────────
+function autoSeedPayslips(){
+  if(payslips.length>0) return;
+  [0,1,2,3].forEach(function(mi){
+    employees.forEach(function(emp){
+      var b=calcBreakdown(emp.basic);
+      payslips.push({empId:emp.id,month:MONTHS_LABEL[mi],gross:b.gross,deductions:b.totalDeductions,
+                     netPay:b.net,issuedOn:new Date(2025,mi,1).toLocaleDateString('en-IN'),breakdown:b});
+    });
+  });
+}
+
+// ── NAV ───────────────────────────────────────────────
+var pageTitles={dashboard:'Dashboard',employees:'Employees',payroll:'Run Payroll',payslips:'Payslip Archive',whatsapp:'WhatsApp Dispatch',salary:'Salary Structure',settings:'Settings'};
+function showPage(name,el){
+  document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
+  document.querySelectorAll('.nav-item').forEach(function(n){ n.classList.remove('active'); });
+  document.getElementById('page-'+name).classList.add('active');
+  if(el) el.classList.add('active');
+  document.getElementById('pageTitle').textContent=pageTitles[name]||name;
+  if(name==='dashboard')  renderDashboard();
+  if(name==='employees')  renderEmployees();
+  if(name==='payroll')    renderPayrollPage();
+  if(name==='payslips')   renderPayslips();
+  if(name==='whatsapp')   renderWhatsappPage();
+  if(name==='settings')   { renderDashboard(); applySettingsToUI(); }
+}
+function renderAll(){ renderDashboard(); }
+function onMonthChange(){
+  currentMonth=parseInt(document.getElementById('globalMonth').value);
+  document.getElementById('runMonthLabel').textContent=MONTHS_LABEL[currentMonth];
+  renderDashboard();
+}
+
+// ── DASHBOARD ─────────────────────────────────────────
+function renderDashboard(){
+  var m=MONTHS_LABEL[currentMonth];
+  var mps=payslips.filter(function(p){ return p.month===m; });
+  var totalGross=mps.reduce(function(s,p){ return s+p.gross; },0);
+  var totalDed=mps.reduce(function(s,p){ return s+p.deductions; },0);
+  var activeEmp=employees.filter(function(e){ return e.status==='Active'; });
+  document.getElementById('kpiPayroll').textContent=fmt(totalGross);
+  document.getElementById('kpiPayrollSub').textContent=m;
+  document.getElementById('kpiEmpCount').textContent=activeEmp.length;
+  document.getElementById('kpiPayslips').textContent=mps.length;
+  document.getElementById('kpiPayslipsSub').textContent=m;
+  document.getElementById('kpiDeductions').textContent=fmt(totalDed);
+
+  // WhatsApp KPIs
+  var empWithWa=employees.filter(function(e){ return !!e.whatsapp; }).length;
+  var totalEmp=employees.length, waSentCount=Object.keys(waSentLog).length;
+  var kpiWaCov=document.getElementById('kpiWaCoverage');
+  if(kpiWaCov) kpiWaCov.textContent=empWithWa+' / '+totalEmp;
+  var kpiWaSub=document.getElementById('kpiWaSub');
+  if(kpiWaSub) kpiWaSub.textContent=totalEmp?Math.round(empWithWa/totalEmp*100)+'% coverage':'No employees';
+  var kpiWaSent=document.getElementById('kpiWaSent');
+  if(kpiWaSent) kpiWaSent.textContent=waSentCount;
+  var covDesc=document.getElementById('waCoverageDesc');
+  if(covDesc){
+    var missing=employees.filter(function(e){ return e.status==='Active'&&!e.whatsapp; });
+    covDesc.textContent=empWithWa+' of '+totalEmp+' employees have WhatsApp numbers'+(missing.length?' · '+missing.length+' missing: '+missing.map(function(e){ return e.fname; }).join(', '):'  ✓ Full coverage');
+  }
+
+  var depts={};
+  employees.forEach(function(e){
+    if(!depts[e.dept]) depts[e.dept]=0;
+    var ps=payslips.find(function(p){ return p.empId===e.id&&p.month===m; });
+    if(ps) depts[e.dept]+=ps.gross;
+  });
+  var dk=Object.keys(depts).filter(function(d){ return depts[d]>0; });
+  var mx=dk.length?Math.max.apply(null,dk.map(function(d){ return depts[d]; })):1;
+  document.getElementById('deptBars').innerHTML=dk.length
+    ?dk.map(function(d){ return '<div class="dept-bar-row"><div class="dept-bar-label">'+d+'</div><div class="dept-bar-track"><div class="dept-bar-fill" style="width:'+Math.round(depts[d]/mx*100)+'%"></div></div><div class="dept-bar-val">'+fmt(depts[d])+'</div></div>'; }).join('')
+    :'<div class="empty-state"><div class="es-icon">📊</div><p>No payroll data for '+m+'</p></div>';
+
+  var acts=[];
+  payslips.slice(-5).reverse().forEach(function(p){
+    var e=employees.find(function(emp){ return emp.id===p.empId; });
+    if(e) acts.push({text:'Payslip issued to '+e.fname+' '+e.lname+' ('+p.month+')',time:p.issuedOn,color:'green'});
+  });
+  if(!acts.length) acts.push({text:'No recent activity',time:'—',color:'gold'});
+  document.getElementById('activityList').innerHTML=acts.map(function(a){
+    return '<div class="activity-item"><div class="activity-dot '+a.color+'"></div><div class="activity-text">'+a.text+'</div><div class="activity-time">'+a.time+'</div></div>';
+  }).join('');
+
+  var rec=payslips.slice(-5).reverse();
+  document.getElementById('recentPayslipsBody').innerHTML=rec.length
+    ?rec.map(function(p){
+        var e=employees.find(function(emp){ return emp.id===p.empId; })||{fname:'?',lname:'',dept:'?'};
+        return '<tr><td><strong style="cursor:pointer;color:var(--gold)" onclick="openProfile(\''+p.empId+'\')">'+e.fname+' '+e.lname+'</strong></td><td><span class="badge badge-ink">'+e.dept+'</span></td><td style="font-family:var(--fm);font-size:11px">'+p.month+'</td><td class="r">'+fmt(p.gross)+'</td><td class="r" style="color:var(--red)">'+fmt(p.deductions)+'</td><td class="r" style="color:var(--green);font-weight:600">'+fmt(p.netPay)+'</td><td><span class="badge badge-green">Issued</span></td><td><button class="icon-btn" onclick="viewPayslip(\''+p.empId+'\',\''+p.month+'\')">👁</button></td></tr>';
+      }).join('')
+    :'<tr><td colspan="8"><div class="empty-state"><div class="es-icon">📄</div><p>No payslips yet</p></div></td></tr>';
+
+  renderTrendChart();
+}
+
+// ── TREND CHART ───────────────────────────────────────
+function renderTrendChart(){
+  var totals=MONTHS_LABEL.map(function(m){ return payslips.filter(function(p){ return p.month===m; }).reduce(function(s,p){ return s+p.gross; },0); });
+  var chartEl=document.getElementById('trendChart'),labelEl=document.getElementById('trendLabels'),rangeEl=document.getElementById('trendRange');
+  if(!chartEl) return;
+  var nonZero=totals.filter(function(v){ return v>0; });
+  if(!nonZero.length){ chartEl.innerHTML='<span style="font-size:12px;color:var(--mu)">No payroll data yet.</span>'; return; }
+  var maxVal=Math.max.apply(null,totals);
+  chartEl.innerHTML=totals.map(function(v,i){
+    var h=maxVal>0?Math.max(4,Math.round(v/maxVal*52)):4,isCur=i===currentMonth;
+    var col=v===0?'var(--paper3)':isCur?'var(--gold)':'var(--teal)';
+    return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px">'+
+      '<span style="font-size:8px;font-family:var(--fm);color:'+(v>0&&isCur?'var(--gold)':v>0?'var(--mu)':'transparent')+'">'+
+        (v>0?'₹'+(v/100000).toFixed(1)+'L':'')+'</span>'+
+      '<div style="width:100%;height:'+h+'px;background:'+col+';border-radius:3px 3px 0 0;cursor:pointer;transition:opacity .15s" '+
+        'onmouseover="this.style.opacity=.7" onmouseout="this.style.opacity=1" '+
+        'onclick="currentMonth='+i+';document.getElementById(\'globalMonth\').value='+i+';onMonthChange()" '+
+        'title="'+MONTHS_LABEL[i]+': '+(v>0?fmt(v):'No data')+'"></div>'+
+    '</div>';
+  }).join('');
+  if(labelEl) labelEl.innerHTML=MONTHS_LABEL.map(function(m,i){ var s=m.substring(0,3),isCur=i===currentMonth; return '<div style="flex:1;text-align:center;font-size:8px;font-family:var(--fm);color:'+(isCur?'var(--gold)':'var(--mu2)')+';font-weight:'+(isCur?700:400)+'">'+s+'</div>'; }).join('');
+  var filled=totals.filter(function(v){ return v>0; });
+  if(rangeEl) rangeEl.textContent=filled.length+' months · total '+fmt(filled.reduce(function(a,b){ return a+b; },0));
+}
+
+// ── EMPLOYEES ─────────────────────────────────────────
+function renderEmployees(){
+  var q=(document.getElementById('empSearch').value||'').toLowerCase();
+  var filtered=employees.filter(function(e){
+    return !q||(e.fname+' '+e.lname+e.id+e.dept+e.desig+(e.whatsapp||'')).toLowerCase().includes(q);
+  });
+  document.getElementById('empCountLabel').textContent=filtered.length===employees.length?employees.length+' employees':filtered.length+' of '+employees.length+' shown';
+  document.getElementById('empBody').innerHTML=filtered.length
+    ?filtered.map(function(e){
+        var sc=e.status==='Active'?'badge-green':e.status==='On Leave'?'badge-gold':'badge-red';
+        var waCell=e.whatsapp
+          ?'<td><span style="font-size:11px;color:#25D366;font-family:var(--fm)">💬 +'+e.whatsapp+'</span>'+(e.email?'<br><span style="font-size:10px;color:var(--mu)">✉ '+e.email+'</span>':'')+'</td>'
+          :'<td>'+(e.email?'<span style="font-size:10px;color:var(--mu)">✉ '+e.email+'</span>':'<span style="font-size:10px;color:var(--mu2)">—</span>')+'</td>';
+        return '<tr>'+
+          '<td style="font-family:var(--fm);font-size:11px;color:var(--mu)">'+e.id+'</td>'+
+          '<td><strong style="cursor:pointer;color:var(--gold)" onclick="openProfile(\''+e.id+'\')">'+e.fname+' '+e.lname+'</strong></td>'+
+          '<td class="mu">'+e.desig+'</td>'+
+          '<td><span class="badge badge-ink">'+e.dept+'</span></td>'+
+          '<td style="font-family:var(--fm);font-size:11px;color:var(--mu)">'+e.join+'</td>'+
+          '<td class="r">'+fmt(e.basic)+'</td>'+
+          waCell+
+          '<td><span class="badge '+sc+'">'+e.status+'</span></td>'+
+          '<td>'+
+            '<button class="icon-btn" title="Edit" onclick="editEmployeeById(\''+e.id+'\')">✏</button>'+
+            '<button class="icon-btn" title="Salary Revision" onclick="openIncrement(\''+e.id+'\')" style="color:var(--gold)">📈</button>'+
+            '<button class="icon-btn" title="One-Time Bonus" onclick="openBonus(\''+e.id+'\')" style="color:var(--teal)">🎁</button>'+
+            '<button class="icon-btn danger" title="Delete" onclick="deleteEmployeeById(\''+e.id+'\')">🗑</button>'+
+          '</td>'+
+        '</tr>';
+      }).join('')
+    :'<tr><td colspan="9"><div class="empty-state"><div class="es-icon">👥</div><p>No employees found</p></div></td></tr>';
+}
+
+function openAddEmployee(){
+  _editEmpId=null;
+  document.getElementById('empModalTitle').textContent='Add Employee';
+  document.getElementById('empEditId').value='';
+  ['empFirstName','empLastName','empId','empDesig','empAcc','empIFSC','empBank','empPAN','empWhatsapp','empEmail'].forEach(function(id){ document.getElementById(id).value=''; });
+  document.getElementById('empDept').value='Engineering';
+  document.getElementById('empStatus').value='Active';
+  document.getElementById('empJoin').value=new Date().toISOString().split('T')[0];
+  document.getElementById('empBasic').value='';
+  document.getElementById('empId').disabled=false;
+  updateSalaryPreview();
+  openModal('empModal');
+}
+
+function editEmployeeById(empId){
+  var e=employees.find(function(x){ return x.id===empId; });
+  if(!e){ toast('Employee not found','err'); return; }
+  _editEmpId=empId;
+  document.getElementById('empModalTitle').textContent='Edit Employee';
+  document.getElementById('empFirstName').value=e.fname;
+  document.getElementById('empLastName').value=e.lname;
+  document.getElementById('empId').value=e.id;
+  document.getElementById('empId').disabled=true;
+  document.getElementById('empDesig').value=e.desig;
+  document.getElementById('empDept').value=e.dept;
+  document.getElementById('empJoin').value=e.join;
+  document.getElementById('empBasic').value=e.basic;
+  document.getElementById('empPAN').value=e.pan||'';
+  document.getElementById('empAcc').value=e.acc||'';
+  document.getElementById('empIFSC').value=e.ifsc||'';
+  document.getElementById('empBank').value=e.bank||'';
+  document.getElementById('empWhatsapp').value=e.whatsapp||'';
+  document.getElementById('empEmail').value=e.email||'';
+  document.getElementById('empStatus').value=e.status;
+  updateSalaryPreview();
+  openModal('empModal');
+}
+
+async function saveEmployee(){
+  var fname=document.getElementById('empFirstName').value.trim();
+  var lname=document.getElementById('empLastName').value.trim();
+  var id=_editEmpId||document.getElementById('empId').value.trim();
+  var basic=parseFloat(document.getElementById('empBasic').value);
+  if(!fname||!id||isNaN(basic)||basic<=0){ toast('Please fill in required fields','err'); return; }
+  var emp={id,fname,lname,
+    desig:document.getElementById('empDesig').value,
+    dept:document.getElementById('empDept').value,
+    join:document.getElementById('empJoin').value,
+    basic,pan:document.getElementById('empPAN').value,
+    acc:document.getElementById('empAcc').value,
+    ifsc:document.getElementById('empIFSC').value,
+    bank:document.getElementById('empBank').value,
+    whatsapp:document.getElementById('empWhatsapp').value.trim().replace(/\D/g,''),
+    email:document.getElementById('empEmail').value.trim().toLowerCase(),
+    status:document.getElementById('empStatus').value};
+  var btn=document.getElementById('saveEmpBtn');
+  btn.disabled=true; btn.textContent='Saving…';
+  if(_sbReady){ try{ showSync('syncing','Saving employee…'); await upsertEmployee(emp); showSync('ok','✓ Saved to Supabase',true); }
+    catch(e){ toast('Cloud save failed: '+e.message,'err'); btn.disabled=false; btn.textContent='Save Employee'; return; } }
+  var idx=employees.findIndex(function(x){ return x.id===id; });
+  if(idx!==-1){ employees[idx]=emp; toast('Employee updated','ok'); }
+  else{ employees.push(emp); toast('Employee added','ok'); }
+  btn.disabled=false; btn.textContent='Save Employee';
+  closeModal('empModal'); renderEmployees(); renderDashboard();
+}
+
+function updateSalaryPreview(){
+  var basic=parseFloat(document.getElementById('empBasic').value)||0;
+  var sp=document.getElementById('salaryPreview');
+  if(!basic){ sp.innerHTML='<div><div style="color:var(--mu);font-size:10px">Gross</div><div style="font-family:var(--fm);font-weight:500">—</div></div><div><div style="color:var(--mu);font-size:10px">Deductions</div><div style="font-family:var(--fm);font-weight:500">—</div></div><div><div style="color:var(--mu);font-size:10px">Net Pay</div><div style="font-family:var(--fm);font-weight:500;color:var(--green)">—</div></div><div><div style="color:var(--mu);font-size:10px">PF (Emp)</div><div style="font-family:var(--fm);font-weight:500">—</div></div>'; return; }
+  var b=calcBreakdown(basic);
+  sp.innerHTML='<div><div style="color:var(--mu);font-size:10px">Gross</div><div style="font-family:var(--fm);font-weight:500">'+fmt(b.gross)+'</div></div><div><div style="color:var(--mu);font-size:10px">Deductions</div><div style="font-family:var(--fm);font-weight:500;color:var(--red)">'+fmt(b.totalDeductions)+'</div></div><div><div style="color:var(--mu);font-size:10px">Net Pay</div><div style="font-family:var(--fm);font-weight:500;color:var(--green)">'+fmt(b.net)+'</div></div><div><div style="color:var(--mu);font-size:10px">PF (Emp)</div><div style="font-family:var(--fm);font-weight:500">'+fmt(b.pf)+'</div></div>';
+}
+
+// ── TRASH BIN ─────────────────────────────────────────
+function updateTrashBadge(){
+  var badge=document.getElementById('trashCount'); if(!badge) return;
+  badge.style.display=deletedEmployees.length>0?'inline':'none';
+  if(deletedEmployees.length>0) badge.textContent=deletedEmployees.length;
+}
+function deleteEmployeeById(empId){
+  var e=employees.find(function(x){ return x.id===empId; });
+  if(!e){ toast('Employee not found','err'); return; }
+  document.getElementById('deleteModalMsg').textContent='Delete "'+e.fname+' '+e.lname+'" ('+empId+')? Their payslips will also be removed.';
+  document.getElementById('deleteConfirmBtn').onclick=function(){ closeModal('deleteModal'); doDeleteEmployee(empId); };
+  openModal('deleteModal');
+}
+async function doDeleteEmployee(empId){
+  var e=employees.find(function(x){ return x.id===empId; }); if(!e) return;
+  var removedPayslips=payslips.filter(function(p){ return p.empId===empId; });
+  if(_sbReady){ showSync('syncing','Deleting…'); try{ await deleteEmployeeCloud(empId); showSync('ok','✓ Deleted',true); }
+    catch(err){ toast('Cloud delete failed: '+err.message,'err'); return; } }
+  deletedEmployees.push({emp:e,payslips:removedPayslips,deletedAt:new Date().toLocaleString('en-IN')});
+  employees=employees.filter(function(x){ return x.id!==empId; });
+  payslips=payslips.filter(function(p){ return p.empId!==empId; });
+  updateTrashBadge(); renderEmployees(); renderDashboard();
+  toast(e.fname+' '+e.lname+' moved to Trash','ok');
+}
+function openTrashBin(){ renderTrashBin(); openModal('trashModal'); }
+function renderTrashBin(){
+  var body=document.getElementById('trashBody');
+  if(!deletedEmployees.length){ body.innerHTML='<div class="empty-state" style="padding:40px 20px"><div class="es-icon">🗑</div><p>Trash is empty</p></div>'; return; }
+  body.innerHTML='<table style="width:100%;border-collapse:collapse"><thead><tr>'+
+    '<th style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);font-weight:600;padding:12px 16px;border-bottom:1px solid var(--paper3);text-align:left;background:var(--paper)">Employee</th>'+
+    '<th style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);font-weight:600;padding:12px 16px;border-bottom:1px solid var(--paper3);text-align:left;background:var(--paper)">Department</th>'+
+    '<th style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);font-weight:600;padding:12px 16px;border-bottom:1px solid var(--paper3);text-align:left;background:var(--paper)">Deleted At</th>'+
+    '<th style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);font-weight:600;padding:12px 16px;border-bottom:1px solid var(--paper3);text-align:left;background:var(--paper)">Payslips</th>'+
+    '<th style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);font-weight:600;padding:12px 16px;border-bottom:1px solid var(--paper3);text-align:left;background:var(--paper)">Action</th>'+
+    '</tr></thead><tbody>'+
+    deletedEmployees.map(function(item,idx){
+      return '<tr style="border-bottom:1px solid var(--paper2)">'+
+        '<td style="padding:12px 16px;font-size:13px"><strong>'+item.emp.fname+' '+item.emp.lname+'</strong><br><span style="font-size:10px;color:var(--mu);font-family:var(--fm)">'+item.emp.id+' · '+item.emp.desig+'</span></td>'+
+        '<td style="padding:12px 16px"><span class="badge badge-ink">'+item.emp.dept+'</span></td>'+
+        '<td style="padding:12px 16px;font-size:11px;color:var(--mu);font-family:var(--fm)">'+item.deletedAt+'</td>'+
+        '<td style="padding:12px 16px;font-size:12px;color:var(--mu)">'+item.payslips.length+' payslip(s)</td>'+
+        '<td style="padding:12px 16px">'+
+          '<button class="top-btn" style="background:var(--green);color:#fff;font-size:11px;padding:5px 12px;margin-right:6px" onclick="restoreEmployee('+idx+')">↩ Restore</button>'+
+          '<button class="icon-btn danger" onclick="permanentDelete('+idx+')">✕</button>'+
+        '</td></tr>';
+    }).join('')+'</tbody></table>';
+}
+async function restoreEmployee(idx){
+  var item=deletedEmployees[idx]; if(!item) return;
+  if(_sbReady){ showSync('syncing','Restoring…'); try{ await upsertEmployee(item.emp); for(var i=0;i<item.payslips.length;i++) await upsertPayslip(item.payslips[i]); showSync('ok','✓ Restored',true); }
+    catch(err){ toast('Cloud restore failed: '+err.message,'err'); return; } }
+  employees.push(item.emp); payslips=payslips.concat(item.payslips);
+  deletedEmployees.splice(idx,1); updateTrashBadge(); renderTrashBin(); renderEmployees(); renderDashboard();
+  toast(item.emp.fname+' '+item.emp.lname+' restored','ok');
+}
+function permanentDelete(idx){ deletedEmployees.splice(idx,1); updateTrashBadge(); renderTrashBin(); toast('Permanently deleted','ok'); }
+function emptyTrash(){ if(!deletedEmployees.length){ toast('Trash is already empty','ok'); return; } deletedEmployees=[]; updateTrashBadge(); renderTrashBin(); toast('Trash emptied','ok'); }
+
+// ── PAYROLL ───────────────────────────────────────────
+function renderPayrollPage(){
+  document.getElementById('runMonthLabel').textContent=MONTHS_LABEL[currentMonth];
+  document.getElementById('payrollBannerSub').textContent='Generate payslips for '+MONTHS_LABEL[currentMonth]+' · '+employees.filter(function(e){ return e.status==='Active'; }).length+' active employees';
+  renderPayrollPending();
+  renderPayrollProcessed();
+  updateWaMissingAlert();
+}
+
+function renderPayrollPending(){
+  var m=MONTHS_LABEL[currentMonth];
+  var pending=employees.filter(function(e){
+    if(e.status!=='Active') return false;
+    return !payslips.find(function(p){ return p.empId===e.id&&p.month===m; });
+  });
+  document.getElementById('pendingPayrollBody').innerHTML=pending.length
+    ?pending.map(function(e){
+        var b=calcBreakdown(e.basic);
+        return '<tr id="prow-'+e.id+'">'+
+          '<td><input type="checkbox" class="pay-check" data-id="'+e.id+'"></td>'+
+          '<td><strong style="cursor:pointer;color:var(--gold)" onclick="openProfile(\''+e.id+'\')">'+e.fname+' '+e.lname+'</strong><br><span style="font-size:10px;color:var(--mu)">'+e.id+'</span></td>'+
+          '<td><span class="badge badge-ink">'+e.dept+'</span></td>'+
+          '<td class="r">'+fmt(e.basic)+'</td>'+
+          '<td class="r">'+fmt(b.hra)+'</td>'+
+          '<td class="r">'+fmt(b.ta+b.sa)+'</td>'+
+          '<td class="r" style="color:var(--red)">'+fmt(b.pf)+'</td>'+
+          '<td class="r" style="color:var(--red)">'+fmt(b.tds)+'</td>'+
+          '<td class="r"><input class="lop-input" id="lop-'+e.id+'" type="number" min="0" max="30" value="0" oninput="updatePendingRow(\''+e.id+'\')" title="Absent days (LOP)"></td>'+
+          '<td class="r" style="color:var(--green);font-weight:600" id="net-'+e.id+'">'+fmt(b.net)+'</td>'+
+          '<td><button class="top-btn gold" style="font-size:11px;padding:4px 10px" onclick="issuePayslip(\''+e.id+'\')">Issue</button></td>'+
+        '</tr>';
+      }).join('')
+    :'<tr><td colspan="11"><div class="empty-state"><div class="es-icon">✅</div><p>All employees have payslips for '+m+'</p></div></td></tr>';
+}
+
+function updatePendingRow(empId){
+  var e=employees.find(function(x){ return x.id===empId; }); if(!e) return;
+  var absent=getLOPDays(empId), b=absent>0?calcBreakdownWithLOP(e.basic,absent):calcBreakdown(e.basic);
+  var netEl=document.getElementById('net-'+empId);
+  if(netEl){ netEl.textContent=fmt(b.net); netEl.style.color=absent>0?'var(--red)':'var(--green)'; netEl.title=absent>0?'LOP: −'+fmt(b.lopDeduction)+' ('+absent+' days)':''; }
+}
+
+function renderPayrollProcessed(){
+  var m=MONTHS_LABEL[currentMonth];
+  var proc=payslips.filter(function(p){ return p.month===m; });
+  document.getElementById('processedPayrollBody').innerHTML=proc.length
+    ?proc.map(function(p){
+        var e=employees.find(function(emp){ return emp.id===p.empId; })||{fname:'?',lname:'',dept:'?',whatsapp:''};
+        var key=p.empId+'|'+p.month, isPaid=!!paidLog[key], sent=!!waSentLog[key];
+        var payBtn='<button onclick="togglePaid(\''+p.empId+'\',\''+p.month+'\',this)" style="font-size:10px;padding:3px 10px;border-radius:6px;cursor:pointer;font-family:var(--ff);font-weight:600;transition:all .18s;'+(isPaid?'background:var(--green);color:#fff;border:none':'background:transparent;color:var(--mu);border:1px solid var(--paper3)')+'">'+
+          (isPaid?'✓ Paid':'Mark Paid')+'</button>';
+        var wabtn=e.whatsapp
+          ?'<button class="icon-btn" title="Send WhatsApp" onclick="sendWhatsappToEmployee(\''+p.empId+'\',\''+p.month+'\')" style="color:#25D366;'+(sent?'opacity:.5':'')+'">💬</button>'+(sent?'<span style="font-size:9px;color:#25D366">✓</span>':'')
+          :'<button class="icon-btn" title="No WhatsApp number" disabled style="opacity:.25;cursor:not-allowed">💬</button>';
+        return '<tr>'+
+          '<td><strong style="cursor:pointer;color:var(--gold)" onclick="openProfile(\''+p.empId+'\')">'+e.fname+' '+e.lname+'</strong></td>'+
+          '<td style="font-family:var(--fm);font-size:11px">'+p.month+'</td>'+
+          '<td class="r">'+fmt(p.gross)+'</td>'+
+          '<td class="r" style="color:var(--green);font-weight:600">'+fmt(p.netPay)+'</td>'+
+          '<td style="font-family:var(--fm);font-size:11px;color:var(--mu)">'+p.issuedOn+'</td>'+
+          '<td>'+payBtn+'</td>'+
+          '<td><button class="icon-btn" onclick="viewPayslip(\''+p.empId+'\',\''+p.month+'\')">👁</button>'+wabtn+'</td>'+
+        '</tr>';
+      }).join('')
+    :'<tr><td colspan="7"><div class="empty-state"><div class="es-icon">📋</div><p>No processed payslips for '+m+'</p></div></td></tr>';
+}
+
+function toggleSelectAll(){ var v=document.getElementById('selectAll').checked; document.querySelectorAll('.pay-check').forEach(function(c){ c.checked=v; }); }
+
+async function runSelectedPayroll(){
+  var checked=Array.from(document.querySelectorAll('.pay-check:checked')).map(function(c){ return c.dataset.id; });
+  if(!checked.length){ toast('Select at least one employee','err'); return; }
+  for(var i=0;i<checked.length;i++) await issuePayslipSilent(checked[i]);
+  toast('Issued '+checked.length+' payslip(s)','ok');
+  renderPayrollPage();
+  var m=MONTHS_LABEL[currentMonth];
+  var selEmps=checked.map(function(id){ return employees.find(function(e){ return e.id===id; }); }).filter(Boolean);
+  if(selEmps.filter(function(e){ return !!e.whatsapp; }).length) setTimeout(function(){ openWhatsappDispatch(selEmps,m); },400);
+}
+
+async function issuePayslipSilent(empId){
+  var e=employees.find(function(emp){ return emp.id===empId; }); if(!e) return;
+  var m=MONTHS_LABEL[currentMonth];
+  if(payslips.find(function(p){ return p.empId===empId&&p.month===m; })) return;
+  var absent=getLOPDays(empId), b=absent>0?calcBreakdownWithLOP(e.basic,absent):calcBreakdown(e.basic);
+  var ps={empId,month:m,gross:b.gross,deductions:b.totalDeductions,netPay:b.net,issuedOn:new Date().toLocaleDateString('en-IN'),breakdown:b};
+  if(_sbReady){ try{ await upsertPayslip(ps); }catch(er){ console.error(er); } }
+  payslips.push(ps);
+}
+
+async function issuePayslip(empId){
+  var e=employees.find(function(emp){ return emp.id===empId; }); if(!e) return;
+  var m=MONTHS_LABEL[currentMonth];
+  if(payslips.find(function(p){ return p.empId===empId&&p.month===m; })){ toast('Payslip already issued','err'); return; }
+  var absent=getLOPDays(empId), b=absent>0?calcBreakdownWithLOP(e.basic,absent):calcBreakdown(e.basic);
+  var ps={empId,month:m,gross:b.gross,deductions:b.totalDeductions,netPay:b.net,issuedOn:new Date().toLocaleDateString('en-IN'),breakdown:b};
+  if(_sbReady){ try{ showSync('syncing','Issuing payslip…'); await upsertPayslip(ps); showSync('ok','✓ Saved',true); }catch(er){ toast('Cloud save failed','err'); console.error(er); } }
+  payslips.push(ps);
+  var msg='Payslip issued for '+e.fname+' '+e.lname+(absent>0?' · LOP '+absent+' days (−'+fmt(b.lopDeduction)+')':'');
+  toast(msg,'ok'); renderPayrollPage();
+  if(e.whatsapp) setTimeout(function(){ openWhatsappDispatch([e],m); },400);
+}
+
+function showRunPayroll(){ showPage('payroll',document.querySelectorAll('.nav-item')[2]); }
+
+async function runPayroll(){
+  var active=employees.filter(function(e){ return e.status==='Active'; });
+  var m=MONTHS_LABEL[currentMonth];
+  var pending=active.filter(function(e){ return !payslips.find(function(p){ return p.empId===e.id&&p.month===m; }); });
+  if(!pending.length){ toast('All payslips already issued for '+m,'err'); return; }
+  var wrap=document.getElementById('runProgressWrap'),fill=document.getElementById('runProgressFill'),label=document.getElementById('runProgressLabel');
+  wrap.style.display='block';
+  var count=0;
+  async function next(){
+    if(count>=pending.length){
+      fill.style.width='100%'; label.textContent='Done! '+pending.length+' payslips issued';
+      renderPayrollPage(); renderDashboard(); toast('✓ Payroll complete — '+pending.length+' payslips','ok');
+      setTimeout(function(){ wrap.style.display='none'; fill.style.width='0%'; },3000);
+      openWhatsappDispatch(pending,m); return;
+    }
+    await issuePayslipSilent(pending[count].id); count++;
+    fill.style.width=Math.round(count/pending.length*100)+'%'; label.textContent='Processing '+count+' of '+pending.length+'…';
+    setTimeout(next,120);
+  }
+  next();
+}
+
+// ── PAYMENT STATUS ────────────────────────────────────
+function togglePaid(empId,month,btn){
+  var key=empId+'|'+month; paidLog[key]=!paidLog[key];
+  if(btn){ btn.textContent=paidLog[key]?'✓ Paid':'Mark Paid'; btn.style.background=paidLog[key]?'var(--green)':'transparent'; btn.style.color=paidLog[key]?'#fff':'var(--mu)'; btn.style.border=paidLog[key]?'none':'1px solid var(--paper3)'; }
+  toast(paidLog[key]?'Marked as paid':'Payment mark removed','ok');
+}
+
+// ── WHATSAPP ALERT ────────────────────────────────────
+function updateWaMissingAlert(){
+  var activeEmps=employees.filter(function(e){ return e.status==='Active'; });
+  var missing=activeEmps.filter(function(e){ return !e.whatsapp; });
+  var banner=document.getElementById('waMissingAlert'),text=document.getElementById('waMissingText');
+  if(!banner) return;
+  if(missing.length){
+    banner.style.display='flex';
+    text.textContent=missing.length+' active employee'+(missing.length>1?'s':'')+' ('+missing.map(function(e){ return e.fname; }).join(', ')+') '+(missing.length>1?"don't":"doesn't")+' have WhatsApp numbers.';
+  } else { banner.style.display='none'; }
+}
+
+// ── PAYSLIPS ARCHIVE ──────────────────────────────────
+function renderPayslips(){
+  var q=(document.getElementById('payslipSearch').value||'').toLowerCase();
+  var mf=document.getElementById('payslipMonthFilter').value;
+  var dfEl=document.getElementById('payslipDeptFilter'); var df=dfEl?dfEl.value:'';
+  var filtered=payslips.filter(function(p){
+    var e=employees.find(function(emp){ return emp.id===p.empId; })||{fname:'',lname:'',dept:''};
+    return (!q||(e.fname+' '+e.lname+p.month+e.dept).toLowerCase().includes(q))&&(!mf||p.month===mf)&&(!df||e.dept===df);
+  });
+  document.getElementById('payslipCountLabel').textContent=payslips.length+' payslips total'+(filtered.length!==payslips.length?' · '+filtered.length+' shown':'');
+  document.getElementById('payslipBody').innerHTML=filtered.length
+    ?filtered.slice().reverse().map(function(p){
+        var e=employees.find(function(emp){ return emp.id===p.empId; })||{fname:'?',lname:'',dept:'?',whatsapp:''};
+        var waKey=p.empId+'|'+p.month, waSent=waSentLog[waKey];
+        var waBtn=e.whatsapp
+          ?'<button class="icon-btn" title="Send WhatsApp" onclick="sendWhatsappToEmployeeFromArchive(\''+p.empId+'\',\''+p.month+'\',this)" style="color:#25D366'+(waSent?';opacity:.5':'')+'">💬</button>'+(waSent?'<span style="font-size:9px;color:#25D366">✓</span>':'')
+          :'<button class="icon-btn" disabled style="opacity:.25;cursor:not-allowed">💬</button>';
+        var emailSent=emailSentLog[p.empId+'|'+p.month];
+        var emailBtn=e.email
+          ?'<button class="icon-btn" title="Send Email" onclick="sendEmailToEmployee(\''+p.empId+'\',\''+p.month+'\')" style="color:#0072C6'+(emailSent?';opacity:.5':'')+'">✉️</button>'+(emailSent?'<span style="font-size:9px;color:#0072C6">✓</span>':'')
+          :'<button class="icon-btn" disabled title="No email on file" style="opacity:.25;cursor:not-allowed">✉️</button>';
+        return '<tr>'+
+          '<td><strong style="cursor:pointer;color:var(--gold)" onclick="openProfile(\''+p.empId+'\')">'+e.fname+' '+e.lname+'</strong></td>'+
+          '<td style="font-family:var(--fm);font-size:11px;color:var(--mu)">'+p.empId+'</td>'+
+          '<td><span class="badge badge-ink">'+e.dept+'</span></td>'+
+          '<td style="font-family:var(--fm);font-size:11px">'+p.month+'</td>'+
+          '<td class="r">'+fmt(p.gross)+'</td>'+
+          '<td class="r" style="color:var(--red)">'+fmt(p.deductions)+'</td>'+
+          '<td class="r" style="color:var(--green);font-weight:600">'+fmt(p.netPay)+'</td>'+
+          '<td style="font-family:var(--fm);font-size:11px;color:var(--mu)">'+p.issuedOn+'</td>'+
+          '<td><button class="icon-btn" onclick="viewPayslip(\''+p.empId+'\',\''+p.month+'\')">👁</button>'+waBtn+emailBtn+'</td>'+
+        '</tr>';
+      }).join('')
+    :'<tr><td colspan="9"><div class="empty-state"><div class="es-icon">📄</div><p>No payslips found</p></div></td></tr>';
+}
+
+// ── PAYSLIP VIEWER ────────────────────────────────────
+function viewPayslip(empId,month){
+  _waCurrentEmpId=empId; _waCurrentMonth=month;
+  var e=employees.find(function(emp){ return emp.id===empId; });
+  var ps=payslips.find(function(p){ return p.empId===empId&&p.month===month; });
+  if(!e||!ps){ toast('Payslip not found','err'); return; }
+  document.getElementById('payslipContent').innerHTML=buildPayslipHTML(e,ps,ps.breakdown,month);
+  openModal('payslipModal');
+}
+
+function buildPayslipHTML(e,ps,b,month){
+  return '<div class="payslip">'+
+    '<div class="ps-header"><div><div class="ps-co-name">'+settings.companyName+'</div><div class="ps-co-sub">SAG — Official Payslip</div></div><div class="ps-badge">PAYSLIP</div></div>'+
+    '<div class="ps-emp-info"><div class="ps-emp-grid">'+
+      '<div class="ps-emp-row"><span class="ps-emp-key">Employee Name</span><span class="ps-emp-val">'+e.fname+' '+e.lname+'</span></div>'+
+      '<div class="ps-emp-row"><span class="ps-emp-key">Employee ID</span><span class="ps-emp-val" style="font-family:var(--fm)">'+e.id+'</span></div>'+
+      '<div class="ps-emp-row"><span class="ps-emp-key">Designation</span><span class="ps-emp-val">'+e.desig+'</span></div>'+
+      '<div class="ps-emp-row"><span class="ps-emp-key">Department</span><span class="ps-emp-val">'+e.dept+'</span></div>'+
+      '<div class="ps-emp-row"><span class="ps-emp-key">Date of Joining</span><span class="ps-emp-val" style="font-family:var(--fm)">'+e.join+'</span></div>'+
+      '<div class="ps-emp-row"><span class="ps-emp-key">PAN Number</span><span class="ps-emp-val" style="font-family:var(--fm)">'+(e.pan||'—')+'</span></div>'+
+      '<div class="ps-emp-row"><span class="ps-emp-key">Bank</span><span class="ps-emp-val">'+(e.bank||'—')+'</span></div>'+
+      '<div class="ps-emp-row"><span class="ps-emp-key">Account No.</span><span class="ps-emp-val" style="font-family:var(--fm)">'+(e.acc||'—')+'</span></div>'+
+    '</div></div>'+
+    '<div class="ps-meta">'+
+      '<div class="ps-meta-block"><div class="ps-meta-row"><span class="ps-meta-label">Pay Period</span><span class="ps-meta-val">'+month+'</span></div><div class="ps-meta-row"><span class="ps-meta-label">Pay Date</span><span class="ps-meta-val">'+ps.issuedOn+'</span></div><div class="ps-meta-row"><span class="ps-meta-label">Working Days</span><span class="ps-meta-val">'+(30-(b.absentDays||0))+' / 30'+(b.absentDays>0?' ('+b.absentDays+' absent)':'')+'</span></div></div>'+
+      '<div class="ps-meta-block"><div class="ps-meta-row"><span class="ps-meta-label">EPFO No.</span><span class="ps-meta-val">'+(settings.epfoReg||'AP/HYD/0000000')+'</span></div><div class="ps-meta-row"><span class="ps-meta-label">ESI No.</span><span class="ps-meta-val">'+(settings.esiReg||'51-000-000')+'</span></div><div class="ps-meta-row"><span class="ps-meta-label">TAN</span><span class="ps-meta-val">'+(settings.companyTAN||'PNEA00000E')+'</span></div></div>'+
+    '</div>'+
+    (b.lopDeduction>0?'<div style="background:var(--red-dim);border-left:3px solid var(--red);padding:8px 20px;font-size:12px;color:var(--red)">LOP Deduction: '+fmt(b.lopDeduction)+' ('+b.absentDays+' absent day'+(b.absentDays>1?'s':'')+')</div>':'')+
+    '<div class="ps-section-title">Earnings</div>'+
+    '<div class="ps-line"><span class="ps-line-label">Basic Salary</span><span class="ps-line-val green">'+fmt(b.basic)+'</span></div>'+
+    '<div class="ps-line"><span class="ps-line-label">House Rent Allowance (HRA)</span><span class="ps-line-val green">'+fmt(b.hra)+'</span></div>'+
+    '<div class="ps-line"><span class="ps-line-label">Transport Allowance (TA)</span><span class="ps-line-val green">'+fmt(b.ta)+'</span></div>'+
+    '<div class="ps-line"><span class="ps-line-label">Special Allowance</span><span class="ps-line-val green">'+fmt(b.sa)+'</span></div>'+
+    '<div class="ps-section-title">Deductions</div>'+
+    '<div class="ps-line"><span class="ps-line-label">Provident Fund (Employee — '+settings.pfPercent+'%)</span><span class="ps-line-val red">'+fmt(b.pf)+'</span></div>'+
+    (b.esi>0?'<div class="ps-line"><span class="ps-line-label">ESI ('+settings.esiPercent+'%)</span><span class="ps-line-val red">'+fmt(b.esi)+'</span></div>':'')+
+    '<div class="ps-line"><span class="ps-line-label">Professional Tax (PT)</span><span class="ps-line-val red">'+fmt(b.pt)+'</span></div>'+
+    '<div class="ps-line"><span class="ps-line-label">TDS / Income Tax ('+settings.tdsPercent+'%)</span><span class="ps-line-val red">'+fmt(b.tds)+'</span></div>'+
+    '<div class="ps-totals"><div class="ps-total-block"><div class="ps-total-label">Gross Earnings</div><div class="ps-total-val">'+fmt(b.gross)+'</div></div><div class="ps-total-block"><div class="ps-total-label">Total Deductions</div><div class="ps-total-val" style="color:#ff8a9a">'+fmt(b.totalDeductions)+'</div></div><div class="ps-total-block"><div class="ps-total-label">Net Pay</div><div class="ps-total-val gold">'+fmt(b.net)+'</div></div></div>'+
+    '<div class="ps-footer-note">This is a computer-generated payslip and does not require a signature. · '+settings.companyName+'<br>'+(settings.companyAddress||'Hyderabad, Andhra Pradesh, India')+' · Generated on '+new Date().toLocaleDateString('en-IN')+'</div>'+
+  '</div>';
+}
+
+function downloadPayslip(){
+  if(!_waCurrentEmpId||!_waCurrentMonth){ window.print(); return; }
+  var e=employees.find(function(x){ return x.id===_waCurrentEmpId; });
+  var ps=payslips.find(function(p){ return p.empId===_waCurrentEmpId&&p.month===_waCurrentMonth; });
+  var target=document.getElementById('printTarget');
+  if(e&&ps&&target) target.innerHTML=buildPayslipHTML(e,ps,ps.breakdown,_waCurrentMonth);
+  toast('Opening print dialog…','ok'); setTimeout(function(){ window.print(); },300);
+}
+
+// ── SETTINGS ─────────────────────────────────────────
+function saveSettings(){
+  function numVal(id,def){ var v=parseFloat(document.getElementById(id).value); return isNaN(v)?def:v; }
+  settings.hraPercent=numVal('hraPercent',40);
+  settings.taPercent=numVal('taPercent',10);
+  settings.saPercent=numVal('saPercent',5);
+  settings.pfPercent=numVal('pfPercent',12);
+  settings.ptAmount=numVal('ptAmount',200);
+  settings.tdsPercent=numVal('tdsPercent',5);
+  settings.esiPercent=numVal('esiPercent',0.75);
+  settings.autoGen=document.getElementById('autoGenToggle').checked;
+  settings.lop=document.getElementById('lopToggle').checked;
+  settings.companyName=document.getElementById('companyName').value;
+  settings.companyPAN=document.getElementById('companyPAN').value;
+  settings.companyTAN=document.getElementById('companyTAN').value;
+  settings.epfoReg=document.getElementById('epfoReg').value;
+  settings.esiReg=document.getElementById('esiReg').value;
+  settings.companyAddress=document.getElementById('companyAddress').value;
+  settings.waMsgTemplate=(document.getElementById('waMsgTemplate')||{}).value||'';
+  lsSet('sag_settings',JSON.stringify(settings));
+  if(_sbReady){ saveSettingsCloud(); } else { toast('Settings saved locally (not connected to Supabase)','ok'); }
+}
+function saveEjPayslipTpl(){
+  var v = (document.getElementById('ejPayslipTpl')||{}).value||'';
+  EMAILJS_PAYSLIP_TEMPLATE_ID = v || EMAILJS_PAYSLIP_TEMPLATE_ID;
+  lsSet('sag_ej_payslip_tpl', v);
+}
+function applySettingsToUI(){
+  var s=settings, safe=function(id,val){ var el=document.getElementById(id); if(el) el.value=val; };
+  safe('hraPercent',s.hraPercent); safe('taPercent',s.taPercent); safe('saPercent',s.saPercent);
+  safe('pfPercent',s.pfPercent); safe('ptAmount',s.ptAmount); safe('tdsPercent',s.tdsPercent);
+  safe('esiPercent',s.esiPercent); safe('companyName',s.companyName);
+  safe('companyPAN',s.companyPAN); safe('companyTAN',s.companyTAN);
+  safe('epfoReg',s.epfoReg); safe('esiReg',s.esiReg); safe('companyAddress',s.companyAddress);
+  safe('waMsgTemplate',s.waMsgTemplate||'');
+  var at=document.getElementById('autoGenToggle'); if(at) at.checked=s.autoGen;
+  var lt=document.getElementById('lopToggle'); if(lt) lt.checked=s.lop;
+  var ejt=document.getElementById('ejPayslipTpl'); if(ejt) ejt.value=lsGet('sag_ej_payslip_tpl')||'';
+  var ecd=document.getElementById('emailCoverageDesc');
+  if(ecd){ var withEmail=employees.filter(function(e){ return !!e.email; }).length; ecd.textContent=withEmail+' of '+employees.length+' employees have email addresses'; }
+  var wcd=document.getElementById('waCoverageDesc');
+  if(wcd){ var withWa=employees.filter(function(e){ return !!e.whatsapp; }).length; wcd.textContent=withWa+' of '+employees.length+' employees have WhatsApp numbers'; }
+}
+
+// ── WHATSAPP ─────────────────────────────────────────
+function buildPayslipMessage(e,ps,month){
+  var b=ps.breakdown, tpl=(settings.waMsgTemplate||'').trim();
+  if(tpl) return tpl.replace(/{name}/g,e.fname+' '+e.lname).replace(/{fname}/g,e.fname).replace(/{month}/g,month).replace(/{company}/g,settings.companyName).replace(/{gross}/g,fmt(b.gross)).replace(/{net}/g,fmt(b.net)).replace(/{deductions}/g,fmt(b.totalDeductions)).replace(/{basic}/g,fmt(b.basic)).replace(/{hra}/g,fmt(b.hra)).replace(/{pf}/g,fmt(b.pf)).replace(/{tds}/g,fmt(b.tds));
+  return 'Dear '+e.fname+',\n\n📋 *Payslip — '+month+'*\n🏢 '+settings.companyName+'\n\n*Earnings*\n• Basic Salary: '+fmt(b.basic)+'\n• HRA: '+fmt(b.hra)+'\n• Transport Allowance: '+fmt(b.ta)+'\n• Special Allowance: '+fmt(b.sa)+'\n\n*Deductions*\n• Provident Fund: '+fmt(b.pf)+'\n'+(b.esi>0?'• ESI: '+fmt(b.esi)+'\n':'')+'• Professional Tax: '+fmt(b.pt)+'\n• TDS / Income Tax: '+fmt(b.tds)+'\n\n━━━━━━━━━━━━━━\n💰 *Gross Earnings: '+fmt(b.gross)+'*\n➖ *Total Deductions: '+fmt(b.totalDeductions)+'*\n✅ *Net Pay: '+fmt(b.net)+'*\n━━━━━━━━━━━━━━\n\nPay Date: '+ps.issuedOn+'\nThis is an official payslip from '+settings.companyName+'.\n\nThank you.';
+}
+// ── PAYSLIP PDF GENERATOR ────────────────────────────
+async function generatePayslipPdfBlob(e, ps, month){
+  var container = document.getElementById('_pdfRenderContainer');
+  if(!container){
+    container = document.createElement('div');
+    container.id = '_pdfRenderContainer';
+    container.style.cssText = 'position:fixed;left:-9999px;top:0;width:700px;background:#fff;z-index:-1;font-family:IBM Plex Sans,sans-serif';
+    document.body.appendChild(container);
+  }
+  container.innerHTML = buildPayslipHTML(e, ps, ps.breakdown, month);
+  await new Promise(function(r){ setTimeout(r, 150); });
+  var canvas = await html2canvas(container, {scale:2, useCORS:true, backgroundColor:'#ffffff', logging:false});
+  var imgData = canvas.toDataURL('image/png');
+  var jsPDFLib = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
+  var pdf = new jsPDFLib({orientation:'portrait', unit:'mm', format:'a4'});
+  var pageW = pdf.internal.pageSize.getWidth();
+  var pageH = pdf.internal.pageSize.getHeight();
+  var imgW = pageW;
+  var imgH = (canvas.height * pageW) / canvas.width;
+  if(imgH > pageH){ imgH = pageH; }
+  pdf.addImage(imgData, 'PNG', 0, 0, imgW, imgH);
+  return pdf.output('blob');
+}
+
+async function sendWhatsappToEmployee(empId, month){
+  var e = employees.find(function(x){ return x.id===empId; });
+  var ps = payslips.find(function(p){ return p.empId===empId && p.month===month; });
+  if(!e||!ps){ toast('Payslip not found','err'); return; }
+  if(!e.whatsapp){ toast('No WhatsApp number for '+e.fname,'err'); return; }
+
+  var msg = buildPayslipMessage(e, ps, month);
+  var fileName = 'Payslip_'+e.fname+'_'+e.lname+'_'+month.replace(' ','_')+'.pdf';
+
+  toast('Generating PDF…','ok');
+  try {
+    var blob = await generatePayslipPdfBlob(e, ps, month);
+    var file = new File([blob], fileName, {type:'application/pdf'});
+
+    // On mobile: use Web Share API to hand the PDF directly to WhatsApp
+    if(navigator.canShare && navigator.canShare({files:[file]})){
+      try {
+        await navigator.share({files:[file], title:fileName, text:msg});
+        waSentLog[empId+'|'+month]=true; updateWaBadge();
+        setTimeout(function(){ renderDashboard(); }, 1500);
+        return;
+      } catch(shareErr){
+        if(shareErr.name === 'AbortError') return; // user cancelled
+        // fall through to desktop flow
+      }
+    }
+
+    // Desktop fallback: auto-download PDF then open WhatsApp web with the text
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = fileName; a.click();
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 3000);
+    setTimeout(function(){
+      window.open('https://wa.me/'+e.whatsapp+'?text='+encodeURIComponent(msg), '_blank');
+    }, 800);
+    toast('PDF downloaded — attach it in WhatsApp','ok');
+
+  } catch(err){
+    console.error('PDF generation failed', err);
+    toast('PDF failed — sending text only','err');
+    window.open('https://wa.me/'+e.whatsapp+'?text='+encodeURIComponent(msg), '_blank');
+  }
+
+  waSentLog[empId+'|'+month]=true; updateWaBadge();
+  setTimeout(function(){ renderDashboard(); }, 1500);
+}
+function sendWhatsappToEmployeeFromArchive(empId,month,btn){
+  sendWhatsappToEmployee(empId,month);
+  if(btn) setTimeout(function(){ btn.style.opacity='.45'; if(!btn.nextSibling||btn.nextSibling.tagName!=='SPAN') btn.insertAdjacentHTML('afterend','<span style="font-size:9px;color:#25D366;vertical-align:middle">✓</span>'); },1200);
+}
+function sendPayslipWhatsapp(){
+  if(!_waCurrentEmpId||!_waCurrentMonth){ toast('No payslip open','err'); return; }
+  sendWhatsappToEmployee(_waCurrentEmpId,_waCurrentMonth); toast('Opening WhatsApp…','ok');
+}
+function copyPayslipSummary(){
+  if(!_waCurrentEmpId||!_waCurrentMonth){ toast('No payslip open','err'); return; }
+  var e=employees.find(function(x){ return x.id===_waCurrentEmpId; });
+  var ps=payslips.find(function(p){ return p.empId===_waCurrentEmpId&&p.month===_waCurrentMonth; });
+  if(!e||!ps) return;
+  if(navigator.clipboard) navigator.clipboard.writeText(buildPayslipMessage(e,ps,_waCurrentMonth)).then(function(){ toast('Copied to clipboard!','ok'); });
+  else toast('Copy not supported in this browser','err');
+}
+function updateWaBadge(){
+  var count=Object.keys(waSentLog).length, badge=document.getElementById('waBadge'); if(!badge) return;
+  badge.style.display=count>0?'inline':'none'; if(count>0) badge.textContent=count;
+}
+function openWhatsappDispatch(emps,month){
+  var rows=emps.map(function(e){ return {e:e,hasPhone:!!e.whatsapp}; });
+  var noNum=rows.filter(function(r){ return !r.hasPhone; }).length;
+  document.getElementById('waDispatchMonth').textContent=month;
+  document.getElementById('waDispatchCount').textContent=emps.length+' employee(s)'+(noNum?' · ⚠ '+noNum+' missing number':'');
+  document.getElementById('waTableBody').innerHTML=rows.map(function(r){
+    var statusCell=r.hasPhone?'<span class="badge badge-green" id="wa-status-'+r.e.id+'">Pending</span>':'<span class="badge badge-red">No number</span>';
+    var btn=r.hasPhone?'<button class="top-btn" style="background:#25D366;color:#fff;font-size:11px;padding:4px 12px" onclick="waSendOne(\''+r.e.id+'\',\''+month+'\',this)">💬 Send</button>':'<a href="#" style="font-size:11px;color:var(--gold)" onclick="editEmployeeById(\''+r.e.id+'\');closeModal(\'waDispatchModal\');return false;">+ Add number</a>';
+    return '<tr style="border-bottom:1px solid var(--paper2)"><td style="padding:10px 14px;font-size:13px"><strong>'+r.e.fname+' '+r.e.lname+'</strong><br><span style="font-size:10px;color:var(--mu);font-family:var(--fm)">'+r.e.id+' · '+r.e.dept+'</span></td><td style="padding:10px 14px;font-size:12px;font-family:var(--fm)">'+(r.hasPhone?'<span style="color:#25D366">+'+r.e.whatsapp+'</span>':'<span style="color:var(--mu2)">—</span>')+'</td><td style="padding:10px 14px">'+statusCell+'</td><td style="padding:10px 14px">'+btn+'</td></tr>';
+  }).join('');
+  openModal('waDispatchModal');
+}
+function waSendOne(empId,month,btn){
+  sendWhatsappToEmployee(empId,month);
+  setTimeout(function(){ var badge=document.getElementById('wa-status-'+empId); if(badge){ badge.className='badge badge-teal'; badge.textContent='Sent ✓'; } if(btn){ btn.textContent='✓ Sent'; btn.disabled=true; btn.style.opacity='.6'; } },1500);
+}
+function waSendAll(){
+  var btns=Array.from(document.querySelectorAll('#waTableBody .top-btn')).filter(function(b){ return !b.disabled; });
+  if(!btns.length){ toast('No employees with WhatsApp numbers','err'); return; }
+  var i=0; function sendNext(){ if(i>=btns.length){ toast('All WhatsApps opened ✓','ok'); return; } btns[i].click(); i++; setTimeout(sendNext,900); } sendNext();
+}
+function sendMonthWhatsappBulk(){
+  var mf=document.getElementById('payslipMonthFilter').value, targetMonth=mf||MONTHS_LABEL[currentMonth];
+  var monthPayslips=payslips.filter(function(p){ return p.month===targetMonth; });
+  if(!monthPayslips.length){ toast('No payslips for '+(mf||'current month'),'err'); return; }
+  openWhatsappDispatch(monthPayslips.map(function(p){ return employees.find(function(e){ return e.id===p.empId; }); }).filter(Boolean),targetMonth);
+}
+function resetWaTemplate(){ var el=document.getElementById('waMsgTemplate'); if(el){ el.value=''; saveSettings(); toast('Template reset to default','ok'); } }
+function previewWaTemplate(){
+  var e=employees[0]; if(!e){ toast('No employees to preview with','err'); return; }
+  var m=MONTHS_LABEL[currentMonth];
+  var ps=payslips.find(function(p){ return p.empId===e.id; })||{empId:e.id,month:m,gross:0,deductions:0,netPay:0,issuedOn:new Date().toLocaleDateString('en-IN'),breakdown:calcBreakdown(e.basic)};
+  document.getElementById('waPreviewContent').textContent=buildPayslipMessage(e,ps,ps.month||m);
+  openModal('waPreviewModal');
+}
+
+// ── WHATSAPP PAGE ────────────────────────────────────
+function renderWhatsappPage(){
+  var selEl=document.getElementById('waPageMonth'), m=selEl?selEl.value:MONTHS_LABEL[currentMonth];
+  var activeEmps=employees.filter(function(e){ return e.status==='Active'; });
+  var withNum=activeEmps.filter(function(e){ return !!e.whatsapp; });
+  var mPayslips=payslips.filter(function(p){ return p.month===m; });
+  var sentThisMonth=withNum.filter(function(e){ return waSentLog[e.id+'|'+m]; });
+  var strip=document.getElementById('waCoverageStrip');
+  if(strip) strip.innerHTML=
+    '<div class="kpi-card" style="border-top:3px solid #25D366"><div class="kpi-label">With WhatsApp No.</div><div class="kpi-value" style="color:#25D366">'+withNum.length+' / '+activeEmps.length+'</div><div class="kpi-sub">'+(activeEmps.length?Math.round(withNum.length/activeEmps.length*100)+'% coverage':'—')+'</div></div>'+
+    '<div class="kpi-card k-ink"><div class="kpi-label">Payslips for '+m+'</div><div class="kpi-value">'+mPayslips.length+'</div><div class="kpi-sub">'+mPayslips.length+' of '+activeEmps.length+' issued</div></div>'+
+    '<div class="kpi-card k-teal"><div class="kpi-label">Sent via WhatsApp</div><div class="kpi-value">'+sentThisMonth.length+'</div><div class="kpi-sub">This session</div></div>';
+  var subEl=document.getElementById('waPageSub'); if(subEl) subEl.textContent=m+' · '+activeEmps.length+' active employees';
+  var body=document.getElementById('waPageBody');
+  if(body) body.innerHTML=activeEmps.map(function(e){
+    var ps=payslips.find(function(p){ return p.empId===e.id&&p.month===m; });
+    var hasPay=!!ps, hasPh=!!e.whatsapp, sent=!!waSentLog[e.id+'|'+m];
+    var payBadge=hasPay?'<span class="badge badge-green">Issued</span>':'<span class="badge badge-ink">Pending</span>';
+    var sentBadge=!hasPh?'<span class="badge badge-ink">No number</span>':sent?'<span class="badge badge-teal">Sent ✓</span>':hasPay?'<span class="badge badge-gold">Not sent</span>':'<span class="badge badge-ink">—</span>';
+    var actionBtn=!hasPh?'<button class="top-btn ghost" style="font-size:11px;padding:4px 10px" onclick="editEmployeeById(\''+e.id+'\')">+ Add number</button>':!hasPay?'<button class="top-btn ghost" style="font-size:11px;padding:4px 10px;opacity:.5" disabled>No payslip yet</button>':'<button class="top-btn" style="background:#25D366;color:#fff;font-size:11px;padding:4px 12px'+(sent?';opacity:.7':'')+'" onclick="waSendFromPage(\''+e.id+'\',\''+m+'\',this)">💬 '+(sent?'Resend':'Send')+'</button>';
+    return '<tr><td><strong style="cursor:pointer;color:var(--gold)" onclick="openProfile(\''+e.id+'\')">'+e.fname+' '+e.lname+'</strong><br><span style="font-size:10px;color:var(--mu);font-family:var(--fm)">'+e.id+' · '+e.dept+'</span></td><td style="font-family:var(--fm);font-size:12px">'+(hasPh?'<span style="color:#25D366">+'+e.whatsapp+'</span>':'<span style="color:var(--mu2)">—</span>')+'</td><td>'+payBadge+'</td><td>'+sentBadge+'</td><td>'+actionBtn+'</td></tr>';
+  }).join('')||'<tr><td colspan="5"><div class="empty-state"><div class="es-icon">👥</div><p>No active employees</p></div></td></tr>';
+}
+function waSendFromPage(empId,month,btn){
+  sendWhatsappToEmployee(empId,month); updateWaBadge();
+  setTimeout(function(){ if(btn){ btn.textContent='💬 Resend'; btn.style.opacity='.7'; } renderWhatsappPage(); renderDashboard(); },1400);
+}
+function sendAllForWaPage(){
+  var selEl=document.getElementById('waPageMonth'), m=selEl?selEl.value:MONTHS_LABEL[currentMonth];
+  var withPayslip=employees.filter(function(e){ return e.status==='Active'&&!!e.whatsapp&&payslips.find(function(p){ return p.empId===e.id&&p.month===m; }); });
+  if(!withPayslip.length){ toast('No payslips with WhatsApp numbers for '+m,'err'); return; }
+  openWhatsappDispatch(withPayslip,m);
+}
+function sendAllCurrentMonthWa(){
+  var m=MONTHS_LABEL[currentMonth];
+  var emps=payslips.filter(function(p){ return p.month===m; }).map(function(p){ return employees.find(function(e){ return e.id===p.empId; }); }).filter(Boolean);
+  openWhatsappDispatch(emps,m);
+}
+
+
+// ── EMAIL PAYSLIP ────────────────────────────────────
+async function sendEmailToEmployee(empId, month){
+  var e = employees.find(function(x){ return x.id===empId; });
+  var ps = payslips.find(function(p){ return p.empId===empId && p.month===month; });
+  if(!e||!ps){ toast('Payslip not found','err'); return; }
+  if(!e.email){ toast('No email address for '+e.fname+'. Edit the employee to add one.','err'); return; }
+  if(typeof emailjs === 'undefined'){ toast('EmailJS not loaded','err'); return; }
+
+  toast('Generating PDF & sending email…','ok');
+  try {
+    var blob = await generatePayslipPdfBlob(e, ps, month);
+    // Convert blob to base64 for EmailJS attachment
+    var base64 = await new Promise(function(res, rej){
+      var r = new FileReader();
+      r.onload = function(){ res(r.result.split(',')[1]); };
+      r.onerror = rej;
+      r.readAsDataURL(blob);
+    });
+    var b = ps.breakdown;
+    var params = {
+      to_name    : e.fname + ' ' + e.lname,
+      to_email   : e.email,
+      from_name  : settings.companyName,
+      emp_id     : e.id,
+      designation: e.desig,
+      department : e.dept,
+      month      : month,
+      pay_date   : ps.issuedOn,
+      basic      : fmt(b.basic),
+      hra        : fmt(b.hra),
+      ta         : fmt(b.ta),
+      sa         : fmt(b.sa),
+      gross      : fmt(b.gross),
+      pf         : fmt(b.pf),
+      esi        : b.esi>0 ? fmt(b.esi) : '—',
+      pt         : fmt(b.pt),
+      tds        : fmt(b.tds),
+      deductions : fmt(b.totalDeductions),
+      net_pay    : fmt(b.net),
+      company    : settings.companyName,
+      address    : settings.companyAddress||'Hyderabad, Andhra Pradesh, India',
+      // PDF as base64 attachment (supported by EmailJS if template uses {{attachment}})
+      attachment : base64,
+      filename   : 'Payslip_'+e.fname+'_'+e.lname+'_'+month.replace(' ','_')+'.pdf'
+    };
+    emailjs.init({publicKey: EMAILJS_PUBLIC_KEY});
+    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_PAYSLIP_TEMPLATE_ID, params);
+    emailSentLog[empId+'|'+month] = true;
+    toast('Payslip emailed to '+e.email,'ok');
+  } catch(err){
+    console.error('Email send failed', err);
+    toast('Email failed: '+((err&&err.text)?err.text:(err&&err.message)||JSON.stringify(err)),'err');
+  }
+}
+
+function sendPayslipEmail(){
+  if(!_waCurrentEmpId||!_waCurrentMonth){ toast('No payslip open','err'); return; }
+  sendEmailToEmployee(_waCurrentEmpId, _waCurrentMonth);
+}
+
+async function sendEmailToAllForMonth(month){
+  var target = month || MONTHS_LABEL[currentMonth];
+  var toSend = employees.filter(function(e){
+    return e.status==='Active' && e.email && payslips.find(function(p){ return p.empId===e.id && p.month===target; });
+  });
+  if(!toSend.length){ toast('No employees with email + payslip for '+target,'err'); return; }
+  toast('Sending '+toSend.length+' emails…','ok');
+  var ok=0, fail=0;
+  for(var i=0;i<toSend.length;i++){
+    try{ await sendEmailToEmployee(toSend[i].id, target); ok++; }
+    catch(e){ fail++; }
+    await new Promise(function(r){ setTimeout(r, 600); }); // rate-limit
+  }
+  toast('Done — '+ok+' sent'+(fail?' · '+fail+' failed':''),'ok');
+}
+
+// ── CSV EXPORT ────────────────────────────────────────
+function downloadCSV(filename,rows){
+  var csv=rows.map(function(r){ return r.map(function(c){ var s=String(c==null?'':c).replace(/"/g,'""'); return /[,"\n]/.test(s)?'"'+s+'"':s; }).join(','); }).join('\n');
+  var a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download=filename; a.click();
+}
+function exportPayrollCSV(){
+  var m=MONTHS_LABEL[currentMonth], proc=payslips.filter(function(p){ return p.month===m; });
+  if(!proc.length){ toast('No payslips for '+m,'err'); return; }
+  var rows=[['Employee ID','Name','Department','Designation','Month','Basic','HRA','TA','SA','Gross','PF','ESI','PT','TDS','Total Deductions','Net Pay','Issued On','Payment Status','WhatsApp Sent']];
+  proc.forEach(function(p){ var e=employees.find(function(x){ return x.id===p.empId; })||{}, b=p.breakdown||{}, key=p.empId+'|'+p.month; rows.push([e.id||'',(e.fname||'')+' '+(e.lname||''),e.dept||'',e.desig||'',p.month,b.basic||0,b.hra||0,b.ta||0,b.sa||0,p.gross,b.pf||0,b.esi||0,b.pt||0,b.tds||0,p.deductions,p.netPay,p.issuedOn,paidLog[key]?'Paid':'Pending',waSentLog[key]?'Yes':'No']); });
+  downloadCSV('payroll-'+m.replace(' ','-')+'.csv',rows); toast('Exported payroll CSV','ok');
+}
+function exportPayslipsCSV(){
+  var mf=document.getElementById('payslipMonthFilter').value, dfEl=document.getElementById('payslipDeptFilter'), df=dfEl?dfEl.value:'';
+  var filtered=payslips.filter(function(p){ var e=employees.find(function(x){ return x.id===p.empId; })||{dept:''}; return(!mf||p.month===mf)&&(!df||e.dept===df); });
+  if(!filtered.length){ toast('No payslips to export','err'); return; }
+  var rows=[['Employee ID','Name','Department','Month','Gross','Deductions','Net Pay','Issued On','WhatsApp Sent']];
+  filtered.forEach(function(p){ var e=employees.find(function(x){ return x.id===p.empId; })||{}; rows.push([e.id||'',(e.fname||'')+' '+(e.lname||''),e.dept||'',p.month,p.gross,p.deductions,p.netPay,p.issuedOn,waSentLog[p.empId+'|'+p.month]?'Yes':'No']); });
+  downloadCSV('payslips'+(mf?'-'+mf.replace(' ','-'):'')+(df?'-'+df:'')+'.csv',rows); toast('CSV exported — '+filtered.length+' payslips','ok');
+}
+
+// ── EMPLOYEE PROFILE ──────────────────────────────────
+function openProfile(empId){
+  var e=employees.find(function(x){ return x.id===empId; }); if(!e) return;
+  _profileEmpId=empId;
+  document.getElementById('profileModalName').textContent=e.fname+' '+e.lname;
+  document.getElementById('profileModalSub').textContent=e.id+' · '+e.desig+' · '+e.dept;
+  var waBtn=document.getElementById('profileWaBtn'); if(waBtn) waBtn.style.display=e.whatsapp?'inline-block':'none';
+  document.querySelectorAll('.profile-tab').forEach(function(t){ t.classList.remove('active'); });
+  document.querySelector('.profile-tab').classList.add('active');
+  ['overview','history','ytd'].forEach(function(t){ var el=document.getElementById('profileTab-'+t); if(el) el.style.display=t==='overview'?'block':'none'; });
+  renderProfileTab('overview');
+  openModal('profileModal');
+}
+function profileEdit(){ if(_profileEmpId){ closeModal('profileModal'); editEmployeeById(_profileEmpId); } }
+function profileSendWa(){
+  if(!_profileEmpId) return;
+  var m=MONTHS_LABEL[currentMonth], ps=payslips.find(function(p){ return p.empId===_profileEmpId&&p.month===m; });
+  if(ps) sendWhatsappToEmployee(_profileEmpId,m);
+  else{ var latest=payslips.filter(function(p){ return p.empId===_profileEmpId; }); if(latest.length) sendWhatsappToEmployee(_profileEmpId,latest[latest.length-1].month); else toast('No payslips to send','err'); }
+}
+function switchProfileTab(name,el){
+  ['overview','history','ytd'].forEach(function(t){ var e2=document.getElementById('profileTab-'+t); if(e2) e2.style.display=t===name?'block':'none'; });
+  document.querySelectorAll('.profile-tab').forEach(function(t){ t.classList.remove('active'); });
+  if(el) el.classList.add('active');
+  renderProfileTab(name);
+}
+function renderProfileTab(name){
+  var e=employees.find(function(x){ return x.id===_profileEmpId; }); if(!e) return;
+  var empPayslips=payslips.filter(function(p){ return p.empId===e.id; });
+  if(name==='overview'){
+    var b=calcBreakdown(e.basic);
+    document.getElementById('profileTab-overview').innerHTML=
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">'+
+      '<div style="background:var(--paper);border:1px solid var(--paper3);border-radius:8px;padding:14px">'+
+        '<div style="font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);font-weight:600;margin-bottom:10px">Employee Details</div>'+
+        '<div style="font-size:12px;line-height:2;color:var(--tx)">'+
+          '<div><span style="color:var(--mu);min-width:100px;display:inline-block">ID</span><span style="font-family:var(--fm)">'+e.id+'</span></div>'+
+          '<div><span style="color:var(--mu);min-width:100px;display:inline-block">Status</span><span class="badge '+(e.status==='Active'?'badge-green':e.status==='On Leave'?'badge-gold':'badge-red')+'">'+e.status+'</span></div>'+
+          '<div><span style="color:var(--mu);min-width:100px;display:inline-block">Joined</span><span style="font-family:var(--fm)">'+e.join+'</span></div>'+
+          '<div><span style="color:var(--mu);min-width:100px;display:inline-block">PAN</span><span style="font-family:var(--fm)">'+(e.pan||'—')+'</span></div>'+
+          '<div><span style="color:var(--mu);min-width:100px;display:inline-block">Bank</span>'+(e.bank||'—')+'</div>'+
+          '<div><span style="color:var(--mu);min-width:100px;display:inline-block">WhatsApp</span>'+(e.whatsapp?'<span style="color:#25D366;font-family:var(--fm)">+'+e.whatsapp+'</span>':'<span style="color:var(--mu2)">Not set</span>')+'</div>'+
+        '</div>'+
+      '</div>'+
+      '<div style="background:var(--paper);border:1px solid var(--paper3);border-radius:8px;padding:14px">'+
+        '<div style="font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);font-weight:600;margin-bottom:10px">Current Salary</div>'+
+        '<div style="font-size:12px;line-height:2">'+
+          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mu)">Basic</span><span style="font-family:var(--fm)">'+fmt(b.basic)+'</span></div>'+
+          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mu)">HRA</span><span style="font-family:var(--fm)">'+fmt(b.hra)+'</span></div>'+
+          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mu)">Allowances</span><span style="font-family:var(--fm)">'+fmt(b.ta+b.sa)+'</span></div>'+
+          '<div style="display:flex;justify-content:space-between;border-top:1px solid var(--paper3);padding-top:4px;margin-top:4px"><span style="color:var(--mu)">Gross</span><span style="font-family:var(--fm);font-weight:600">'+fmt(b.gross)+'</span></div>'+
+          '<div style="display:flex;justify-content:space-between"><span style="color:var(--mu)">Deductions</span><span style="font-family:var(--fm);color:var(--red)">−'+fmt(b.totalDeductions)+'</span></div>'+
+          '<div style="display:flex;justify-content:space-between;border-top:1px solid var(--paper3);padding-top:4px;margin-top:4px"><span style="font-weight:600">Net Pay</span><span style="font-family:var(--fm);font-weight:700;color:var(--green)">'+fmt(b.net)+'</span></div>'+
+        '</div>'+
+      '</div></div>'+
+      '<div style="font-size:12px;color:var(--mu);padding:8px 0">'+empPayslips.length+' payslip(s) issued · Latest: '+(empPayslips.length?empPayslips[empPayslips.length-1].month:'—')+'</div>';
+  }
+  if(name==='history'){
+    document.getElementById('profileTab-history').innerHTML=empPayslips.length
+      ?empPayslips.slice().reverse().map(function(p){ var sent=waSentLog[p.empId+'|'+p.month]; return '<div class="profile-hist-row"><span style="font-family:var(--fm);font-size:11px;color:var(--mu);width:120px">'+p.month+'</span><span style="flex:1">'+fmt(p.gross)+' gross</span><span style="color:var(--red);font-family:var(--fm);font-size:11px;width:100px;text-align:right">−'+fmt(p.deductions)+'</span><span style="color:var(--green);font-family:var(--fm);font-weight:600;width:100px;text-align:right">'+fmt(p.netPay)+'</span><span style="width:60px;text-align:center">'+(sent?'<span style="font-size:10px;color:#25D366">💬✓</span>':'<span style="font-size:10px;color:var(--mu2)">—</span>')+'</span><button class="icon-btn" onclick="viewPayslip(\''+p.empId+'\',\''+p.month+'\');closeModal(\'profileModal\')">👁</button></div>'; }).join('')
+      :'<div class="empty-state"><div class="es-icon">📄</div><p>No payslips yet</p></div>';
+  }
+  if(name==='ytd'){
+    var ytdGross=0,ytdNet=0,ytdPF=0,ytdTDS=0,ytdDed=0, cy=new Date().getFullYear();
+    empPayslips.forEach(function(p){ if(p.month&&p.month.includes(cy)){ ytdGross+=p.gross||0; ytdNet+=p.netPay||0; ytdDed+=p.deductions||0; ytdPF+=(p.breakdown&&p.breakdown.pf)||0; ytdTDS+=(p.breakdown&&p.breakdown.tds)||0; } });
+    var revHist=incrementHistory[_profileEmpId]||[];
+    document.getElementById('profileTab-ytd').innerHTML=
+      '<div style="font-size:11px;color:var(--mu);margin-bottom:14px">Year-to-Date for '+cy+' ('+empPayslips.filter(function(p){ return p.month&&p.month.includes(cy); }).length+' months)</div>'+
+      '<div class="ytd-grid">'+
+        '<div class="ytd-card"><div class="ytd-card-label">YTD Gross</div><div class="ytd-card-val">'+fmt(ytdGross)+'</div></div>'+
+        '<div class="ytd-card"><div class="ytd-card-label">YTD Net Pay</div><div class="ytd-card-val" style="color:var(--green)">'+fmt(ytdNet)+'</div></div>'+
+        '<div class="ytd-card"><div class="ytd-card-label">YTD PF</div><div class="ytd-card-val">'+fmt(ytdPF)+'</div></div>'+
+        '<div class="ytd-card"><div class="ytd-card-label">YTD TDS</div><div class="ytd-card-val" style="color:var(--red)">'+fmt(ytdTDS)+'</div></div>'+
+      '</div>'+
+      '<div style="background:var(--ink);border-radius:8px;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">'+
+        '<div><div style="font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.4);font-weight:600">Total Deductions YTD</div><div style="font-family:var(--fm);font-size:18px;color:#ff8a9a;margin-top:3px">'+fmt(ytdDed)+'</div></div>'+
+        '<div style="text-align:right"><div style="font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.4);font-weight:600">Take-Home YTD</div><div style="font-family:var(--fm);font-size:22px;color:var(--gold2);font-weight:600;margin-top:3px">'+fmt(ytdNet)+'</div></div>'+
+      '</div>'+
+      (revHist.length?'<div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--mu);font-weight:600;margin-bottom:8px">Salary Revision History</div>'+
+        revHist.slice().reverse().map(function(h){ return '<div class="increment-row"><span style="font-family:var(--fm);font-size:10px;color:var(--mu);min-width:75px">'+h.date+'</span><span style="font-size:12px;flex:1">'+h.reason+(h.notes?' · '+h.notes:'')+'</span><span style="font-family:var(--fm);font-size:11px;color:var(--mu2);text-decoration:line-through;margin-right:8px">'+fmt(h.oldBasic)+'</span><span style="font-family:var(--fm);font-size:12px;color:var(--green);font-weight:600">'+fmt(h.newBasic)+'</span></div>'; }).join(''):'');
+  }
+}
+
+// ── SALARY INCREMENT ─────────────────────────────────
+function openIncrement(empId){
+  var e=employees.find(function(x){ return x.id===empId; }); if(!e) return;
+  _incrementEmpId=empId;
+  document.getElementById('incrementEmpName').textContent=e.fname+' '+e.lname+' · '+e.desig;
+  document.getElementById('incrCurrentBasic').value=e.basic;
+  document.getElementById('incrNewBasic').value='';
+  document.getElementById('incrNotes').value='';
+  document.getElementById('incrEffective').value=new Date().toISOString().substring(0,7);
+  document.getElementById('incrPreviewGrid').innerHTML='<span style="color:var(--mu)">Enter new basic to preview</span>';
+  renderIncrHistory(empId); openModal('incrementModal');
+}
+function updateIncrementPreview(){
+  var e=employees.find(function(x){ return x.id===_incrementEmpId; }); if(!e) return;
+  var newBasic=parseFloat(document.getElementById('incrNewBasic').value);
+  if(!newBasic||newBasic<=0){ document.getElementById('incrPreviewGrid').innerHTML='<span style="color:var(--mu)">Enter new basic to preview</span>'; return; }
+  var oldN=calcBreakdown(e.basic).net, newN=calcBreakdown(newBasic).net, diff=newBasic-e.basic, pct=e.basic>0?((diff/e.basic)*100).toFixed(1):'0';
+  document.getElementById('incrPreviewGrid').innerHTML=
+    '<div><div style="color:var(--mu);font-size:10px;margin-bottom:3px">Current Net Pay</div><div style="font-family:var(--fm)">'+fmt(oldN)+'</div></div>'+
+    '<div><div style="color:var(--mu);font-size:10px;margin-bottom:3px">New Net Pay</div><div style="font-family:var(--fm);color:var(--green);font-weight:600">'+fmt(newN)+'</div></div>'+
+    '<div><div style="color:var(--mu);font-size:10px;margin-bottom:3px">Increase</div><div style="font-family:var(--fm);color:var(--teal)">'+fmt(diff)+' (+'+pct+'%)</div></div>';
+}
+function renderIncrHistory(empId){
+  var hist=incrementHistory[empId]||[], el=document.getElementById('incrHistory');
+  el.innerHTML=hist.length?hist.slice().reverse().map(function(h){ return '<div class="increment-row"><span style="font-family:var(--fm);font-size:10px;color:var(--mu);min-width:75px">'+h.date+'</span><span style="font-size:12px;flex:1">'+h.reason+(h.notes?' — <em style="color:var(--mu);font-size:11px">'+h.notes+'</em>':'')+'</span><span style="font-family:var(--fm);font-size:11px;color:var(--mu2);text-decoration:line-through;margin-right:8px">'+fmt(h.oldBasic)+'</span><span style="font-family:var(--fm);font-size:12px;color:var(--green);font-weight:600">'+fmt(h.newBasic)+'</span></div>'; }).join(''):'<div style="font-size:12px;color:var(--mu);padding:6px 0">No revisions recorded yet</div>';
+}
+function applyIncrement(){
+  var e=employees.find(function(x){ return x.id===_incrementEmpId; }); if(!e) return;
+  var newBasic=parseFloat(document.getElementById('incrNewBasic').value);
+  if(!newBasic||newBasic<=0){ toast('Enter a valid new basic salary','err'); return; }
+  if(newBasic===e.basic){ toast('New basic is same as current','err'); return; }
+  var reason=document.getElementById('incrReason').value, notes=document.getElementById('incrNotes').value.trim();
+  var effective=document.getElementById('incrEffective').value;
+  if(!incrementHistory[_incrementEmpId]) incrementHistory[_incrementEmpId]=[];
+  var oldBasic=e.basic;
+  incrementHistory[_incrementEmpId].push({date:effective,oldBasic,newBasic,reason,notes});
+  e.basic=newBasic;
+  if(_sbReady) upsertEmployee(e).catch(function(er){ console.error(er); });
+  toast('✓ Salary revised: '+fmt(oldBasic)+' → '+fmt(newBasic)+' (+'+((( newBasic-oldBasic)/oldBasic)*100).toFixed(1)+'%)','ok');
+  closeModal('incrementModal'); renderEmployees(); renderDashboard();
+  if(e.whatsapp){
+    setTimeout(function(){
+      var msg='Dear '+e.fname+',\n\n🎉 *Salary Revision — '+settings.companyName+'*\n\nYour revised salary is effective from '+effective+'.\n\n• Previous Basic: '+fmt(oldBasic)+'\n• Revised Basic: '+fmt(newBasic)+'\n• Reason: '+reason+(notes?'\n• Note: '+notes:'')+'\n\nRegards,\n'+settings.companyName;
+      window.open('https://wa.me/'+e.whatsapp+'?text='+encodeURIComponent(msg),'_blank');
+    },500);
+  }
+}
+
+// ── BONUS / ONE-TIME PAYMENT ──────────────────────────
+function openBonus(empId){
+  var e=employees.find(function(x){ return x.id===empId; }); if(!e) return;
+  _bonusEmpId=empId;
+  document.getElementById('bonusEmpName').textContent=e.fname+' '+e.lname+' · '+e.desig;
+  document.getElementById('bonusAmount').value='';
+  document.getElementById('bonusNote').value='';
+  document.getElementById('bonusPreview').style.display='none';
+  closeModal('profileModal'); openModal('bonusModal');
+}
+function updateBonusPreview(){
+  var amt=parseFloat(document.getElementById('bonusAmount').value), type=document.getElementById('bonusType').value, note=document.getElementById('bonusNote').value;
+  var prev=document.getElementById('bonusPreview'), cont=document.getElementById('bonusPreviewContent');
+  if(!amt||amt<=0){ prev.style.display='none'; return; }
+  prev.style.display='block';
+  var e=employees.find(function(x){ return x.id===_bonusEmpId; }); if(!e) return;
+  var label={bonus:'Performance Bonus',incentive:'Sales Incentive',festival:'Festival Bonus',advance:'Salary Advance',reimbursement:'Reimbursement',other:'One-Time Payment'}[type]||type;
+  cont.innerHTML='<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="color:var(--mu)">Recipient</span><strong>'+e.fname+' '+e.lname+'</strong></div><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="color:var(--mu)">Type</span><span>'+label+'</span></div><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="color:var(--mu)">Amount</span><strong style="font-family:var(--fm);color:var(--gold);font-size:15px">'+fmt(amt)+'</strong></div>'+(note?'<div style="display:flex;justify-content:space-between"><span style="color:var(--mu)">Note</span><em>'+note+'</em></div>':'');
+}
+function sendBonusWhatsapp(){
+  var amt=parseFloat(document.getElementById('bonusAmount').value), type=document.getElementById('bonusType').value, note=document.getElementById('bonusNote').value.trim();
+  if(!amt||amt<=0){ toast('Enter a valid amount','err'); return; }
+  var e=employees.find(function(x){ return x.id===_bonusEmpId; }); if(!e) return;
+  if(!e.whatsapp){ toast('No WhatsApp number for '+e.fname,'err'); return; }
+  var label={bonus:'Performance Bonus',incentive:'Sales Incentive',festival:'Festival Bonus',advance:'Salary Advance',reimbursement:'Reimbursement',other:'One-Time Payment'}[type]||'Payment';
+  var msg='Dear '+e.fname+',\n\n🎉 *'+label+' — '+settings.companyName+'*\n\nA '+label.toLowerCase()+' of *'+fmt(amt)+'* has been processed for you.\n'+(note?'\n📝 Note: '+note+'\n':'')+'\nDate: '+new Date().toLocaleDateString('en-IN')+'\nEmployee ID: '+e.id+'\n\nRegards,\n'+settings.companyName;
+  window.open('https://wa.me/'+e.whatsapp+'?text='+encodeURIComponent(msg),'_blank');
+  toast('WhatsApp opened for '+e.fname,'ok'); closeModal('bonusModal');
+}
+
+// ── LIVE SALARY CALCULATOR ────────────────────────────
+function runSalaryCalc(){
+  var basic=parseFloat(document.getElementById('calcBasicInput').value), res=document.getElementById('calcResult');
+  if(!basic||basic<=0){ if(res) res.style.display='none'; return; }
+  if(res) res.style.display='block';
+  var b=calcBreakdown(basic);
+  var items=[
+    {label:'Basic Salary',val:b.basic},{label:'HRA ('+settings.hraPercent+'%)',val:b.hra},
+    {label:'Transport Allowance',val:b.ta},{label:'Special Allowance',val:b.sa},
+    {label:'PF ('+settings.pfPercent+'%)',val:b.pf,red:true},{label:'Professional Tax',val:b.pt,red:true},
+    {label:'TDS ('+settings.tdsPercent+'%)',val:b.tds,red:true}
+  ];
+  if(b.esi>0) items.push({label:'ESI ('+settings.esiPercent+'%)',val:b.esi,red:true});
+  document.getElementById('calcGrid').innerHTML=items.map(function(i){ return '<div class="calc-cell"><div class="calc-cell-label">'+i.label+'</div><div class="calc-cell-val" style="color:'+(i.red?'var(--red)':'var(--tx)')+'">'+fmt(i.val)+'</div></div>'; }).join('');
+  document.getElementById('calcGross').textContent=fmt(b.gross);
+  document.getElementById('calcDed').textContent=fmt(b.totalDeductions);
+  document.getElementById('calcNet').textContent=fmt(b.net);
+  document.getElementById('calcAnnual').innerHTML='Annual CTC: <strong style="font-family:var(--fm)">'+fmt(b.gross*12)+'</strong> &nbsp;·&nbsp; Annual Net: <strong style="font-family:var(--fm);color:var(--green)">'+fmt(b.net*12)+'</strong> &nbsp;·&nbsp; Effective tax rate: <strong style="font-family:var(--fm)">'+((b.tds/b.gross)*100).toFixed(1)+'%</strong>';
+}
+
+// ── PAYROLL SUMMARY EMAIL ─────────────────────────────
+function sendPayrollSummaryEmail(){
+  var m=MONTHS_LABEL[currentMonth], proc=payslips.filter(function(p){ return p.month===m; });
+  if(!proc.length){ toast('No payslips for '+m,'err'); return; }
+  var totalGross=proc.reduce(function(s,p){ return s+p.gross; },0), totalNet=proc.reduce(function(s,p){ return s+p.netPay; },0), totalDed=proc.reduce(function(s,p){ return s+p.deductions; },0);
+  var lines=proc.map(function(p){ var e=employees.find(function(x){ return x.id===p.empId; })||{fname:'?',lname:'',dept:''}; return '  '+e.fname+' '+e.lname+' ('+e.dept+'): Gross '+fmt(p.gross)+' | Net '+fmt(p.netPay); }).join('\n');
+  var subject=encodeURIComponent('Payroll Summary — '+m+' | '+settings.companyName);
+  var body=encodeURIComponent('Hi,\n\nPayroll summary for '+m+'.\n\nCompany: '+settings.companyName+'\nEmployees: '+proc.length+'\nTotal Gross: '+fmt(totalGross)+'\nTotal Deductions: '+fmt(totalDed)+'\nTotal Net Pay: '+fmt(totalNet)+'\n\nBreakdown:\n'+lines+'\n\nRegards,\n'+settings.companyName);
+  window.open('mailto:?subject='+subject+'&body='+body); toast('Email composer opened','ok');
+}
+
+// ── DARK MODE ─────────────────────────────────────────
+function initDark(){
+  if(lsGet('sag_dark')==='1'){
+    document.body.classList.add('dark');
+    var btn=document.getElementById('darkToggleBtn'); if(btn) btn.textContent='☀️';
+  }
+}
+function toggleDark(){
+  var isDark=document.body.classList.toggle('dark'); lsSet('sag_dark',isDark?'1':'');
+  var btn=document.getElementById('darkToggleBtn'); if(btn) btn.textContent=isDark?'☀️':'🌙';
+}
+
+// ── MODAL / TOAST / TABS ──────────────────────────────
+function openModal(id){ var el=document.getElementById(id); if(el) el.classList.add('open'); }
+function closeModal(id){ var el=document.getElementById(id); if(el) el.classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(function(o){ o.addEventListener('click',function(e){ if(e.target===o) o.classList.remove('open'); }); });
+
+function confirmAction(msg,cb){ _confirmCb=cb; document.getElementById('confirmMsg').textContent=msg; document.getElementById('confirmBar').classList.add('show'); document.getElementById('confirmYes').onclick=function(){ hideConfirm(); if(_confirmCb) _confirmCb(); }; }
+function hideConfirm(){ document.getElementById('confirmBar').classList.remove('show'); _confirmCb=null; }
+
+var _tt;
+function toast(msg,type){ var el=document.getElementById('toast'); el.textContent=msg; el.className=(type==='err'?'err':'ok')+' show'; clearTimeout(_tt); _tt=setTimeout(function(){ el.className=''; },2800); }
+
+function switchTab(prefix,name,el){
+  document.querySelectorAll('[id^="'+prefix+'-"]').forEach(function(p){ p.classList.remove('active'); });
+  document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
+  document.getElementById(prefix+'-'+name).classList.add('active');
+  el.classList.add('active');
+}
+
+// ══════════════════════════════════════════════════════
+// ── AUTH / OTP / ADMIN ────────────────────────────────
+// ══════════════════════════════════════════════════════
+
+var _otpCode = '', _otpEmail = '', _otpExpiry = 0;
+var _resendTimer = null, _adminUsers = [], _auditLog = [], _currentAdmin = null;
+
+function loadAdminUsers(){ var s=lsGet('sag_admin_users'); try{ _adminUsers=s?JSON.parse(s):[]; }catch(e){ _adminUsers=[]; } }
+function saveAdminUsers(){ lsSet('sag_admin_users',JSON.stringify(_adminUsers)); }
+function loadAuditLog(){ var s=lsGet('sag_audit_log'); try{ _auditLog=s?JSON.parse(s):[]; }catch(e){ _auditLog=[]; } }
+function saveAuditLog(){ lsSet('sag_audit_log',JSON.stringify(_auditLog.slice(0,50))); }
+function addAuditEntry(type,detail){ _auditLog.unshift({type:type,detail:detail,time:new Date().toLocaleString('en-IN'),email:_otpEmail||'—'}); saveAuditLog(); }
+function generateOTP(){ return Math.floor(100000+Math.random()*900000).toString(); }
+
+// ── EmailJS config (set your credentials here or via Settings UI)
+var EMAILJS_PUBLIC_KEY          = 'XQm1cQEgTxOwMVXdF';
+var EMAILJS_SERVICE_ID          = 'service_zxp8665';
+var EMAILJS_TEMPLATE_ID         = 'template_gjkv478';         // OTP template (existing)
+var EMAILJS_PAYSLIP_TEMPLATE_ID = lsGet('sag_ej_payslip_tpl')||'template_payslip'; // ← Set in Settings or here
+
+(function initEmailJS(){
+  function tryInit(){ if(typeof emailjs!=='undefined'){ emailjs.init({publicKey:EMAILJS_PUBLIC_KEY}); } else { setTimeout(tryInit,300); } }
+  tryInit();
+})();
+
+async function _sendOTPEmail(email,adminName,otpCode){
+  if(typeof emailjs==='undefined') throw new Error('EmailJS SDK failed to load.');
+  emailjs.init({publicKey:EMAILJS_PUBLIC_KEY});
+  var params={to_name:adminName||email,to_email:email,email:email,passcode:otpCode,otp:otpCode,code:otpCode,message:'Your SAG Payroll verification code is: '+otpCode+'\n\nThis code expires in 10 minutes.',from_name:'SAG Payroll',reply_to:email};
+  try{ return await emailjs.send(EMAILJS_SERVICE_ID,EMAILJS_TEMPLATE_ID,params); }
+  catch(err){ throw new Error('EmailJS: '+((err&&err.text)?err.text:(err&&err.message)?err.message:JSON.stringify(err))); }
+}
+
+async function sendOTP(){
+  var email=document.getElementById('loginEmail').value.trim().toLowerCase();
+  var errEl=document.getElementById('loginErr1'); errEl.classList.remove('show');
+  if(!email||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ errEl.textContent='Please enter a valid email address.'; errEl.classList.add('show'); return; }
+  loadAdminUsers();
+  var admin=_adminUsers.find(function(a){ return a.email.toLowerCase()===email; });
+  // First-run: auto-register as Super Admin
+  if(!_adminUsers.length){
+    var firstName=email.split('@')[0].replace(/[._]/g,' ').replace(/\b\w/g,function(c){ return c.toUpperCase(); });
+    admin={name:firstName,email:email,role:'Super Admin',addedOn:new Date().toLocaleDateString('en-IN'),active:true};
+    _adminUsers.push(admin); saveAdminUsers();
+  }
+  if(!admin||!admin.active){ errEl.textContent='This email is not registered as an admin. Contact your Super Admin.'; errEl.classList.add('show'); return; }
+  var btn=document.querySelector('#loginStep1 .login-btn');
+  btn.disabled=true; btn.textContent='Sending…';
+  _otpCode=generateOTP(); _otpEmail=email; _otpExpiry=Date.now()+10*60*1000;
+  var okEl=document.getElementById('loginOk2'), subText=document.getElementById('otpSubText');
+  okEl.classList.remove('show');
+  var isConfigured=(EMAILJS_PUBLIC_KEY!=='YOUR_PUBLIC_KEY'&&EMAILJS_SERVICE_ID!=='YOUR_SERVICE_ID'&&EMAILJS_TEMPLATE_ID!=='YOUR_TEMPLATE_ID');
+  if(isConfigured){
+    try{
+      await _sendOTPEmail(email,admin.name,_otpCode);
+      subText.textContent='A 6-digit code has been sent to '+email+'. Check your inbox (and spam folder).';
+      okEl.textContent='📧 Verification code sent to '+email; okEl.classList.add('show');
+    }catch(e){
+      errEl.textContent='Failed to send email: '+(e.message||e)+'. Check your EmailJS config.'; errEl.classList.add('show');
+      btn.disabled=false; btn.textContent='Send Verification Code →'; _otpCode=''; return;
+    }
+  } else {
+    console.warn('%c[SAG DEV MODE] OTP: '+_otpCode,'color:orange;font-size:16px;font-weight:bold');
+    subText.textContent='Dev mode: EmailJS not configured. Check browser console (F12) for OTP.';
+    okEl.textContent='⚠️ Dev mode — OTP logged to browser console only.'; okEl.classList.add('show');
+  }
+  btn.disabled=false; btn.textContent='Send Verification Code →';
+  document.getElementById('loginStep1').classList.remove('active');
+  document.getElementById('loginStep2').classList.add('active');
+  document.getElementById('otp0').focus();
+  startResendTimer(60); addAuditEntry('OTP_SENT','OTP sent to '+email);
+}
+
+function startResendTimer(secs){
+  clearInterval(_resendTimer);
+  var rl=document.getElementById('resendLink'),tEl=document.getElementById('resendTimer');
+  rl.style.display='none'; tEl.style.display='inline'; var rem=secs; tEl.textContent='('+rem+'s)';
+  _resendTimer=setInterval(function(){ rem--; tEl.textContent='('+rem+'s)'; if(rem<=0){ clearInterval(_resendTimer); tEl.style.display='none'; rl.style.display='inline'; } },1000);
+}
+
+async function resendOTP(){
+  _otpCode=generateOTP(); _otpExpiry=Date.now()+10*60*1000;
+  document.getElementById('loginErr2').classList.remove('show');
+  [0,1,2,3,4,5].forEach(function(i){ document.getElementById('otp'+i).value=''; });
+  var okEl=document.getElementById('loginOk2');
+  var isConfigured=(EMAILJS_PUBLIC_KEY!=='YOUR_PUBLIC_KEY'&&EMAILJS_SERVICE_ID!=='YOUR_SERVICE_ID'&&EMAILJS_TEMPLATE_ID!=='YOUR_TEMPLATE_ID');
+  if(isConfigured){
+    loadAdminUsers();
+    var admin=_adminUsers.find(function(a){ return a.email.toLowerCase()===_otpEmail; });
+    try{ await _sendOTPEmail(_otpEmail,admin?admin.name:_otpEmail,_otpCode); okEl.textContent='📧 New code sent to '+_otpEmail; okEl.classList.add('show'); }
+    catch(e){ okEl.textContent='⚠️ Resend failed — check EmailJS config.'; okEl.classList.add('show'); }
+  } else {
+    console.warn('%c[SAG DEV MODE] Resent OTP: '+_otpCode,'color:orange;font-size:16px;font-weight:bold');
+    okEl.textContent='⚠️ Dev mode — new OTP logged to browser console only.'; okEl.classList.add('show');
+  }
+  document.getElementById('otp0').focus(); startResendTimer(60); addAuditEntry('OTP_RESENT','OTP resent to '+_otpEmail);
+}
+
+function backToEmail(){
+  clearInterval(_resendTimer);
+  document.getElementById('loginStep2').classList.remove('active');
+  document.getElementById('loginStep1').classList.add('active');
+  document.getElementById('loginErr1').classList.remove('show');
+  document.getElementById('loginOk2').classList.remove('show');
+  _otpCode='';
+}
+
+function otpInput(idx){
+  var v=document.getElementById('otp'+idx).value.replace(/[^0-9]/g,'');
+  document.getElementById('otp'+idx).value=v;
+  if(v&&idx<5) document.getElementById('otp'+(idx+1)).focus();
+  var code=''; for(var i=0;i<6;i++) code+=document.getElementById('otp'+i).value;
+  if(code.length===6) setTimeout(verifyOTP,80);
+}
+
+function otpKey(e,idx){
+  if(e.key==='Backspace'&&!document.getElementById('otp'+idx).value&&idx>0) document.getElementById('otp'+(idx-1)).focus();
+  if(e.key==='Enter') verifyOTP();
+}
+
+function verifyOTP(){
+  var code=''; for(var i=0;i<6;i++) code+=(document.getElementById('otp'+i).value||'');
+  var errEl=document.getElementById('loginErr2'); errEl.classList.remove('show');
+  if(code.length<6){ errEl.textContent='Enter all 6 digits.'; errEl.classList.add('show'); return; }
+  if(Date.now()>_otpExpiry){ errEl.textContent='This code has expired. Please request a new one.'; errEl.classList.add('show'); [0,1,2,3,4,5].forEach(function(i){ document.getElementById('otp'+i).value=''; }); document.getElementById('otp0').focus(); addAuditEntry('OTP_EXPIRED','Expired OTP attempt for '+_otpEmail); return; }
+  if(code!==_otpCode){ errEl.textContent='Incorrect code. Please try again.'; errEl.classList.add('show'); [0,1,2,3,4,5].forEach(function(i){ document.getElementById('otp'+i).value=''; }); document.getElementById('otp0').focus(); addAuditEntry('OTP_FAILED','Wrong OTP attempt for '+_otpEmail); return; }
+  clearInterval(_resendTimer);
+  loadAdminUsers();
+  _currentAdmin=_adminUsers.find(function(a){ return a.email.toLowerCase()===_otpEmail; });
+  var loginTime=new Date().toLocaleString('en-IN');
+  addAuditEntry('LOGIN_SUCCESS','Signed in as '+(_currentAdmin?_currentAdmin.name:_otpEmail));
+  lsSet('sag_session',JSON.stringify({email:_otpEmail,time:loginTime,name:_currentAdmin?_currentAdmin.name:_otpEmail}));
+  var initials=(_currentAdmin&&_currentAdmin.name)?_currentAdmin.name.split(' ').map(function(w){ return w[0]; }).join('').slice(0,2).toUpperCase():'AD';
+  document.getElementById('sidebarAvatar').textContent=initials;
+  document.getElementById('sidebarName').textContent=_currentAdmin?_currentAdmin.name:_otpEmail;
+  document.getElementById('sidebarEmail').textContent=_otpEmail;
+  document.getElementById('adminKpiLastLogin').textContent=loginTime.split(',')[1]?loginTime.split(',')[1].trim():loginTime;
+  document.getElementById('adminKpiSessionSub').textContent=_otpEmail;
+  document.getElementById('loginScreen').classList.add('hidden');
+  appInit();
+}
+
+function logout(){
+  lsSet('sag_session',''); _currentAdmin=null; _otpCode=''; _otpExpiry=0; _sbReady=false;
+  [0,1,2,3,4,5].forEach(function(i){ document.getElementById('otp'+i).value=''; });
+  document.getElementById('loginEmail').value='';
+  document.getElementById('loginErr1').classList.remove('show');
+  document.getElementById('loginOk2').classList.remove('show');
+  document.getElementById('loginErr2').classList.remove('show');
+  document.getElementById('loginStep2').classList.remove('active');
+  document.getElementById('loginStep1').classList.add('active');
+  document.getElementById('loginScreen').classList.remove('hidden');
+  addAuditEntry('LOGOUT','Logged out');
+}
+
+// ── ADMIN PANEL ───────────────────────────────────────
+function renderAdminPage(){
+  loadAdminUsers(); loadAuditLog();
+  document.getElementById('adminKpiUsers').textContent=_adminUsers.filter(function(a){ return a.active; }).length;
+  var ul=document.getElementById('adminUsersList');
+  ul.innerHTML=_adminUsers.map(function(a,idx){
+    var initials=a.name.split(' ').map(function(w){ return w[0]; }).join('').slice(0,2).toUpperCase();
+    var isMe=a.email.toLowerCase()===_otpEmail;
+    return '<div class="admin-user-row">'+
+      '<div class="admin-user-avatar">'+initials+'</div>'+
+      '<div class="admin-user-info"><div class="admin-user-name">'+a.name+(isMe?' <span style="font-size:9px;background:var(--gold-dim);color:var(--gold);border-radius:4px;padding:2px 6px;font-weight:600">YOU</span>':'')+'</div>'+
+      '<div class="admin-user-meta">'+a.email+' · '+a.role+' · Added '+a.addedOn+'</div></div>'+
+      '<span class="badge '+(a.active?'badge-green':'badge-red')+'" style="margin-right:8px">'+(a.active?'Active':'Disabled')+'</span>'+
+      (!isMe?'<button class="icon-btn danger" onclick="removeAdmin('+idx+')" title="Remove">✕</button>':'')+
+    '</div>';
+  }).join('')||'<div class="empty-state"><p>No admins found</p></div>';
+  var al=document.getElementById('auditLogList');
+  al.innerHTML=_auditLog.length?_auditLog.slice(0,15).map(function(e){
+    var color=e.type==='LOGIN_SUCCESS'?'var(--green)':e.type==='LOGOUT'?'var(--gold)':e.type.indexOf('FAIL')>-1?'var(--red)':'var(--teal)';
+    var icon=e.type==='LOGIN_SUCCESS'?'✔':e.type==='LOGOUT'?'↪':e.type.indexOf('FAIL')>-1?'⚠':'✉';
+    return '<div class="admin-log-row"><div class="admin-log-dot" style="background:'+color+'"></div>'+
+      '<div style="flex:1;font-size:12px">'+icon+' '+e.detail+' <span style="color:var(--mu)">— '+e.email+'</span></div>'+
+      '<div class="admin-log-time">'+e.time+'</div></div>';
+  }).join(''):'<div style="padding:16px;font-size:12px;color:var(--mu);text-align:center">No login activity yet</div>';
+}
+
+function openAddAdmin(){
+  document.getElementById('newAdminName').value='';
+  document.getElementById('newAdminEmail').value='';
+  document.getElementById('newAdminRole').value='Payroll Admin';
+  openModal('addAdminModal');
+}
+
+function saveNewAdmin(){
+  var name=document.getElementById('newAdminName').value.trim();
+  var email=document.getElementById('newAdminEmail').value.trim().toLowerCase();
+  var role=document.getElementById('newAdminRole').value;
+  if(!name||!email){ toast('Name and email required','err'); return; }
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ toast('Invalid email','err'); return; }
+  if(_adminUsers.find(function(a){ return a.email.toLowerCase()===email; })){ toast('Email already an admin','err'); return; }
+  _adminUsers.push({name:name,email:email,role:role,addedOn:new Date().toLocaleDateString('en-IN'),active:true});
+  saveAdminUsers(); closeModal('addAdminModal'); renderAdminPage();
+  toast(name+' added as admin','ok'); addAuditEntry('ADMIN_ADDED',name+' ('+email+') added as '+role);
+}
+
+function removeAdmin(idx){
+  var a=_adminUsers[idx]; if(!a) return;
+  if(a.email.toLowerCase()===_otpEmail){ toast("Can't remove yourself",'err'); return; }
+  _adminUsers.splice(idx,1); saveAdminUsers(); renderAdminPage();
+  toast(a.name+' removed','ok'); addAuditEntry('ADMIN_REMOVED',a.name+' ('+a.email+') removed');
+}
+
+// Patch showPage and pageTitles for admin
+var _adminShowPageOrig = showPage;
+showPage = function(name, el) { _adminShowPageOrig(name, el); if(name==='admin') renderAdminPage(); };
+pageTitles['admin'] = 'Admin Panel';
+
+// ── appInit: called after successful login ────────────
+function appInit(){
+  var savedUrl=lsGet('sag_sb_url')||SB_URL, savedKey=lsGet('sag_sb_key')||SB_KEY;
+  SB_URL=savedUrl; SB_KEY=savedKey;
+  var su=document.getElementById('sbUrl'); if(su) su.value=savedUrl;
+  var sk=document.getElementById('sbKey'); if(sk) sk.value=savedKey;
+  lsSet('sag_sb_url',SB_URL); lsSet('sag_sb_key',SB_KEY);
+  var ls=lsGet('sag_settings');
+  if(ls){ try{ settings=Object.assign(settings,JSON.parse(ls)); applySettingsToUI(); }catch(e){} }
+  if(SB_URL&&SB_KEY){ initSupabase(); }
+  else {
+    showSync('err','⚠ Not connected — go to Settings to add Supabase credentials');
+    employees=[
+      {id:'SAG-001',fname:'Arun',lname:'Reddy',desig:'Sr. Software Engineer',dept:'Engineering',join:'2022-03-15',basic:75000,pan:'ABCPR1234K',acc:'1234567890',ifsc:'HDFC0001234',bank:'HDFC Bank',status:'Active',whatsapp:'919000000001'},
+      {id:'SAG-002',fname:'Priya',lname:'Sharma',desig:'Product Manager',dept:'Engineering',join:'2021-07-01',basic:90000,pan:'BCDQS2345L',acc:'2345678901',ifsc:'ICIC0001234',bank:'ICICI Bank',status:'Active',whatsapp:'919000000002'},
+      {id:'SAG-003',fname:'Rahul',lname:'Verma',desig:'Sales Executive',dept:'Sales',join:'2023-01-10',basic:45000,pan:'CDERT3456M',acc:'3456789012',ifsc:'SBIN0001234',bank:'SBI',status:'Active',whatsapp:'919000000003'},
+      {id:'SAG-004',fname:'Sneha',lname:'Patel',desig:'UI/UX Designer',dept:'Design',join:'2022-11-20',basic:60000,pan:'DEFTU4567N',acc:'4567890123',ifsc:'AXIS0001234',bank:'Axis Bank',status:'Active',whatsapp:'919000000004'},
+      {id:'SAG-005',fname:'Kiran',lname:'Nair',desig:'HR Executive',dept:'HR',join:'2020-06-01',basic:50000,pan:'EFGUV5678O',acc:'5678901234',ifsc:'KOTAK0001234',bank:'Kotak Bank',status:'Active',whatsapp:'919000000005'},
+      {id:'SAG-006',fname:'Divya',lname:'Menon',desig:'Finance Analyst',dept:'Finance',join:'2021-09-15',basic:65000,pan:'FGHVW6789P',acc:'6789012345',ifsc:'HDFC0005678',bank:'HDFC Bank',status:'Active',whatsapp:'919000000006'},
+      {id:'SAG-007',fname:'Suresh',lname:'Kumar',desig:'Marketing Manager',dept:'Marketing',join:'2019-04-01',basic:80000,pan:'GHIWX7890Q',acc:'7890123456',ifsc:'ICIC0005678',bank:'ICICI Bank',status:'Active',whatsapp:'919000000007'},
+    ];
+    autoSeedPayslips(); renderAll();
+  }
+}
+
+document.addEventListener('keydown',function(ev){
+  if(ev.key==='Escape'){ document.querySelectorAll('.modal-overlay.open').forEach(function(m){ m.classList.remove('open'); }); return; }
+  if(!ev.altKey||ev.ctrlKey||ev.metaKey) return;
+  var key=ev.key.toLowerCase();
+  var pageMap={d:'dashboard',e:'employees',p:'payroll',l:'payslips',w:'whatsapp',s:'settings'};
+  if(pageMap[key]){ ev.preventDefault(); showPage(pageMap[key],document.querySelector('.nav-item[onclick*="\''+pageMap[key]+'\'"]')); return; }
+  if(key==='/'){ ev.preventDefault(); openModal('shortcutModal'); }
+  if(key==='n'){ ev.preventDefault(); openAddEmployee(); }
+  if(key==='r'){ ev.preventDefault(); runPayroll(); }
+  if(key==='k'){ ev.preventDefault(); toggleDark(); }
+});
+</script>
+<!-- ADD ADMIN MODAL -->
+<div class="modal-overlay" id="addAdminModal">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-head">
+      <div class="modal-title">Add Admin User</div>
+      <button class="modal-close" onclick="closeModal('addAdminModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field"><label>Full Name</label><input id="newAdminName" placeholder="Ravi Kumar"></div>
+      <div class="field"><label>Email Address</label><input id="newAdminEmail" type="email" placeholder="ravi@company.com"></div>
+      <div class="field"><label>Role</label>
+        <select id="newAdminRole">
+          <option value="Super Admin">Super Admin</option>
+          <option value="Payroll Admin">Payroll Admin</option>
+          <option value="HR Admin">HR Admin</option>
+          <option value="View Only">View Only</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="top-btn ghost" onclick="closeModal('addAdminModal')">Cancel</button>
+      <button class="top-btn gold" onclick="saveNewAdmin()">Add Admin</button>
+    </div>
+  </div>
+</div>
+
+</body>
 </html>
