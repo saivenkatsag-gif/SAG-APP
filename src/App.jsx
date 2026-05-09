@@ -976,7 +976,7 @@ function ProductDetailModal({ product, onClose, onAddCart, user, showAuth, allPr
 }
 
 // ─── BANNER CAROUSEL ──────────────────────────────────────────
-function BannerCarousel({ banners, onCategoryLink }) {
+function BannerCarousel({ banners, onCategoryLink, onProductLink }) {
   const [idx, setIdx] = useState(0);
   const timerRef = useRef(null);
 
@@ -989,6 +989,12 @@ function BannerCarousel({ banners, onCategoryLink }) {
 
   if (!banners.length) return null;
   const b = banners[idx];
+
+  const handleCTA = () => {
+    if (b.linkProductId && onProductLink) { onProductLink(b.linkProductId); return; }
+    if (b.linkCategory && onCategoryLink) { onCategoryLink(b.linkCategory); return; }
+  };
+  const hasLink = !!(b.linkProductId || b.linkCategory);
 
   return (
     <div style={{ margin:"12px 14px 0",borderRadius:16,overflow:"hidden",position:"relative",boxShadow:"0 4px 20px rgba(36,84,199,0.15)" }}>
@@ -1025,15 +1031,17 @@ function BannerCarousel({ banners, onCategoryLink }) {
           {b.subtitle && (
             <div style={{ fontSize:"0.88rem",color:"rgba(255,255,255,0.9)",marginBottom:16,textShadow:"0 1px 4px rgba(0,0,0,0.4)" }}>{b.subtitle}</div>
           )}
-          {(b.cta || b.linkCategory) && (
+          {(b.cta || hasLink) && (
             <button
-              onClick={() => b.linkCategory && onCategoryLink && onCategoryLink(b.linkCategory)}
+              onClick={handleCTA}
               style={{
                 alignSelf:"flex-start",background:"#fff",color:"#1a2b6b",border:"none",borderRadius:40,
                 padding:"9px 20px",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:"0.83rem",
-                cursor:"pointer",boxShadow:"0 2px 10px rgba(0,0,0,0.2)"
+                cursor: hasLink ? "pointer" : "default",
+                boxShadow:"0 2px 10px rgba(0,0,0,0.2)",
+                opacity: hasLink ? 1 : 0.85,
               }}>
-              {b.cta || "Shop Now"} →
+              {b.cta || "Shop Now"} {hasLink ? "→" : ""}
             </button>
           )}
         </div>
@@ -1055,18 +1063,26 @@ function BannerCarousel({ banners, onCategoryLink }) {
 function BannerAdminModal({ banners, onSave, onClose }) {
   const [list, setList] = useState(banners.map(b => ({...b})));
   const [editIdx, setEditIdx] = useState(null);
-  const [form, setForm] = useState({ title:"", subtitle:"", badge:"", bg:"linear-gradient(135deg,#1a2b6b 0%,#2454c7 100%)", emoji:"🚁", cta:"Shop Now", imageUrl:"", linkCategory:"" });
+  const emptyForm = { title:"", subtitle:"", badge:"", bg:"linear-gradient(135deg,#1a2b6b 0%,#2454c7 100%)", emoji:"🚁", cta:"Shop Now", imageUrl:"", linkCategory:"", linkProductId:null, linkProductName:"", _linkType:"none" };
+  const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
   const imgInputRef = useRef(null);
+  const [productList, setProductList] = useState([]);
 
   const CATEGORY_OPTIONS = ["All","Drones","Batteries","Flight Controller","Accessories","Offers","New"];
 
+  useEffect(() => {
+    fetch(`${SUPABASE_URL}/rest/v1/products?order=name.asc&select=id,name,category`, { headers: sbHeaders })
+      .then(r => r.ok ? r.json() : []).then(rows => setProductList(rows||[])).catch(()=>{});
+  }, []);
+
   const openEdit = (i) => {
     setEditIdx(i);
-    setForm(i === -1
-      ? { title:"", subtitle:"", badge:"", bg:"linear-gradient(135deg,#1a2b6b 0%,#2454c7 100%)", emoji:"🚁", cta:"Shop Now", imageUrl:"", linkCategory:"" }
-      : {...list[i], imageUrl: list[i].imageUrl||"", linkCategory: list[i].linkCategory||"" });
+    if (i === -1) { setForm(emptyForm); return; }
+    const b = list[i];
+    const _linkType = b.linkProductId ? "product" : b.linkCategory ? "category" : "none";
+    setForm({...emptyForm, ...b, imageUrl: b.imageUrl||"", linkCategory: b.linkCategory||"", linkProductId: b.linkProductId||null, linkProductName: b.linkProductName||"", _linkType});
   };
 
   const handleImageUpload = (e) => {
@@ -1113,6 +1129,8 @@ function BannerAdminModal({ banners, onSave, onClose }) {
             id: saved.id,
             imageUrl: saved.image_url || b.imageUrl || "",
             linkCategory: saved.link_category || b.linkCategory || "",
+            linkProductId: saved.link_product_id || b.linkProductId || null,
+            linkProductName: saved.link_product_name || b.linkProductName || "",
           });
         } else {
           savedList.push(b);
@@ -1170,15 +1188,33 @@ function BannerAdminModal({ banners, onSave, onClose }) {
                 </div>
               ))}
 
-              {/* Link to Category */}
+              {/* Link – Category or Product */}
               <div style={{ marginBottom:14 }}>
-                <label style={{ fontSize:"0.7rem",color:"#6b7280",fontWeight:700,textTransform:"uppercase",display:"block",marginBottom:4 }}>🔗 Link Button to Category</label>
-                <select value={form.linkCategory} onChange={e => setForm(f=>({...f,linkCategory:e.target.value}))}
-                  style={{ width:"100%",padding:"9px 12px",background:"#f9fafb",border:"1.5px solid #e5e7eb",borderRadius:10,color:"#111827",fontFamily:"'DM Sans',sans-serif",fontSize:"0.88rem",outline:"none",boxSizing:"border-box" }}>
-                  <option value="">— No link —</option>
-                  {CATEGORY_OPTIONS.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
-                {form.linkCategory && <div style={{ marginTop:5,fontSize:"0.74rem",color:"#2454c7" }}>Button will navigate to: <strong>{form.linkCategory}</strong></div>}
+                <label style={{ fontSize:"0.7rem",color:"#6b7280",fontWeight:700,textTransform:"uppercase",display:"block",marginBottom:6 }}>🔗 CTA Button Links To</label>
+                <div style={{ display:"flex",gap:6,marginBottom:8 }}>
+                  {[["none","No Link"],["category","Category"],["product","Product"]].map(([val,lbl]) => (
+                    <button key={val} onClick={() => setForm(f=>({...f,_linkType:val,linkCategory:val==="category"?f.linkCategory:"",linkProductId:val==="product"?f.linkProductId:null,linkProductName:val==="product"?f.linkProductName:""}))}
+                      style={{ flex:1,padding:"7px 4px",borderRadius:8,border:`1.5px solid ${(form._linkType||"none")===val?"#2454c7":"#e5e7eb"}`,background:(form._linkType||"none")===val?"#eff6ff":"#f9fafb",color:(form._linkType||"none")===val?"#2454c7":"#6b7280",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontSize:"0.75rem",fontWeight:700 }}>
+                      {lbl}
+                    </button>
+                  ))}
+                </div>
+                {(form._linkType||"none")==="category" && (
+                  <select value={form.linkCategory} onChange={e => setForm(f=>({...f,linkCategory:e.target.value}))}
+                    style={{ width:"100%",padding:"9px 12px",background:"#f9fafb",border:"1.5px solid #e5e7eb",borderRadius:10,color:"#111827",fontFamily:"'DM Sans',sans-serif",fontSize:"0.88rem",outline:"none",boxSizing:"border-box" }}>
+                    <option value="">— Select Category —</option>
+                    {CATEGORY_OPTIONS.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                )}
+                {(form._linkType||"none")==="product" && (
+                  <select value={form.linkProductId||""} onChange={e=>{const p=productList.find(x=>String(x.id)===e.target.value);setForm(f=>({...f,linkProductId:e.target.value,linkProductName:p?.name||""}));}}
+                    style={{ width:"100%",padding:"9px 12px",background:"#f9fafb",border:"1.5px solid #e5e7eb",borderRadius:10,color:"#111827",fontFamily:"'DM Sans',sans-serif",fontSize:"0.88rem",outline:"none",boxSizing:"border-box" }}>
+                    <option value="">— Select Product —</option>
+                    {productList.map(p=><option key={p.id} value={p.id}>{p.name} ({p.category})</option>)}
+                  </select>
+                )}
+                {(form._linkType||"none")==="category" && form.linkCategory && <div style={{ marginTop:5,fontSize:"0.74rem",color:"#2454c7" }}>→ Opens <strong>{form.linkCategory}</strong></div>}
+                {(form._linkType||"none")==="product" && form.linkProductName && <div style={{ marginTop:5,fontSize:"0.74rem",color:"#2454c7" }}>→ Opens product: <strong>{form.linkProductName}</strong></div>}
               </div>
 
               {!form.imageUrl && (
@@ -1209,7 +1245,9 @@ function BannerAdminModal({ banners, onSave, onClose }) {
                   </div>
                   <div style={{ flex:1 }}>
                     <div style={{ fontWeight:700,fontSize:"0.88rem",color:"#111827" }}>{b.title||"(Image Banner)"}</div>
-                    <div style={{ fontSize:"0.75rem",color:"#6b7280" }}>{b.linkCategory ? `→ ${b.linkCategory}` : b.subtitle}</div>
+                    <div style={{ fontSize:"0.75rem",color:"#6b7280" }}>
+                      {b.linkProductName ? `→ Product: ${b.linkProductName}` : b.linkCategory ? `→ ${b.linkCategory}` : b.subtitle}
+                    </div>
                   </div>
                   <button onClick={()=>openEdit(i)} style={{ background:"#eff6ff",border:"1px solid #85c9ff",color:"#2454c7",borderRadius:8,padding:"5px 11px",fontSize:"0.76rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:700 }}>Edit</button>
                   <button onClick={()=>deleteB(i)} style={{ background:"#fef2f2",border:"1px solid #fca5a5",color:"#ef4444",borderRadius:8,padding:"5px 8px",fontSize:"0.76rem",cursor:"pointer" }}>✕</button>
@@ -1384,7 +1422,7 @@ function HomePage({ user, cart, showAuth, showToast, onTabChange, banners, setBa
 
       {/* ─── MAIN SCROLL AREA ─── */}
       <div>
-        <BannerCarousel banners={banners} onCategoryLink={(cat) => setActiveCat(cat)} />
+        <BannerCarousel banners={banners} onCategoryLink={(cat) => setActiveCat(cat)} onProductLink={(productId) => { const p = products.find(x => String(x.id) === String(productId)); if (p) openProduct(p); }} />
 
         {search || activeCat !== "All" ? (
           <div style={{ padding:"16px 14px 8px" }}>
@@ -2239,6 +2277,8 @@ async function sbUpsertBanner(banner) {
     bg: banner.bg, emoji: banner.emoji, cta: banner.cta,
     image_url: banner.imageUrl || null,
     link_category: banner.linkCategory || null,
+    link_product_id: banner.linkProductId || null,
+    link_product_name: banner.linkProductName || null,
     sort_order: banner.sort_order || 0,
     active: banner.active !== false,
   };
@@ -2334,19 +2374,45 @@ function AdminBanners({ showToast }) {
   const [banners, setBanners] = useState(DEFAULT_BANNERS.map((b,i) => ({...b, sort_order:i, active:true})));
   const [editIdx, setEditIdx] = useState(null);
   const [loading, setLoading] = useState(false);
-  const emptyForm = { title:"", subtitle:"", badge:"", bg:"linear-gradient(135deg,#0d3a8e 0%,#1a56cc 60%,#0d3a8e 100%)", emoji:"🚁", cta:"Shop Now", active:true };
+  const CATEGORY_OPTIONS = ["All","Drones","Batteries","Flight Controller","Accessories","Offers","New"];
+  const emptyForm = { title:"", subtitle:"", badge:"", bg:"linear-gradient(135deg,#0d3a8e 0%,#1a56cc 60%,#0d3a8e 100%)", emoji:"🚁", cta:"Shop Now", active:true, imageUrl:"", linkCategory:"", linkProductId:null, linkProductName:"" };
   const [form, setForm] = useState(emptyForm);
+  const [products, setProducts] = useState([]);
+  const imgInputRef = useRef(null);
+
+  useEffect(() => {
+    fetch(`${SUPABASE_URL}/rest/v1/products?order=name.asc&select=id,name,category`, { headers: sbHeaders })
+      .then(r => r.ok ? r.json() : []).then(rows => setProducts(rows||[])).catch(()=>{});
+  }, []);
+
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => setForm(f => ({...f, imageUrl: ev.target.result}));
+    reader.readAsDataURL(file);
+  };
 
   useEffect(() => {
     sbGetBanners().then(rows => {
-      if (rows && rows.length) setBanners(rows.map(r => ({ id:r.id, db_id:r.id, title:r.title, subtitle:r.subtitle, badge:r.badge, bg:r.bg, emoji:r.emoji, cta:r.cta, active:r.active!==false, sort_order:r.sort_order||0 })));
+      if (rows && rows.length) setBanners(rows.map(r => ({
+        id:r.id, db_id:r.id, title:r.title, subtitle:r.subtitle, badge:r.badge,
+        bg:r.bg, emoji:r.emoji, cta:r.cta, active:r.active!==false, sort_order:r.sort_order||0,
+        imageUrl: r.image_url || "", linkCategory: r.link_category || "",
+        linkProductId: r.link_product_id || null, linkProductName: r.link_product_name || "",
+      })));
     }).catch(()=>{});
   }, []);
 
-  const openEdit = (i) => { setEditIdx(i); setForm(i===-1 ? emptyForm : {...banners[i]}); };
+  const openEdit = (i) => {
+    if (i === -1) { setEditIdx(-1); setForm(emptyForm); return; }
+    const b = banners[i];
+    const _linkType = b.linkProductId ? "product" : b.linkCategory ? "category" : "none";
+    setEditIdx(i); setForm({...emptyForm, ...b, _linkType});
+  };
 
   const saveForm = async () => {
-    if (!form.title.trim()) return;
+    if (!form.title.trim() && !form.imageUrl) { showToast("error","Add a title or an image."); return; }
     setLoading(true);
     try {
       if (editIdx === -1) {
@@ -2384,14 +2450,73 @@ function AdminBanners({ showToast }) {
       <button onClick={()=>setEditIdx(null)} style={{ display:"flex",alignItems:"center",gap:6,background:"none",border:"none",color:"#7aab8a",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontSize:"0.85rem",marginBottom:20,padding:0 }}>← Back to Banners</button>
       <div style={{ background:"#131f16",border:"1px solid rgba(46,204,113,0.2)",borderRadius:16,padding:24,maxWidth:560 }}>
         <div className="modal-title">{editIdx===-1?"Add Banner":"Edit Banner"}</div>
-        {[["Title","title","text","e.g. SALE IS LIVE"],["Subtitle","subtitle","text","e.g. Up to 20% off on Drones"],["Badge","badge","text","e.g. LIMITED TIME"],["Emoji","emoji","text","e.g. 🚁"],["CTA Button","cta","text","e.g. Shop Now"]].map(([lbl,key,type,ph])=>(
-          <div key={key} className="modal-field"><label>{lbl}</label><input type={type} placeholder={ph} value={form[key]||""} onChange={e=>setForm(f=>({...f,[key]:e.target.value}))} /></div>
-        ))}
+
+        {/* ── Image Upload ── */}
         <div className="modal-field">
-          <label>Background CSS Gradient</label>
-          <input value={form.bg} onChange={e=>setForm(f=>({...f,bg:e.target.value}))} placeholder="linear-gradient(135deg,#0d3a8e 0%,...)" style={{ fontFamily:"monospace",fontSize:"0.8rem" }} />
-          <div className="gradient-preview" style={{ background:form.bg }} />
+          <label>📷 Banner Image (JPG/PNG) — fills entire banner</label>
+          <div onClick={() => imgInputRef.current?.click()} style={{
+            width:"100%",height:110,border:"2px dashed rgba(46,204,113,0.4)",borderRadius:12,
+            display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
+            background: form.imageUrl ? "transparent" : "rgba(46,204,113,0.04)",cursor:"pointer",
+            position:"relative",overflow:"hidden"
+          }}>
+            {form.imageUrl
+              ? <img src={form.imageUrl} alt="preview" style={{ width:"100%",height:"100%",objectFit:"cover" }} />
+              : <><div style={{ fontSize:"2rem",marginBottom:4 }}>📷</div><div style={{ fontSize:"0.78rem",color:"#7aab8a",fontWeight:600 }}>Click to upload JPG / PNG</div><div style={{ fontSize:"0.7rem",color:"#5a8a6a",marginTop:2 }}>Replaces the gradient background</div></>
+            }
+          </div>
+          <input ref={imgInputRef} type="file" accept="image/jpeg,image/png,image/jpg,image/webp" onChange={handleImageUpload} style={{ display:"none" }} />
+          {form.imageUrl && <button onClick={() => setForm(f=>({...f,imageUrl:""}))} style={{ marginTop:6,background:"none",border:"1px solid rgba(224,80,80,0.4)",color:"#e05050",borderRadius:8,padding:"3px 10px",fontSize:"0.75rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif" }}>✕ Remove Image</button>}
         </div>
+
+        {/* ── Text Fields ── */}
+        {[["Title (shown over image)","title","e.g. SALE IS LIVE"],["Subtitle","subtitle","e.g. Up to 20% off on Drones"],["Badge","badge","e.g. LIMITED TIME"],["CTA Button Text","cta","e.g. Shop Now"]].map(([lbl,key,ph])=>(
+          <div key={key} className="modal-field"><label>{lbl}</label><input type="text" placeholder={ph} value={form[key]||""} onChange={e=>setForm(f=>({...f,[key]:e.target.value}))} /></div>
+        ))}
+
+        {/* ── Emoji (only when no image) ── */}
+        {!form.imageUrl && (
+          <div className="modal-field"><label>Emoji (shown when no image)</label><input type="text" placeholder="🚁" value={form.emoji||""} onChange={e=>setForm(f=>({...f,emoji:e.target.value}))} /></div>
+        )}
+
+        {/* ── Gradient (only when no image) ── */}
+        {!form.imageUrl && (
+          <div className="modal-field">
+            <label>Background CSS Gradient</label>
+            <input value={form.bg||""} onChange={e=>setForm(f=>({...f,bg:e.target.value}))} placeholder="linear-gradient(135deg,#0d3a8e 0%,...)" style={{ fontFamily:"monospace",fontSize:"0.8rem" }} />
+            <div className="gradient-preview" style={{ background:form.bg }} />
+          </div>
+        )}
+
+        {/* ── CTA Link Type ── */}
+        <div className="modal-field">
+          <label>🔗 CTA Button Links To</label>
+          <div style={{ display:"flex",gap:8,marginBottom:10 }}>
+            {[["none","No Link"],["category","Category"],["product","Specific Product"]].map(([val,lbl]) => (
+              <button key={val} onClick={() => setForm(f=>({...f, _linkType:val, linkCategory: val==="category"?f.linkCategory:"", linkProductId: val==="product"?f.linkProductId:null, linkProductName: val==="product"?f.linkProductName:""}))}
+                style={{ flex:1,padding:"7px 4px",borderRadius:8,border:`1px solid ${(form._linkType||"none")===val?"#2ecc71":"rgba(46,204,113,0.2)"}`,background:(form._linkType||"none")===val?"rgba(46,204,113,0.15)":"transparent",color:(form._linkType||"none")===val?"#2ecc71":"#7aab8a",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontSize:"0.75rem",fontWeight:700 }}>
+                {lbl}
+              </button>
+            ))}
+          </div>
+          {(form._linkType||"none")==="category" && (
+            <select value={form.linkCategory||""} onChange={e=>setForm(f=>({...f,linkCategory:e.target.value}))}
+              style={{ width:"100%",padding:"9px 12px",background:"#0a0f0d",border:"1.5px solid rgba(46,204,113,0.25)",borderRadius:10,color:"#fff",fontFamily:"'DM Sans',sans-serif",fontSize:"0.88rem",outline:"none",boxSizing:"border-box" }}>
+              <option value="">— Select Category —</option>
+              {CATEGORY_OPTIONS.map(c=><option key={c} value={c}>{c}</option>)}
+            </select>
+          )}
+          {(form._linkType||"none")==="product" && (
+            <select value={form.linkProductId||""} onChange={e=>{const p=products.find(x=>String(x.id)===e.target.value);setForm(f=>({...f,linkProductId:e.target.value,linkProductName:p?.name||""}));}}
+              style={{ width:"100%",padding:"9px 12px",background:"#0a0f0d",border:"1.5px solid rgba(46,204,113,0.25)",borderRadius:10,color:"#fff",fontFamily:"'DM Sans',sans-serif",fontSize:"0.88rem",outline:"none",boxSizing:"border-box" }}>
+              <option value="">— Select Product —</option>
+              {products.map(p=><option key={p.id} value={p.id}>{p.name} ({p.category})</option>)}
+            </select>
+          )}
+          {((form._linkType||"none")==="category" && form.linkCategory) && <div style={{ marginTop:5,fontSize:"0.74rem",color:"#2ecc71" }}>→ Opens <strong>{form.linkCategory}</strong> category</div>}
+          {((form._linkType||"none")==="product" && form.linkProductName) && <div style={{ marginTop:5,fontSize:"0.74rem",color:"#2ecc71" }}>→ Opens product: <strong>{form.linkProductName}</strong></div>}
+        </div>
+
         <div style={{ display:"flex",gap:10,marginTop:20 }}>
           <button className="admin-btn green" onClick={saveForm} style={{ flex:1,justifyContent:"center" }} disabled={loading}>{loading?"Saving…":"Save Banner"}</button>
           <button className="admin-btn" onClick={()=>setEditIdx(null)} style={{ flex:1,justifyContent:"center",background:"rgba(255,255,255,0.05)",color:"#e8f5ec",border:"1px solid rgba(255,255,255,0.1)" }}>Cancel</button>
@@ -2409,16 +2534,15 @@ function AdminBanners({ showToast }) {
       <div style={{ display:"flex",flexDirection:"column",gap:12 }}>
         {banners.map((b,i) => (
           <div key={b.id||i} style={{ background:"#131f16",border:"1px solid rgba(30,53,34,1)",borderRadius:14,padding:"14px 18px",display:"flex",alignItems:"center",gap:16,flexWrap:"wrap" }}>
-            <div className="banner-preview" style={{ background:b.bg }}>
-              <span className="banner-emoji">{b.emoji}</span>
-              <div className="banner-info">
-                <div className="banner-title">{b.title}</div>
-                <div className="banner-sub">{b.subtitle}</div>
-              </div>
+            <div style={{ width:72,height:52,borderRadius:10,overflow:"hidden",flexShrink:0,background:b.bg||"#1a3a8e",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.4rem" }}>
+              {b.imageUrl ? <img src={b.imageUrl} alt="" style={{ width:"100%",height:"100%",objectFit:"cover" }} /> : (b.emoji||"🖼")}
             </div>
             <div style={{ flex:1,minWidth:120 }}>
-              <div style={{ fontSize:"0.8rem",color:"#7aab8a",marginBottom:4 }}>Badge: <span style={{ color:"#fff" }}>{b.badge}</span></div>
-              <div style={{ fontSize:"0.8rem",color:"#7aab8a" }}>CTA: <span style={{ color:"#2ecc71" }}>{b.cta}</span></div>
+              <div style={{ fontWeight:700,fontSize:"0.88rem",color:"#fff",marginBottom:3 }}>{b.title||"(Image Banner)"}</div>
+              <div style={{ fontSize:"0.75rem",color:"#7aab8a",marginBottom:2 }}>CTA: <span style={{ color:"#2ecc71" }}>{b.cta||"—"}</span></div>
+              {b.linkProductName ? <div style={{ fontSize:"0.72rem",color:"#85c9ff" }}>→ Product: {b.linkProductName}</div>
+               : b.linkCategory ? <div style={{ fontSize:"0.72rem",color:"#85c9ff" }}>→ Category: {b.linkCategory}</div>
+               : <div style={{ fontSize:"0.72rem",color:"#5a7a6a" }}>No link set</div>}
             </div>
             <div style={{ display:"flex",alignItems:"center",gap:8 }}>
               <label style={{ display:"flex",alignItems:"center",gap:6,cursor:"pointer",fontSize:"0.78rem",color:b.active?"#2ecc71":"#7aab8a" }}>
@@ -3226,6 +3350,8 @@ export default function App() {
           bg: r.bg, emoji: r.emoji, cta: r.cta,
           imageUrl: r.image_url || "",
           linkCategory: r.link_category || "",
+          linkProductId: r.link_product_id || null,
+          linkProductName: r.link_product_name || "",
           sort_order: r.sort_order || 0,
           active: r.active !== false,
         })));
