@@ -65,7 +65,7 @@ async function sbResendConfirmation(email) {
 }
 
 function saveSession(s) { localStorage.setItem("sag_sb_session", JSON.stringify(s)); }
-function loadSession() { try { return JSON.parse(localStorage.getItem("sag_sb_session") || "null"); } catch { return null; } }
+function loadSession() { try { const s = JSON.parse(localStorage.getItem("sag_sb_session") || "null"); if (s && s.email) s.email = s.email.trim().toLowerCase(); return s; } catch { return null; } }
 function clearSession() { localStorage.removeItem("sag_sb_session"); }
 
 // ─── SUPABASE DB HELPERS ───────────────────────────────────────
@@ -231,7 +231,8 @@ function AuthModal({ onClose, onLogin }) {
     try {
       const data = await sbSignIn(email.trim().toLowerCase(), password);
       const displayName = data.user?.user_metadata?.full_name || email.split("@")[0];
-      const session = { id: data.user.id, name: displayName, email: data.user.email, accessToken: data.access_token };
+      const userEmail = (data.user.email || email).trim().toLowerCase();
+      const session = { id: data.user.id, name: displayName, email: userEmail, accessToken: data.access_token };
       saveSession(session); onLogin(session); onClose();
     } catch (e) {
       if (e.message.includes("confirm your email")) setUnconfirmedEmail(email.trim().toLowerCase());
@@ -685,7 +686,7 @@ function HomePage({ user, cart, setCart, showAuth, showToast, onTabChange, banne
           </div>
           <div style={{ display:"flex",alignItems:"center",gap:8 }}>
             {/* Banner admin hint — admin only */}
-            {localUser?.email === ADMIN_EMAIL && (
+            {(localUser?.email||"").toLowerCase() === ADMIN_EMAIL && (
               <button onClick={() => setBannerAdminOpen(true)} title="Manage Banners" style={{
                 background:"rgba(255,255,255,0.12)",border:"none",borderRadius:8,padding:"6px 10px",
                 color:"#fff",fontSize:"0.7rem",fontWeight:700,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"
@@ -2049,7 +2050,7 @@ export default function App() {
 
   if (showAdmin) return (
     <div>
-      <AdminPage autoAuthed={user?.email === ADMIN_EMAIL} />
+      <AdminPage autoAuthed={(user?.email||"").toLowerCase() === ADMIN_EMAIL} />
       <div style={{ position:"fixed",bottom:20,right:20,zIndex:9999 }}>
         <button onClick={()=>setShowAdmin(false)} style={{ background:"#131f16",border:"1px solid rgba(46,204,113,0.3)",color:"#7aab8a",padding:"8px 14px",borderRadius:40,fontSize:"0.75rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif" }}>← Back to App</button>
       </div>
@@ -2084,7 +2085,7 @@ export default function App() {
       )}
 
       {/* Admin shortcut — only visible to the admin account */}
-      {user?.email === ADMIN_EMAIL && (
+      {(user?.email||"").toLowerCase() === ADMIN_EMAIL && (
         <div style={{ position:"fixed",bottom:72,right:16,zIndex:99 }}>
           <button onClick={()=>setShowAdmin(true)} style={{ background:"rgba(10,15,13,0.9)",border:"1px solid rgba(46,204,113,0.2)",color:"#7aab8a",padding:"7px 13px",borderRadius:40,fontSize:"0.72rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",backdropFilter:"blur(6px)" }}>⚙ Admin</button>
         </div>
