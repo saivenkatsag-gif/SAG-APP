@@ -1056,6 +1056,8 @@ function BannerAdminModal({ banners, onSave, onClose }) {
   const [list, setList] = useState(banners.map(b => ({...b})));
   const [editIdx, setEditIdx] = useState(null);
   const [form, setForm] = useState({ title:"", subtitle:"", badge:"", bg:"linear-gradient(135deg,#1a2b6b 0%,#2454c7 100%)", emoji:"🚁", cta:"Shop Now", imageUrl:"", linkCategory:"" });
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
   const imgInputRef = useRef(null);
 
   const CATEGORY_OPTIONS = ["All","Drones","Batteries","Flight Controller","Accessories","Offers","New"];
@@ -1086,6 +1088,42 @@ function BannerAdminModal({ banners, onSave, onClose }) {
   };
 
   const deleteB = (i) => setList(l => l.filter((_,x) => x !== i));
+
+  // ── Save All to Supabase ──
+  const saveAll = async () => {
+    setSaving(true); setSaveError("");
+    try {
+      // Delete banners removed from list
+      const removedDbIds = banners
+        .filter(orig => orig.db_id && !list.find(b => b.db_id === orig.db_id))
+        .map(b => b.db_id);
+      for (const id of removedDbIds) {
+        await sbDeleteBanner(id);
+      }
+      // Upsert all current banners
+      const savedList = [];
+      for (let i = 0; i < list.length; i++) {
+        const b = { ...list[i], sort_order: i };
+        const rows = await sbUpsertBanner(b);
+        const saved = Array.isArray(rows) ? rows[0] : rows;
+        if (saved) {
+          savedList.push({
+            ...b,
+            db_id: saved.id,
+            id: saved.id,
+            imageUrl: saved.image_url || b.imageUrl || "",
+            linkCategory: saved.link_category || b.linkCategory || "",
+          });
+        } else {
+          savedList.push(b);
+        }
+      }
+      onSave(savedList);
+    } catch (e) {
+      setSaveError("Failed to save banners. Please try again.");
+      setSaving(false);
+    }
+  };
 
   return (
     <div style={{ position:"fixed",inset:0,zIndex:9999,background:"rgba(0,0,0,0.55)",backdropFilter:"blur(8px)",display:"flex",alignItems:"flex-end",justifyContent:"center" }}
@@ -1180,8 +1218,13 @@ function BannerAdminModal({ banners, onSave, onClose }) {
               <button onClick={()=>openEdit(-1)} style={{ width:"100%",marginTop:14,padding:"11px",background:"#eff6ff",color:"#2454c7",border:"1.5px dashed #85c9ff",borderRadius:12,fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:"0.88rem",cursor:"pointer" }}>
                 + Add New Banner
               </button>
-              <button onClick={()=>onSave(list)} style={{ width:"100%",marginTop:10,padding:"11px",background:"#2454c7",color:"#fff",border:"none",borderRadius:40,fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:"0.9rem",cursor:"pointer" }}>
-                ✅ Save All Changes
+              {saveError && (
+                <div style={{ marginTop:10,padding:"8px 12px",background:"#fef2f2",border:"1px solid #fca5a5",borderRadius:8,color:"#dc2626",fontSize:"0.8rem" }}>
+                  {saveError}
+                </div>
+              )}
+              <button onClick={saveAll} disabled={saving} style={{ width:"100%",marginTop:10,padding:"11px",background: saving ? "#9ca3af" : "#2454c7",color:"#fff",border:"none",borderRadius:40,fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:"0.9rem",cursor:saving?"wait":"pointer",opacity:saving?0.8:1 }}>
+                {saving ? "⏳ Saving to cloud…" : "✅ Save All Changes"}
               </button>
             </>
           )}
@@ -2057,7 +2100,14 @@ async function sbGetBanners() {
   return res.json();
 }
 async function sbUpsertBanner(banner) {
-  const payload = { title:banner.title, subtitle:banner.subtitle, badge:banner.badge, bg:banner.bg, emoji:banner.emoji, cta:banner.cta, sort_order:banner.sort_order||0, active:banner.active!==false };
+  const payload = {
+    title: banner.title, subtitle: banner.subtitle, badge: banner.badge,
+    bg: banner.bg, emoji: banner.emoji, cta: banner.cta,
+    image_url: banner.imageUrl || null,
+    link_category: banner.linkCategory || null,
+    sort_order: banner.sort_order || 0,
+    active: banner.active !== false,
+  };
   if (banner.db_id) {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/banners?id=eq.${banner.db_id}`, {
       method:"PATCH", headers:{...sbHeaders,Prefer:"return=representation"}, body:JSON.stringify({...payload,updated_at:new Date().toISOString()}),
@@ -2655,6 +2705,23 @@ export default function App() {
   const [banners, setBanners] = useState(DEFAULT_BANNERS);
   const [showAdmin, setShowAdmin] = useState(false);
   const [products, setProducts] = useState(STATIC_PRODUCTS);
+
+  // ── Load banners from Supabase on mount ──
+  useEffect(() => {
+    sbGetBanners().then(rows => {
+      if (rows && rows.length) {
+        setBanners(rows.map(r => ({
+          id: r.id, db_id: r.id,
+          title: r.title, subtitle: r.subtitle, badge: r.badge,
+          bg: r.bg, emoji: r.emoji, cta: r.cta,
+          imageUrl: r.image_url || "",
+          linkCategory: r.link_category || "",
+          sort_order: r.sort_order || 0,
+          active: r.active !== false,
+        })));
+      }
+    }).catch(() => {});
+  }, []);
   const [modalProduct, setModalProduct] = useState(null);
   // Stack so similar-product clicks create a back-navigable history
   const [productHistory, setProductHistory] = useState([]);
