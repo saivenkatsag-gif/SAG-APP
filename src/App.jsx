@@ -1962,20 +1962,20 @@ function AccountPage({ user, onLogin, onLogout, cart, showToast }) {
                 <div style={{ background:"#131f16",border:"1px solid rgba(46,204,113,0.1)",borderRadius:12,padding:"16px",marginBottom:12 }}>
                   <div style={{ fontSize:"0.88rem",fontWeight:700,color:"#fff",marginBottom:14,textAlign:"left" }}>Personal Information</div>
                   {[["Full Name", user.name],["Email", user.email]].map(([label,val]) => (
-                    <div key={label} style={{ marginBottom:12 }}>
-                      <div style={{ fontSize:"0.7rem",color:"#7aab8a",fontWeight:700,textTransform:"uppercase",letterSpacing:".07em",marginBottom:4 }}>{label}</div>
-                      <div style={{ padding:"10px 13px",background:"rgba(255,255,255,0.04)",borderRadius:10,fontSize:"0.88rem",color:"rgba(255,255,255,0.5)",border:"1px solid rgba(46,204,113,0.08)" }}>{val}</div>
+                    <div key={label} style={{ marginBottom:12, textAlign:"left" }}>
+                      <div style={{ fontSize:"0.7rem",color:"#7aab8a",fontWeight:700,textTransform:"uppercase",letterSpacing:".07em",marginBottom:4,textAlign:"left" }}>{label}</div>
+                      <div style={{ padding:"10px 13px",background:"rgba(255,255,255,0.04)",borderRadius:10,fontSize:"0.88rem",color:"rgba(255,255,255,0.5)",border:"1px solid rgba(46,204,113,0.08)",textAlign:"left" }}>{val}</div>
                     </div>
                   ))}
-                  <div style={{ marginBottom:12 }}>
-                    <div style={{ fontSize:"0.7rem",color:"#7aab8a",fontWeight:700,textTransform:"uppercase",letterSpacing:".07em",marginBottom:4 }}>Phone Number</div>
+                  <div style={{ marginBottom:12, textAlign:"left" }}>
+                    <div style={{ fontSize:"0.7rem",color:"#7aab8a",fontWeight:700,textTransform:"uppercase",letterSpacing:".07em",marginBottom:4,textAlign:"left" }}>Phone Number</div>
                     <input value={profileForm.phone} onChange={e => setProfileForm(f=>({...f,phone:e.target.value}))} placeholder="+91 98765 43210"
-                      style={{ width:"100%",padding:"10px 13px",background:"#0a0f0d",border:"1.5px solid rgba(46,204,113,0.2)",borderRadius:10,color:"#fff",fontFamily:"'DM Sans',sans-serif",fontSize:"0.88rem",outline:"none",boxSizing:"border-box" }} />
+                      style={{ width:"100%",padding:"10px 13px",background:"#0a0f0d",border:"1.5px solid rgba(46,204,113,0.2)",borderRadius:10,color:"#fff",fontFamily:"'DM Sans',sans-serif",fontSize:"0.88rem",outline:"none",boxSizing:"border-box",textAlign:"left" }} />
                   </div>
-                  <div style={{ marginBottom:16 }}>
-                    <div style={{ fontSize:"0.7rem",color:"#7aab8a",fontWeight:700,textTransform:"uppercase",letterSpacing:".07em",marginBottom:4 }}>Delivery Address</div>
+                  <div style={{ marginBottom:16, textAlign:"left" }}>
+                    <div style={{ fontSize:"0.7rem",color:"#7aab8a",fontWeight:700,textTransform:"uppercase",letterSpacing:".07em",marginBottom:4,textAlign:"left" }}>Delivery Address</div>
                     <textarea value={profileForm.address} onChange={e => setProfileForm(f=>({...f,address:e.target.value}))} placeholder="House No, Street, City, State, Pincode"
-                      rows={3} style={{ width:"100%",padding:"10px 13px",background:"#0a0f0d",border:"1.5px solid rgba(46,204,113,0.2)",borderRadius:10,color:"#fff",fontFamily:"'DM Sans',sans-serif",fontSize:"0.88rem",outline:"none",boxSizing:"border-box",resize:"vertical" }} />
+                      rows={3} style={{ width:"100%",padding:"10px 13px",background:"#0a0f0d",border:"1.5px solid rgba(46,204,113,0.2)",borderRadius:10,color:"#fff",fontFamily:"'DM Sans',sans-serif",fontSize:"0.88rem",outline:"none",boxSizing:"border-box",resize:"vertical",textAlign:"left" }} />
                   </div>
                   <button onClick={saveProfile} disabled={savingProfile} style={{
                     width:"100%",padding:"12px",background:"#2ecc71",color:"#0a0f0d",border:"none",borderRadius:40,
