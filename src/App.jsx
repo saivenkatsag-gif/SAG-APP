@@ -950,15 +950,13 @@ function SectionBlock({ title, subtitle, products, onProductClick, onAddCart, us
           <div style={{ fontFamily:"'Barlow Condensed',sans-serif",fontSize:"1.25rem",fontWeight:800,color:"#111827" }}>{title}</div>
           <div style={{ fontSize:"0.74rem",color:"#6b7280",marginTop:1 }}>{subtitle}</div>
         </div>
-        <button onClick={onViewAll} style={{ background:`rgba(${accent==="#2ecc71"?"46,204,113":"240,160,48"},0.15)`,border:`1px solid ${accent}33`,color:accent,borderRadius:20,padding:"5px 12px",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:"0.75rem",cursor:"pointer" }}>
+        <button onClick={onViewAll} style={{ background:"#eff6ff",border:"1px solid #85c9ff",color:"#2454c7",borderRadius:20,padding:"5px 12px",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:"0.75rem",cursor:"pointer" }}>
           View All →
         </button>
       </div>
-      <div style={{ display:"flex",gap:10,overflowX:"auto",padding:"0 14px 10px",scrollbarWidth:"none" }}>
+      <div style={{ display:"flex",gap:10,overflowX:"auto",padding:"0 14px 12px",scrollbarWidth:"none" }}>
         {products.map(p => (
-          <div key={p.id} style={{ flexShrink:0,width:150 }}>
-            <ProductCard p={p} onClick={() => onProductClick(p)} onAddCart={() => onAddCart(p)} user={user} compact />
-          </div>
+          <ProductCard key={p.id} p={p} onClick={() => onProductClick(p)} onAddCart={() => onAddCart(p)} user={user} compact />
         ))}
       </div>
     </div>
@@ -968,44 +966,103 @@ function SectionBlock({ title, subtitle, products, onProductClick, onAddCart, us
 // ─── PRODUCT CARD ─────────────────────────────────────────────
 function ProductCard({ p, onClick, onAddCart, user, compact }) {
   const off = discount(p.price, p.originalPrice);
+
+  if (compact) {
+    // Horizontal compact card for section carousels
+    return (
+      <div onClick={onClick} style={{
+        background:"#fff",border:"1.5px solid #e8edf5",borderRadius:14,
+        overflow:"hidden",cursor:"pointer",display:"flex",flexDirection:"column",
+        width:150,flexShrink:0,
+        boxShadow:"0 1px 4px rgba(0,0,0,0.05)",position:"relative"
+      }}>
+        {(p.isNew||p.isOffer) && (
+          <div style={{
+            position:"absolute",top:6,left:6,zIndex:2,
+            background:p.isNew?"#0ea5e9":"#f59e0b",
+            color:"#fff",fontSize:"0.52rem",fontWeight:800,padding:"2px 6px",borderRadius:20,textTransform:"uppercase"
+          }}>{p.isNew?"New":"Sale"}</div>
+        )}
+        <div style={{ width:"100%",height:100,overflow:"hidden",background:"#f3f4f6",flexShrink:0 }}>
+          {p.image && <img src={p.image} alt={p.name} loading="lazy" style={{ width:"100%",height:"100%",objectFit:"cover" }} />}
+        </div>
+        <div style={{ padding:"8px 9px 8px",display:"flex",flexDirection:"column",gap:3 }}>
+          <div style={{ fontSize:"0.56rem",fontWeight:700,color:"#85c9ff",letterSpacing:".05em",textTransform:"uppercase" }}>{p.category||"Product"}</div>
+          <div style={{ fontSize:"0.76rem",fontWeight:600,color:"#111827",lineHeight:1.25,display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden" }}>{p.name}</div>
+          <div style={{ display:"flex",alignItems:"center",gap:4,flexWrap:"wrap",marginTop:2 }}>
+            <span style={{ fontFamily:"'Barlow Condensed',sans-serif",fontSize:"0.92rem",fontWeight:800,color:"#1a2b6b" }}>{formatINR(p.price)}</span>
+            {off && <span style={{ fontSize:"0.58rem",background:"#eff6ff",border:"1px solid #bfdbfe",color:"#2454c7",padding:"1px 4px",borderRadius:8,fontWeight:700 }}>{off}%</span>}
+          </div>
+          {p.originalPrice && <div style={{ fontSize:"0.67rem",color:"#9ca3af",textDecoration:"line-through" }}>{formatINR(p.originalPrice)}</div>}
+        </div>
+      </div>
+    );
+  }
+
+  // ── Grid card: fixed height, Myntra-style ──
   return (
     <div onClick={onClick} style={{
       background:"#ffffff",border:"1.5px solid #e8edf5",borderRadius:14,
-      overflow:"hidden",cursor:"pointer",display:"flex",flexDirection:"column",
-      transition:"box-shadow .2s,border-color .2s", position:"relative",
-      height: compact ? "auto" : 300,
-      boxShadow:"0 1px 4px rgba(0,0,0,0.06)"
+      overflow:"hidden",cursor:"pointer",
+      display:"flex",flexDirection:"column",
+      height:340,                         // fixed card height
+      boxShadow:"0 1px 6px rgba(0,0,0,0.07)",
+      position:"relative",
+      transition:"box-shadow .18s,border-color .18s"
     }}>
+      {/* Badge */}
       {(p.isNew||p.isOffer) && (
         <div style={{
-          position:"absolute",top:7,left:7,zIndex:2,background:p.isNew?"#0ea5e9":"#f59e0b",
-          color:"#fff",fontSize:"0.58rem",fontWeight:800,padding:"2px 7px",borderRadius:20,textTransform:"uppercase"
-        }}>{p.isNew?"New":"Sale"}</div>
+          position:"absolute",top:8,left:8,zIndex:2,
+          background:p.isNew?"#0ea5e9":"#f59e0b",
+          color:"#fff",fontSize:"0.55rem",fontWeight:800,
+          padding:"2px 8px",borderRadius:20,textTransform:"uppercase",
+          letterSpacing:".04em",boxShadow:"0 1px 4px rgba(0,0,0,0.15)"
+        }}>{p.isNew?"NEW":"SALE"}</div>
       )}
-      <div style={{ width:"100%",height:compact?100:145,overflow:"hidden",background:"#f3f4f6",flexShrink:0 }}>
-        {p.image && <img src={p.image} alt={p.name} loading="lazy" style={{ width:"100%",height:"100%",objectFit:"cover" }} />}
+
+      {/* Image — 60% of card */}
+      <div style={{ width:"100%",height:185,overflow:"hidden",background:"#f3f4f6",flexShrink:0 }}>
+        {p.image
+          ? <img src={p.image} alt={p.name} loading="lazy" style={{ width:"100%",height:"100%",objectFit:"cover" }} />
+          : <div style={{ width:"100%",height:"100%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"3rem",opacity:.2 }}>📦</div>
+        }
       </div>
-      <div style={{ padding: compact ? "8px 9px 6px" : "10px 12px 6px",flex:1,display:"flex",flexDirection:"column" }}>
-        <div style={{ fontSize:"0.62rem",fontWeight:700,color:"#85c9ff",letterSpacing:".06em",textTransform:"uppercase",marginBottom:2 }}>{p.category||"Product"}</div>
-        <div style={{ fontSize: compact ? "0.78rem" : "0.84rem",fontWeight:600,color:"#111827",lineHeight:1.3,marginBottom:4,display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden",flex:1 }}>{p.name}</div>
-        <div style={{ display:"flex",alignItems:"baseline",gap:5,flexWrap:"wrap",marginBottom: compact ? 0 : 2 }}>
-          <span style={{ fontFamily:"'Barlow Condensed',sans-serif",fontSize: compact ? "0.95rem" : "1.05rem",fontWeight:800,color:"#1a2b6b" }}>{formatINR(p.price)}</span>
-          {off && <span style={{ fontSize:"0.62rem",background:"#eff6ff",border:"1px solid #bfdbfe",color:"#2454c7",padding:"1px 5px",borderRadius:10,fontWeight:700 }}>{off}%</span>}
+
+      {/* Info — remaining space, no overflow */}
+      <div style={{ padding:"9px 10px 0",display:"flex",flexDirection:"column",flex:1,minHeight:0 }}>
+        {/* Category */}
+        <div style={{ fontSize:"0.58rem",fontWeight:700,color:"#85c9ff",letterSpacing:".07em",textTransform:"uppercase",marginBottom:3,lineHeight:1 }}>{p.category||"Product"}</div>
+        {/* Name — 2 lines max */}
+        <div style={{ fontSize:"0.82rem",fontWeight:600,color:"#111827",lineHeight:1.3,marginBottom:5,display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden" }}>{p.name}</div>
+        {/* Price row */}
+        <div style={{ display:"flex",alignItems:"center",gap:5,flexWrap:"wrap" }}>
+          <span style={{ fontFamily:"'Barlow Condensed',sans-serif",fontSize:"1.05rem",fontWeight:800,color:"#1a2b6b" }}>{formatINR(p.price)}</span>
+          {off && <span style={{ fontSize:"0.6rem",background:"#eff6ff",border:"1px solid #bfdbfe",color:"#2454c7",padding:"1px 5px",borderRadius:10,fontWeight:700 }}>{off}%</span>}
         </div>
-        {p.originalPrice && !compact && <div style={{ fontSize:"0.73rem",color:"#9ca3af",textDecoration:"line-through" }}>{formatINR(p.originalPrice)}</div>}
+        {/* Original price */}
+        {p.originalPrice && (
+          <div style={{ fontSize:"0.7rem",color:"#9ca3af",textDecoration:"line-through",marginTop:1 }}>{formatINR(p.originalPrice)}</div>
+        )}
       </div>
-      {!compact && (
-        <div style={{ padding:"6px 10px 10px",display:"flex",gap:8 }} onClick={e=>e.stopPropagation()}>
-          <button onClick={onAddCart} style={{
-            flex:1,background:"#2454c7",color:"#fff",border:"none",borderRadius:30,
-            padding:"8px 10px",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:"0.78rem",cursor:"pointer"
-          }}>🛒 {user?"Add":"Sign in"}</button>
-          <a href={waLink(p.waNum||"919390238537",`Hello SAG! I'm interested in ${p.name} (${formatINR(p.price)})`)} target="_blank" rel="noreferrer"
-            style={{ border:"1.5px solid #85c9ff",background:"#eff6ff",color:"#2454c7",borderRadius:30,padding:"8px 10px",cursor:"pointer",fontSize:"0.85rem",display:"flex",alignItems:"center",textDecoration:"none" }}>
-            💬
-          </a>
-        </div>
-      )}
+
+      {/* Action buttons — pinned to bottom */}
+      <div style={{ padding:"7px 10px 10px",display:"flex",gap:7,marginTop:"auto",flexShrink:0 }} onClick={e=>e.stopPropagation()}>
+        <button onClick={onAddCart} style={{
+          flex:1,background:"#1a2b6b",color:"#fff",border:"none",borderRadius:30,
+          padding:"8px 6px",fontFamily:"'DM Sans',sans-serif",fontWeight:700,
+          fontSize:"0.74rem",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:5,
+          whiteSpace:"nowrap"
+        }}>🛒 {user?"Add to Cart":"Sign in"}</button>
+        <a href={waLink(p.waNum||"919390238537",`Hello SAG! I'm interested in ${p.name} (${formatINR(p.price)})`)}
+          target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()}
+          style={{
+            width:36,height:36,flexShrink:0,
+            border:"1.5px solid #85c9ff",background:"#eff6ff",color:"#2454c7",
+            borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",
+            fontSize:"0.9rem",textDecoration:"none"
+          }}>💬</a>
+      </div>
     </div>
   );
 }
