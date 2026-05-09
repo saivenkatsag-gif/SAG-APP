@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 
-const SUPABASE_URL = "https://mefmpxohxrpnezwlbchj.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1lZm1weG9oeHJwbmV6d2xiY2hqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcyMTk3MjEsImV4cCI6MjA5Mjc5NTcyMX0.PbTag81xO1_X8vuxkizhVYjfhj3lz5CO3yjn8zlnNoM";
+const SUPABASE_URL = "https://mkhopakdgqbibtvtpuhg.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1raG9wYWtkZ3FiaWJ0dnRwdWhnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwNTczODcsImV4cCI6MjA5MTYzMzM4N30.oJSHnjo82-zJ7sMoENC2VXSTxia3_TTGBJJf7heZ7FA";
 const LOGO = "https://framerusercontent.com/images/J2SsjH2XcUHn6jAVX44tSmKJ8.png";
 
 // ─── SUPABASE AUTH HELPERS ─────────────────────────────────────
@@ -66,6 +66,61 @@ async function sbResendConfirmation(email) {
 function saveSession(s) { localStorage.setItem("sag_sb_session", JSON.stringify(s)); }
 function loadSession() { try { return JSON.parse(localStorage.getItem("sag_sb_session") || "null"); } catch { return null; } }
 function clearSession() { localStorage.removeItem("sag_sb_session"); }
+
+// ─── SUPABASE DB HELPERS ───────────────────────────────────────
+async function sbGetProfile(userId, accessToken) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/user_profiles?id=eq.${userId}&select=*`, {
+    headers: { ...sbHeaders, Authorization: `Bearer ${accessToken}` },
+  });
+  if (!res.ok) return null;
+  const data = await res.json();
+  return data[0] || null;
+}
+
+async function sbUpdateProfile(userId, accessToken, updates) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/user_profiles?id=eq.${userId}`, {
+    method: "PATCH",
+    headers: { ...sbHeaders, Authorization: `Bearer ${accessToken}`, Prefer: "return=representation" },
+    body: JSON.stringify({ ...updates, updated_at: new Date().toISOString() }),
+  });
+  if (!res.ok) throw new Error("Failed to update profile");
+  return res.json();
+}
+
+async function sbSaveEnquiry(accessToken, enquiry) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/user_enquiries`, {
+    method: "POST",
+    headers: { ...sbHeaders, Authorization: `Bearer ${accessToken}`, Prefer: "return=representation" },
+    body: JSON.stringify(enquiry),
+  });
+  if (!res.ok) return null;
+  return res.json();
+}
+
+async function sbGetEnquiries(userId, accessToken) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/user_enquiries?user_id=eq.${userId}&order=created_at.desc&select=*`, {
+    headers: { ...sbHeaders, Authorization: `Bearer ${accessToken}` },
+  });
+  if (!res.ok) return [];
+  return res.json();
+}
+
+// Admin: get all users profiles + enquiries
+async function sbGetAllProfiles() {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/user_profiles?select=*&order=created_at.desc`, {
+    headers: sbHeaders,
+  });
+  if (!res.ok) return [];
+  return res.json();
+}
+
+async function sbGetAllEnquiries() {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/user_enquiries?select=*&order=created_at.desc`, {
+    headers: sbHeaders,
+  });
+  if (!res.ok) return [];
+  return res.json();
+}
 
 // ─── STATIC DATA ──────────────────────────────────────────────
 const STATIC_PRODUCTS = [
@@ -280,10 +335,21 @@ function CartDrawer({ open, onClose, cart, setCart, user, showAuth }) {
   const updateQty = (id, delta) => setCart(c => c.map(i => i.id===id ? {...i,qty:Math.max(1,i.qty+delta)} : i));
   const remove = (id) => setCart(c => c.filter(i => i.id !== id));
 
-  const checkout = () => {
+  const checkout = async () => {
     if (!user) { onClose(); showAuth(); return; }
     const lines = cart.map(i => `• ${i.name} x${i.qty} — ${formatINR(i.price*i.qty)}`).join("\n");
     const msg = `🛒 *Cart Enquiry — SAG Drone Technologies*\n\n👤 *Customer:* ${user.name}\n✉️ *Email:* ${user.email||''}\n\n*Items:*\n${lines}\n\n💰 *Total: ${formatINR(total)}*\n\nPlease confirm availability. Thank you!`;
+    // Save enquiry to Supabase
+    if (user.accessToken) {
+      await sbSaveEnquiry(user.accessToken, {
+        user_id: user.id,
+        user_name: user.name,
+        user_email: user.email || "",
+        items: cart.map(i => ({ id:i.id, name:i.name, price:i.price, qty:i.qty })),
+        total_amount: total,
+        status: "enquired",
+      }).catch(() => {});
+    }
     window.open(`https://wa.me/919390238537?text=${encodeURIComponent(msg)}`, "_blank");
   };
 
@@ -882,34 +948,67 @@ function CategoriesPage({ products, onProductClick, onAddCart, user }) {
 // ─── ACCOUNT PAGE ─────────────────────────────────────────────
 function AccountPage({ user, onLogin, onLogout, cart, showToast }) {
   const [authOpen, setAuthOpen] = useState(false);
+  const [profile, setProfile] = useState(null);
+  const [enquiries, setEnquiries] = useState([]);
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [profileForm, setProfileForm] = useState({ phone:"", address:"" });
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [activeSection, setActiveSection] = useState("overview");
   const cartCount = cart.reduce((s,i) => s+i.qty, 0);
   const cartTotal = cart.reduce((s,i) => s+i.price*i.qty, 0);
 
+  useEffect(() => {
+    if (!user?.accessToken) return;
+    sbGetProfile(user.id, user.accessToken).then(p => {
+      if (p) { setProfile(p); setProfileForm({ phone: p.phone||"", address: p.address||"" }); }
+    }).catch(()=>{});
+    sbGetEnquiries(user.id, user.accessToken).then(setEnquiries).catch(()=>{});
+  }, [user]);
+
+  const saveProfile = async () => {
+    if (!user?.accessToken) return;
+    setSavingProfile(true);
+    try {
+      await sbUpdateProfile(user.id, user.accessToken, profileForm);
+      setProfile(p => ({...p, ...profileForm}));
+      setEditingProfile(false);
+      showToast("success","✅ Profile updated!");
+    } catch { showToast("error","❌ Failed to save."); }
+    finally { setSavingProfile(false); }
+  };
+
+  const statusColor = s => s==="enquired" ? "#2ecc71" : s==="confirmed" ? "#3a9ad9" : "#f0a030";
+
   return (
-    <div style={{ background:"#0a0f0d",minHeight:"100vh",paddingBottom:70,fontFamily:"'DM Sans',sans-serif" }}>
-      <div style={{ background:"linear-gradient(135deg,#0d3a8e 0%,#1760d8 100%)",padding:"16px 16px 24px" }}>
+    <div style={{ background:"#0a0f0d",minHeight:"100vh",paddingBottom:80,fontFamily:"'DM Sans',sans-serif" }}>
+      {/* Header */}
+      <div style={{ background:"linear-gradient(135deg,#0d3a8e 0%,#1760d8 100%)",padding:"16px 16px 20px" }}>
         <div style={{ fontFamily:"'Barlow Condensed',sans-serif",fontSize:"1.5rem",fontWeight:800,color:"#fff",marginBottom:2 }}>Account</div>
         {user ? (
-          <div style={{ display:"flex",alignItems:"center",gap:12,marginTop:12 }}>
-            <div style={{ width:52,height:52,borderRadius:"50%",background:"#2ecc71",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:"1.4rem",color:"#0a0f0d" }}>
+          <div style={{ display:"flex",alignItems:"center",gap:12,marginTop:10 }}>
+            <div style={{ width:52,height:52,borderRadius:"50%",background:"#2ecc71",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:"1.4rem",color:"#0a0f0d",flexShrink:0 }}>
               {user.name[0].toUpperCase()}
             </div>
-            <div>
-              <div style={{ fontWeight:700,fontSize:"1rem",color:"#fff" }}>{user.name}</div>
-              <div style={{ fontSize:"0.78rem",color:"rgba(255,255,255,0.7)" }}>{user.email}</div>
+            <div style={{ flex:1,minWidth:0 }}>
+              <div style={{ fontWeight:700,fontSize:"1rem",color:"#fff",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{user.name}</div>
+              <div style={{ fontSize:"0.76rem",color:"rgba(255,255,255,0.7)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{user.email}</div>
+              {profile?.phone && <div style={{ fontSize:"0.74rem",color:"rgba(255,255,255,0.6)",marginTop:1 }}>📞 {profile.phone}</div>}
             </div>
+            <button onClick={() => setEditingProfile(true)} style={{ background:"rgba(255,255,255,0.15)",border:"none",borderRadius:8,padding:"6px 12px",color:"#fff",fontSize:"0.74rem",fontWeight:700,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",flexShrink:0 }}>
+              ✏️ Edit
+            </button>
           </div>
         ) : (
           <div style={{ fontSize:"0.85rem",color:"rgba(255,255,255,0.75)",marginTop:4 }}>Sign in to access your account</div>
         )}
       </div>
 
-      <div style={{ padding:"16px 14px" }}>
+      <div style={{ padding:"14px 14px" }}>
         {!user ? (
-          <div style={{ textAlign:"center",paddingTop:20 }}>
+          <div style={{ textAlign:"center",paddingTop:24 }}>
             <div style={{ fontSize:"3.5rem",marginBottom:12 }}>👤</div>
             <div style={{ fontFamily:"'Barlow Condensed',sans-serif",fontSize:"1.4rem",fontWeight:800,color:"#fff",marginBottom:6 }}>Not signed in</div>
-            <div style={{ fontSize:"0.85rem",color:"#7aab8a",marginBottom:22 }}>Sign in to track orders and enquire faster</div>
+            <div style={{ fontSize:"0.85rem",color:"#7aab8a",marginBottom:22 }}>Sign in to track orders and manage your profile</div>
             <button onClick={() => setAuthOpen(true)} style={{
               background:"#2ecc71",color:"#0a0f0d",border:"none",borderRadius:40,padding:"13px 36px",
               fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:"0.95rem",cursor:"pointer"
@@ -917,45 +1016,149 @@ function AccountPage({ user, onLogin, onLogout, cart, showToast }) {
           </div>
         ) : (
           <>
-            {/* Cart summary */}
-            {cartCount > 0 && (
-              <div style={{ background:"#131f16",border:"1px solid rgba(46,204,113,0.15)",borderRadius:12,padding:"14px 16px",marginBottom:14 }}>
-                <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center" }}>
-                  <div>
-                    <div style={{ fontWeight:700,fontSize:"0.9rem",color:"#fff",marginBottom:2 }}>🛒 Cart</div>
-                    <div style={{ fontSize:"0.78rem",color:"#7aab8a" }}>{cartCount} item{cartCount!==1?"s":""} · {formatINR(cartTotal)}</div>
-                  </div>
-                  <a href={`https://wa.me/919390238537?text=${encodeURIComponent(`Hello SAG! I have ${cartCount} items in my cart worth ${formatINR(cartTotal)}.`)}`}
-                    target="_blank" rel="noreferrer"
-                    style={{ background:"#2ecc71",color:"#0a0f0d",border:"none",borderRadius:20,padding:"7px 14px",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:"0.78rem",cursor:"pointer",textDecoration:"none" }}>
-                    Enquire 💬
-                  </a>
+            {/* Section tabs */}
+            <div style={{ display:"flex",gap:8,marginBottom:16 }}>
+              {[["overview","🏠 Overview"],["orders","📦 My Orders"],["profile","👤 Profile"]].map(([s,l]) => (
+                <button key={s} onClick={() => setActiveSection(s)} style={{
+                  flex:1,padding:"9px 6px",borderRadius:10,border:"none",cursor:"pointer",
+                  fontFamily:"'DM Sans',sans-serif",fontSize:"0.75rem",fontWeight:700,
+                  background: activeSection===s ? "#2ecc71" : "#131f16",
+                  color: activeSection===s ? "#0a0f0d" : "#7aab8a",
+                  border: activeSection===s ? "none" : "1px solid rgba(46,204,113,0.1)",
+                  transition:"all .2s"
+                }}>{l}</button>
+              ))}
+            </div>
+
+            {/* ── OVERVIEW ── */}
+            {activeSection === "overview" && (
+              <>
+                {/* Stats row */}
+                <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:14 }}>
+                  {[
+                    ["📦", enquiries.length, "Enquiries"],
+                    ["🛒", cartCount, "In Cart"],
+                    ["✅", enquiries.filter(e=>e.status==="confirmed").length, "Confirmed"],
+                  ].map(([icon,val,label]) => (
+                    <div key={label} style={{ background:"#131f16",border:"1px solid rgba(46,204,113,0.1)",borderRadius:12,padding:"12px 10px",textAlign:"center" }}>
+                      <div style={{ fontSize:"1.3rem",marginBottom:4 }}>{icon}</div>
+                      <div style={{ fontFamily:"'Barlow Condensed',sans-serif",fontSize:"1.5rem",fontWeight:800,color:"#fff" }}>{val}</div>
+                      <div style={{ fontSize:"0.68rem",color:"#7aab8a",marginTop:1 }}>{label}</div>
+                    </div>
+                  ))}
                 </div>
+
+                {/* Cart summary */}
+                {cartCount > 0 && (
+                  <div style={{ background:"linear-gradient(135deg,rgba(46,204,113,0.1),rgba(46,204,113,0.05))",border:"1px solid rgba(46,204,113,0.2)",borderRadius:12,padding:"14px 16px",marginBottom:12 }}>
+                    <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center" }}>
+                      <div>
+                        <div style={{ fontWeight:700,fontSize:"0.9rem",color:"#fff",marginBottom:2 }}>🛒 Active Cart</div>
+                        <div style={{ fontSize:"0.78rem",color:"#7aab8a" }}>{cartCount} item{cartCount!==1?"s":""} · {formatINR(cartTotal)}</div>
+                      </div>
+                      <a href={`https://wa.me/919390238537?text=${encodeURIComponent(`Hello SAG! I have ${cartCount} items in my cart worth ${formatINR(cartTotal)}.`)}`}
+                        target="_blank" rel="noreferrer"
+                        style={{ background:"#2ecc71",color:"#0a0f0d",border:"none",borderRadius:20,padding:"7px 14px",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:"0.78rem",cursor:"pointer",textDecoration:"none",flexShrink:0 }}>
+                        Enquire 💬
+                      </a>
+                    </div>
+                  </div>
+                )}
+
+                {/* Quick links */}
+                {[
+                  ["💬","WhatsApp Support","Chat with our team",() => window.open("https://wa.me/919390238537","_blank")],
+                  ["📞","Call Us","+91 897777 6019",() => window.open("tel:+918977776019","_blank")],
+                  ["📍","Our Location","Nidadavole, Andhra Pradesh – 534 302",null],
+                  ["✉️","Email Us","sagtechinfo@gmail.com",() => window.open("mailto:sagtechinfo@gmail.com","_blank")],
+                ].map(([icon,label,sub,action]) => (
+                  <div key={label} onClick={action||undefined} style={{ display:"flex",alignItems:"center",gap:12,padding:"13px 14px",background:"#131f16",border:"1px solid rgba(46,204,113,0.1)",borderRadius:12,marginBottom:9,cursor:action?"pointer":"default" }}>
+                    <span style={{ fontSize:"1.25rem" }}>{icon}</span>
+                    <div style={{ flex:1 }}>
+                      <div style={{ fontWeight:600,fontSize:"0.87rem",color:"#fff" }}>{label}</div>
+                      <div style={{ fontSize:"0.73rem",color:"#7aab8a",marginTop:1 }}>{sub}</div>
+                    </div>
+                    {action && <span style={{ color:"#7aab8a",fontSize:"0.85rem" }}>›</span>}
+                  </div>
+                ))}
+
+                <button onClick={onLogout} style={{
+                  width:"100%",marginTop:6,padding:"13px",background:"rgba(224,80,80,0.08)",
+                  border:"1px solid rgba(224,80,80,0.25)",color:"#e05050",borderRadius:12,
+                  fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:"0.88rem",cursor:"pointer"
+                }}>⏏ Sign Out</button>
+              </>
+            )}
+
+            {/* ── MY ORDERS ── */}
+            {activeSection === "orders" && (
+              <div>
+                <div style={{ fontSize:"0.8rem",color:"#7aab8a",marginBottom:12 }}>{enquiries.length} enquir{enquiries.length!==1?"ies":"y"} recorded</div>
+                {enquiries.length === 0 ? (
+                  <div style={{ textAlign:"center",padding:"40px 20px",color:"#7aab8a" }}>
+                    <div style={{ fontSize:"3rem",opacity:.3,marginBottom:10 }}>📦</div>
+                    <div style={{ fontFamily:"'Barlow Condensed',sans-serif",fontSize:"1.2rem",fontWeight:800,color:"#fff",marginBottom:6 }}>No enquiries yet</div>
+                    <div style={{ fontSize:"0.82rem" }}>When you enquire on WhatsApp, it'll appear here.</div>
+                  </div>
+                ) : enquiries.map(enq => (
+                  <div key={enq.id} style={{ background:"#131f16",border:"1px solid rgba(46,204,113,0.1)",borderRadius:12,padding:"14px 16px",marginBottom:10 }}>
+                    <div style={{ display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8 }}>
+                      <div>
+                        <div style={{ fontSize:"0.72rem",color:"#7aab8a" }}>#{enq.id} · {new Date(enq.created_at).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"})}</div>
+                        <div style={{ fontFamily:"'Barlow Condensed',sans-serif",fontSize:"1.1rem",fontWeight:800,color:"#fff",marginTop:2 }}>{formatINR(enq.total_amount)}</div>
+                      </div>
+                      <span style={{ background:`${statusColor(enq.status)}22`,border:`1px solid ${statusColor(enq.status)}55`,color:statusColor(enq.status),borderRadius:20,padding:"3px 10px",fontSize:"0.68rem",fontWeight:700,textTransform:"uppercase" }}>
+                        {enq.status}
+                      </span>
+                    </div>
+                    {Array.isArray(enq.items) && enq.items.map((item,i) => (
+                      <div key={i} style={{ display:"flex",justifyContent:"space-between",fontSize:"0.78rem",color:"#7aab8a",padding:"3px 0",borderTop: i===0?"1px solid rgba(46,204,113,0.08)":"none",marginTop: i===0?8:0 }}>
+                        <span>{item.name} × {item.qty}</span>
+                        <span style={{ color:"#fff" }}>{formatINR(item.price*item.qty)}</span>
+                      </div>
+                    ))}
+                  </div>
+                ))}
               </div>
             )}
 
-            {/* Menu items */}
-            {[
-              ["📦","My Orders","View past enquiries via WhatsApp"],
-              ["📍","Delivery Address","Nidadavole, Andhra Pradesh"],
-              ["💬","WhatsApp Support","Chat with our team directly"],
-              ["📞","Call Us","+91 897777 6019"],
-            ].map(([icon,label,sub]) => (
-              <div key={label} style={{ display:"flex",alignItems:"center",gap:12,padding:"14px 16px",background:"#131f16",border:"1px solid rgba(46,204,113,0.1)",borderRadius:12,marginBottom:10,cursor:"pointer" }}>
-                <span style={{ fontSize:"1.3rem" }}>{icon}</span>
-                <div style={{ flex:1 }}>
-                  <div style={{ fontWeight:600,fontSize:"0.88rem",color:"#fff" }}>{label}</div>
-                  <div style={{ fontSize:"0.75rem",color:"#7aab8a" }}>{sub}</div>
+            {/* ── PROFILE EDIT ── */}
+            {activeSection === "profile" && (
+              <div>
+                <div style={{ background:"#131f16",border:"1px solid rgba(46,204,113,0.1)",borderRadius:12,padding:"16px",marginBottom:12 }}>
+                  <div style={{ fontSize:"0.88rem",fontWeight:700,color:"#fff",marginBottom:14 }}>Personal Information</div>
+                  {[
+                    ["Full Name", user.name, null, true],
+                    ["Email", user.email, null, true],
+                  ].map(([label,val]) => (
+                    <div key={label} style={{ marginBottom:12 }}>
+                      <div style={{ fontSize:"0.7rem",color:"#7aab8a",fontWeight:700,textTransform:"uppercase",letterSpacing:".07em",marginBottom:4 }}>{label}</div>
+                      <div style={{ padding:"10px 13px",background:"rgba(255,255,255,0.04)",borderRadius:10,fontSize:"0.88rem",color:"rgba(255,255,255,0.5)",border:"1px solid rgba(46,204,113,0.08)" }}>{val}</div>
+                    </div>
+                  ))}
+                  <div style={{ marginBottom:12 }}>
+                    <div style={{ fontSize:"0.7rem",color:"#7aab8a",fontWeight:700,textTransform:"uppercase",letterSpacing:".07em",marginBottom:4 }}>Phone Number</div>
+                    <input value={profileForm.phone} onChange={e => setProfileForm(f=>({...f,phone:e.target.value}))} placeholder="+91 98765 43210"
+                      style={{ width:"100%",padding:"10px 13px",background:"#0a0f0d",border:"1.5px solid rgba(46,204,113,0.2)",borderRadius:10,color:"#fff",fontFamily:"'DM Sans',sans-serif",fontSize:"0.88rem",outline:"none",boxSizing:"border-box" }} />
+                  </div>
+                  <div style={{ marginBottom:16 }}>
+                    <div style={{ fontSize:"0.7rem",color:"#7aab8a",fontWeight:700,textTransform:"uppercase",letterSpacing:".07em",marginBottom:4 }}>Delivery Address</div>
+                    <textarea value={profileForm.address} onChange={e => setProfileForm(f=>({...f,address:e.target.value}))} placeholder="House No, Street, City, State, Pincode"
+                      rows={3} style={{ width:"100%",padding:"10px 13px",background:"#0a0f0d",border:"1.5px solid rgba(46,204,113,0.2)",borderRadius:10,color:"#fff",fontFamily:"'DM Sans',sans-serif",fontSize:"0.88rem",outline:"none",boxSizing:"border-box",resize:"vertical" }} />
+                  </div>
+                  <button onClick={saveProfile} disabled={savingProfile} style={{
+                    width:"100%",padding:"12px",background:"#2ecc71",color:"#0a0f0d",border:"none",borderRadius:40,
+                    fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:"0.9rem",cursor:"pointer"
+                  }}>{savingProfile ? "Saving..." : "💾 Save Profile"}</button>
                 </div>
-                <span style={{ color:"#7aab8a",fontSize:"0.8rem" }}>›</span>
-              </div>
-            ))}
 
-            <button onClick={onLogout} style={{
-              width:"100%",marginTop:8,padding:"13px",background:"rgba(224,80,80,0.1)",
-              border:"1px solid rgba(224,80,80,0.3)",color:"#e05050",borderRadius:12,
-              fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:"0.88rem",cursor:"pointer"
-            }}>⏏ Sign Out</button>
+                <button onClick={onLogout} style={{
+                  width:"100%",padding:"13px",background:"rgba(224,80,80,0.08)",
+                  border:"1px solid rgba(224,80,80,0.25)",color:"#e05050",borderRadius:12,
+                  fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:"0.88rem",cursor:"pointer"
+                }}>⏏ Sign Out</button>
+              </div>
+            )}
           </>
         )}
       </div>
