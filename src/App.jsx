@@ -522,7 +522,7 @@ function ProductDetailModal({ product, onClose, onAddCart, user, showAuth }) {
 }
 
 // ─── BANNER CAROUSEL ──────────────────────────────────────────
-function BannerCarousel({ banners }) {
+function BannerCarousel({ banners, onCategoryLink }) {
   const [idx, setIdx] = useState(0);
   const timerRef = useRef(null);
 
@@ -537,28 +537,58 @@ function BannerCarousel({ banners }) {
   const b = banners[idx];
 
   return (
-    <div style={{ margin:"12px 14px 0",borderRadius:14,overflow:"hidden",position:"relative" }}>
+    <div style={{ margin:"12px 14px 0",borderRadius:16,overflow:"hidden",position:"relative",boxShadow:"0 4px 20px rgba(36,84,199,0.15)" }}>
       <div style={{
-        background: b.bg, minHeight:170,padding:"22px 20px",
-        display:"flex",flexDirection:"column",justifyContent:"center",position:"relative"
+        minHeight:190,position:"relative",display:"flex",flexDirection:"column",justifyContent:"center",
+        background: b.imageUrl ? "transparent" : (b.bg || "linear-gradient(135deg,#1a2b6b 0%,#2454c7 100%)"),
+        overflow:"hidden"
       }}>
-        <div style={{ display:"inline-flex",alignItems:"center",gap:6,background:"rgba(255,255,255,0.18)",borderRadius:20,padding:"3px 10px",fontSize:"0.68rem",fontWeight:800,color:"#fff",letterSpacing:".08em",marginBottom:10,width:"fit-content" }}>
-          🔥 {b.badge}
+        {/* Full-bleed background image */}
+        {b.imageUrl && (
+          <img src={b.imageUrl} alt="banner" style={{
+            position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover",zIndex:0
+          }} />
+        )}
+        {/* Overlay for text readability when image is used */}
+        {b.imageUrl && (
+          <div style={{ position:"absolute",inset:0,background:"linear-gradient(to right,rgba(0,0,0,0.55) 0%,rgba(0,0,0,0.1) 100%)",zIndex:1 }} />
+        )}
+
+        <div style={{ position:"relative",zIndex:2,padding:"22px 20px" }}>
+          {b.badge && (
+            <div style={{ display:"inline-flex",alignItems:"center",gap:6,background:"rgba(255,255,255,0.22)",backdropFilter:"blur(4px)",borderRadius:20,padding:"3px 10px",fontSize:"0.68rem",fontWeight:800,color:"#fff",letterSpacing:".08em",marginBottom:10,width:"fit-content" }}>
+              🔥 {b.badge}
+            </div>
+          )}
+          {!b.imageUrl && b.emoji && (
+            <div style={{ position:"absolute",right:20,top:"50%",transform:"translateY(-50%)",fontSize:"5rem",opacity:.2 }}>{b.emoji}</div>
+          )}
+          {b.title && (
+            <div style={{ fontFamily:"'Barlow Condensed',sans-serif",fontSize:"2.2rem",fontWeight:900,color:"#fff",lineHeight:1,marginBottom:6,letterSpacing:"-0.02em",textShadow:"0 2px 8px rgba(0,0,0,0.3)" }}>
+              {b.title}
+            </div>
+          )}
+          {b.subtitle && (
+            <div style={{ fontSize:"0.88rem",color:"rgba(255,255,255,0.9)",marginBottom:16,textShadow:"0 1px 4px rgba(0,0,0,0.4)" }}>{b.subtitle}</div>
+          )}
+          {(b.cta || b.linkCategory) && (
+            <button
+              onClick={() => b.linkCategory && onCategoryLink && onCategoryLink(b.linkCategory)}
+              style={{
+                alignSelf:"flex-start",background:"#fff",color:"#1a2b6b",border:"none",borderRadius:40,
+                padding:"9px 20px",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:"0.83rem",
+                cursor:"pointer",boxShadow:"0 2px 10px rgba(0,0,0,0.2)"
+              }}>
+              {b.cta || "Shop Now"} →
+            </button>
+          )}
         </div>
-        <div style={{ position:"absolute",right:20,top:"50%",transform:"translateY(-50%)",fontSize:"5rem",opacity:.25 }}>{b.emoji}</div>
-        <div style={{ fontFamily:"'Barlow Condensed',sans-serif",fontSize:"2.2rem",fontWeight:900,color:"#fff",lineHeight:1,marginBottom:6,letterSpacing:"-0.02em" }}>
-          {b.title}
-        </div>
-        <div style={{ fontSize:"0.88rem",color:"rgba(255,255,255,0.85)",marginBottom:14 }}>{b.subtitle}</div>
-        <button style={{ alignSelf:"flex-start",background:"#fff",color:"#0a0f0d",border:"none",borderRadius:40,padding:"8px 18px",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:"0.83rem",cursor:"pointer" }}>
-          {b.cta} →
-        </button>
       </div>
-      <div style={{ display:"flex",justifyContent:"center",gap:6,padding:"8px 0",background:"rgba(0,0,0,0.4)" }}>
+      <div style={{ display:"flex",justifyContent:"center",gap:6,padding:"8px 0",background:"rgba(0,0,0,0.08)" }}>
         {banners.map((_,i) => (
           <div key={i} onClick={() => goTo(i)} style={{
             width: i===idx ? 18 : 6, height:6, borderRadius:3,
-            background: i===idx ? "#fff" : "rgba(255,255,255,0.35)",
+            background: i===idx ? "#2454c7" : "rgba(36,84,199,0.3)",
             transition:"all .3s", cursor:"pointer"
           }} />
         ))}
@@ -571,15 +601,28 @@ function BannerCarousel({ banners }) {
 function BannerAdminModal({ banners, onSave, onClose }) {
   const [list, setList] = useState(banners.map(b => ({...b})));
   const [editIdx, setEditIdx] = useState(null);
-  const [form, setForm] = useState({ title:"", subtitle:"", badge:"", bg:"linear-gradient(135deg,#0d3a8e 0%,#1a56cc 60%,#0d3a8e 100%)", emoji:"🚁", cta:"Shop Now" });
+  const [form, setForm] = useState({ title:"", subtitle:"", badge:"", bg:"linear-gradient(135deg,#1a2b6b 0%,#2454c7 100%)", emoji:"🚁", cta:"Shop Now", imageUrl:"", linkCategory:"" });
+  const imgInputRef = useRef(null);
+
+  const CATEGORY_OPTIONS = ["All","Drones","Batteries","Flight Controller","Accessories","Offers","New"];
 
   const openEdit = (i) => {
     setEditIdx(i);
-    setForm(i === -1 ? { title:"", subtitle:"", badge:"", bg:"linear-gradient(135deg,#0d3a8e 0%,#1a56cc 60%,#0d3a8e 100%)", emoji:"🚁", cta:"Shop Now" } : {...list[i]});
+    setForm(i === -1
+      ? { title:"", subtitle:"", badge:"", bg:"linear-gradient(135deg,#1a2b6b 0%,#2454c7 100%)", emoji:"🚁", cta:"Shop Now", imageUrl:"", linkCategory:"" }
+      : {...list[i], imageUrl: list[i].imageUrl||"", linkCategory: list[i].linkCategory||"" });
+  };
+
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => setForm(f => ({...f, imageUrl: ev.target.result}));
+    reader.readAsDataURL(file);
   };
 
   const saveForm = () => {
-    if (!form.title.trim()) return;
+    if (!form.title.trim() && !form.imageUrl) return;
     if (editIdx === -1) {
       setList(l => [...l, { ...form, id: Date.now() }]);
     } else {
@@ -591,58 +634,99 @@ function BannerAdminModal({ banners, onSave, onClose }) {
   const deleteB = (i) => setList(l => l.filter((_,x) => x !== i));
 
   return (
-    <div style={{ position:"fixed",inset:0,zIndex:9999,background:"rgba(0,0,0,0.88)",backdropFilter:"blur(8px)",display:"flex",alignItems:"flex-end",justifyContent:"center" }}
+    <div style={{ position:"fixed",inset:0,zIndex:9999,background:"rgba(0,0,0,0.55)",backdropFilter:"blur(8px)",display:"flex",alignItems:"flex-end",justifyContent:"center" }}
       onClick={e => e.target===e.currentTarget&&onClose()}>
-      <div style={{ background:"#131f16",borderRadius:"20px 20px 0 0",width:"100%",maxWidth:520,maxHeight:"88vh",overflowY:"auto",padding:"0 0 20px" }}>
-        <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"16px 18px",borderBottom:"1px solid rgba(46,204,113,0.15)" }}>
-          <span style={{ fontFamily:"'Barlow Condensed',sans-serif",fontSize:"1.1rem",fontWeight:800,color:"#fff" }}>🖼 Manage Banners</span>
-          <button onClick={onClose} style={{ background:"none",border:"none",color:"#7aab8a",fontSize:"1.3rem",cursor:"pointer" }}>✕</button>
+      <div style={{ background:"#fff",borderRadius:"20px 20px 0 0",width:"100%",maxWidth:520,maxHeight:"88vh",overflowY:"auto",padding:"0 0 20px" }}>
+        <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"16px 18px",borderBottom:"1px solid #e8edf5" }}>
+          <span style={{ fontFamily:"'Barlow Condensed',sans-serif",fontSize:"1.1rem",fontWeight:800,color:"#111827" }}>🖼 Manage Banners</span>
+          <button onClick={onClose} style={{ background:"none",border:"none",color:"#6b7280",fontSize:"1.3rem",cursor:"pointer" }}>✕</button>
         </div>
         <div style={{ padding:"14px 18px" }}>
           {editIdx !== null ? (
             <div>
-              <div style={{ fontSize:"0.88rem",fontWeight:700,color:"#fff",marginBottom:12 }}>{editIdx===-1?"Add New Banner":"Edit Banner"}</div>
+              <div style={{ fontSize:"0.88rem",fontWeight:700,color:"#111827",marginBottom:12 }}>{editIdx===-1?"Add New Banner":"Edit Banner"}</div>
+
+              {/* Image Upload */}
+              <div style={{ marginBottom:12 }}>
+                <label style={{ fontSize:"0.7rem",color:"#6b7280",fontWeight:700,textTransform:"uppercase",display:"block",marginBottom:4 }}>Banner Image (JPG/PNG) — fills entire banner</label>
+                <div
+                  onClick={() => imgInputRef.current?.click()}
+                  style={{
+                    width:"100%",height:100,border:"2px dashed #85c9ff",borderRadius:12,
+                    display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
+                    background: form.imageUrl ? "transparent" : "#f0f7ff",cursor:"pointer",position:"relative",overflow:"hidden"
+                  }}>
+                  {form.imageUrl
+                    ? <img src={form.imageUrl} alt="preview" style={{ width:"100%",height:"100%",objectFit:"cover" }} />
+                    : <><div style={{ fontSize:"2rem",marginBottom:4 }}>📷</div><div style={{ fontSize:"0.78rem",color:"#85c9ff",fontWeight:600 }}>Click to upload image</div></>
+                  }
+                </div>
+                <input ref={imgInputRef} type="file" accept="image/jpeg,image/png,image/jpg,image/webp" onChange={handleImageUpload} style={{ display:"none" }} />
+                {form.imageUrl && <button onClick={() => setForm(f=>({...f,imageUrl:""}))} style={{ marginTop:6,background:"none",border:"1px solid #fca5a5",color:"#ef4444",borderRadius:8,padding:"3px 10px",fontSize:"0.75rem",cursor:"pointer" }}>✕ Remove Image</button>}
+              </div>
+
               {[
-                ["Title","title","e.g. SALE IS LIVE"],
+                ["Title (shown over image)","title","e.g. SALE IS LIVE"],
                 ["Subtitle","subtitle","e.g. Up to 20% off on Drones"],
                 ["Badge Text","badge","e.g. LIMITED TIME"],
-                ["Emoji","emoji","e.g. 🚁"],
-                ["CTA Button","cta","e.g. Shop Now"],
+                ["CTA Button Text","cta","e.g. Shop Now"],
               ].map(([label,key,ph]) => (
                 <div key={key} style={{ marginBottom:10 }}>
-                  <label style={{ fontSize:"0.7rem",color:"#7aab8a",fontWeight:700,textTransform:"uppercase",display:"block",marginBottom:4 }}>{label}</label>
+                  <label style={{ fontSize:"0.7rem",color:"#6b7280",fontWeight:700,textTransform:"uppercase",display:"block",marginBottom:4 }}>{label}</label>
                   <input value={form[key]} onChange={e => setForm(f => ({...f,[key]:e.target.value}))} placeholder={ph}
-                    style={{ width:"100%",padding:"9px 12px",background:"#0a0f0d",border:"1.5px solid rgba(46,204,113,0.2)",borderRadius:10,color:"#fff",fontFamily:"'DM Sans',sans-serif",fontSize:"0.88rem",outline:"none",boxSizing:"border-box" }} />
+                    style={{ width:"100%",padding:"9px 12px",background:"#f9fafb",border:"1.5px solid #e5e7eb",borderRadius:10,color:"#111827",fontFamily:"'DM Sans',sans-serif",fontSize:"0.88rem",outline:"none",boxSizing:"border-box" }} />
                 </div>
               ))}
+
+              {/* Link to Category */}
               <div style={{ marginBottom:14 }}>
-                <label style={{ fontSize:"0.7rem",color:"#7aab8a",fontWeight:700,textTransform:"uppercase",display:"block",marginBottom:4 }}>Background CSS Gradient</label>
-                <input value={form.bg} onChange={e => setForm(f => ({...f,bg:e.target.value}))} placeholder="linear-gradient(135deg,#0d3a8e 0%,#1a56cc 100%)"
-                  style={{ width:"100%",padding:"9px 12px",background:"#0a0f0d",border:"1.5px solid rgba(46,204,113,0.2)",borderRadius:10,color:"#fff",fontFamily:"monospace",fontSize:"0.8rem",outline:"none",boxSizing:"border-box" }} />
-                <div style={{ height:28,borderRadius:6,marginTop:6,background:form.bg }} />
+                <label style={{ fontSize:"0.7rem",color:"#6b7280",fontWeight:700,textTransform:"uppercase",display:"block",marginBottom:4 }}>🔗 Link Button to Category</label>
+                <select value={form.linkCategory} onChange={e => setForm(f=>({...f,linkCategory:e.target.value}))}
+                  style={{ width:"100%",padding:"9px 12px",background:"#f9fafb",border:"1.5px solid #e5e7eb",borderRadius:10,color:"#111827",fontFamily:"'DM Sans',sans-serif",fontSize:"0.88rem",outline:"none",boxSizing:"border-box" }}>
+                  <option value="">— No link —</option>
+                  {CATEGORY_OPTIONS.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+                {form.linkCategory && <div style={{ marginTop:5,fontSize:"0.74rem",color:"#2454c7" }}>Button will navigate to: <strong>{form.linkCategory}</strong></div>}
               </div>
+
+              {!form.imageUrl && (
+                <div style={{ marginBottom:14 }}>
+                  <label style={{ fontSize:"0.7rem",color:"#6b7280",fontWeight:700,textTransform:"uppercase",display:"block",marginBottom:4 }}>Emoji (shown if no image)</label>
+                  <input value={form.emoji} onChange={e => setForm(f => ({...f,emoji:e.target.value}))} placeholder="🚁"
+                    style={{ width:"100%",padding:"9px 12px",background:"#f9fafb",border:"1.5px solid #e5e7eb",borderRadius:10,color:"#111827",fontFamily:"'DM Sans',sans-serif",fontSize:"0.88rem",outline:"none",boxSizing:"border-box" }} />
+                  <div style={{ marginTop:8 }}>
+                    <label style={{ fontSize:"0.7rem",color:"#6b7280",fontWeight:700,textTransform:"uppercase",display:"block",marginBottom:4 }}>Background Gradient (used if no image)</label>
+                    <input value={form.bg} onChange={e => setForm(f => ({...f,bg:e.target.value}))} placeholder="linear-gradient(135deg,#1a2b6b 0%,#2454c7 100%)"
+                      style={{ width:"100%",padding:"9px 12px",background:"#f9fafb",border:"1.5px solid #e5e7eb",borderRadius:10,color:"#111827",fontFamily:"monospace",fontSize:"0.8rem",outline:"none",boxSizing:"border-box" }} />
+                    <div style={{ height:28,borderRadius:6,marginTop:6,background:form.bg }} />
+                  </div>
+                </div>
+              )}
+
               <div style={{ display:"flex",gap:10 }}>
-                <button onClick={saveForm} style={{ flex:1,padding:"11px",background:"#2ecc71",color:"#0a0f0d",border:"none",borderRadius:40,fontFamily:"'DM Sans',sans-serif",fontWeight:700,cursor:"pointer" }}>Save Banner</button>
-                <button onClick={()=>setEditIdx(null)} style={{ flex:1,padding:"11px",background:"rgba(255,255,255,0.05)",color:"#e8f5ec",border:"1px solid rgba(255,255,255,0.1)",borderRadius:40,fontFamily:"'DM Sans',sans-serif",fontWeight:600,cursor:"pointer" }}>Cancel</button>
+                <button onClick={saveForm} style={{ flex:1,padding:"11px",background:"#2454c7",color:"#fff",border:"none",borderRadius:40,fontFamily:"'DM Sans',sans-serif",fontWeight:700,cursor:"pointer" }}>Save Banner</button>
+                <button onClick={()=>setEditIdx(null)} style={{ flex:1,padding:"11px",background:"#f3f4f6",color:"#374151",border:"1px solid #e5e7eb",borderRadius:40,fontFamily:"'DM Sans',sans-serif",fontWeight:600,cursor:"pointer" }}>Cancel</button>
               </div>
             </div>
           ) : (
             <>
               {list.map((b,i) => (
-                <div key={b.id} style={{ display:"flex",alignItems:"center",gap:12,padding:"10px 0",borderBottom:"1px solid rgba(46,204,113,0.08)" }}>
-                  <div style={{ width:44,height:44,borderRadius:10,background:b.bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.5rem",flexShrink:0 }}>{b.emoji}</div>
-                  <div style={{ flex:1 }}>
-                    <div style={{ fontWeight:700,fontSize:"0.88rem",color:"#fff" }}>{b.title}</div>
-                    <div style={{ fontSize:"0.75rem",color:"#7aab8a" }}>{b.subtitle}</div>
+                <div key={b.id} style={{ display:"flex",alignItems:"center",gap:12,padding:"10px 0",borderBottom:"1px solid #f3f4f6" }}>
+                  <div style={{ width:52,height:44,borderRadius:10,overflow:"hidden",flexShrink:0,background:b.bg||"#e5e7eb",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.3rem" }}>
+                    {b.imageUrl ? <img src={b.imageUrl} alt="" style={{ width:"100%",height:"100%",objectFit:"cover" }} /> : b.emoji}
                   </div>
-                  <button onClick={()=>openEdit(i)} style={{ background:"rgba(58,154,217,0.15)",border:"1px solid #3a9ad9",color:"#3a9ad9",borderRadius:8,padding:"5px 11px",fontSize:"0.76rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:700 }}>Edit</button>
-                  <button onClick={()=>deleteB(i)} style={{ background:"rgba(224,80,80,0.12)",border:"1px solid #e05050",color:"#e05050",borderRadius:8,padding:"5px 8px",fontSize:"0.76rem",cursor:"pointer" }}>✕</button>
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontWeight:700,fontSize:"0.88rem",color:"#111827" }}>{b.title||"(Image Banner)"}</div>
+                    <div style={{ fontSize:"0.75rem",color:"#6b7280" }}>{b.linkCategory ? `→ ${b.linkCategory}` : b.subtitle}</div>
+                  </div>
+                  <button onClick={()=>openEdit(i)} style={{ background:"#eff6ff",border:"1px solid #85c9ff",color:"#2454c7",borderRadius:8,padding:"5px 11px",fontSize:"0.76rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:700 }}>Edit</button>
+                  <button onClick={()=>deleteB(i)} style={{ background:"#fef2f2",border:"1px solid #fca5a5",color:"#ef4444",borderRadius:8,padding:"5px 8px",fontSize:"0.76rem",cursor:"pointer" }}>✕</button>
                 </div>
               ))}
-              <button onClick={()=>openEdit(-1)} style={{ width:"100%",marginTop:14,padding:"11px",background:"rgba(46,204,113,0.1)",color:"#2ecc71",border:"1.5px dashed rgba(46,204,113,0.4)",borderRadius:12,fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:"0.88rem",cursor:"pointer" }}>
+              <button onClick={()=>openEdit(-1)} style={{ width:"100%",marginTop:14,padding:"11px",background:"#eff6ff",color:"#2454c7",border:"1.5px dashed #85c9ff",borderRadius:12,fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:"0.88rem",cursor:"pointer" }}>
                 + Add New Banner
               </button>
-              <button onClick={()=>onSave(list)} style={{ width:"100%",marginTop:10,padding:"11px",background:"#2ecc71",color:"#0a0f0d",border:"none",borderRadius:40,fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:"0.9rem",cursor:"pointer" }}>
+              <button onClick={()=>onSave(list)} style={{ width:"100%",marginTop:10,padding:"11px",background:"#2454c7",color:"#fff",border:"none",borderRadius:40,fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:"0.9rem",cursor:"pointer" }}>
                 ✅ Save All Changes
               </button>
             </>
@@ -698,20 +782,20 @@ function HomePage({ user, cart, showAuth, showToast, onTabChange, banners, setBa
   const offers = products.filter(p => p.isOffer).slice(0,4);
 
   return (
-    <div style={{ background:"#0a0f0d",minHeight:"100vh",paddingBottom:70,fontFamily:"'DM Sans',sans-serif" }}>
+    <div style={{ background:"#f5f7fa",minHeight:"100vh",paddingBottom:70,fontFamily:"'DM Sans',sans-serif" }}>
 
       {/* ─── TOP BAR ─── */}
       <div style={{
         position:"sticky",top:0,zIndex:100,
-        background:"linear-gradient(135deg,#0d3a8e 0%,#1760d8 100%)",
-        padding:"10px 14px 0"
+        background:"linear-gradient(135deg,#1a2b6b 0%,#2454c7 100%)",
+        padding:"10px 14px 0",
+        boxShadow:"0 2px 12px rgba(36,84,199,0.18)"
       }}>
         <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8 }}>
           <div style={{ display:"flex",alignItems:"center",gap:8 }}>
             <img src={LOGO} alt="SAG" style={{ height:34,borderRadius:6 }} />
             <div>
-              <div style={{ fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:"0.95rem",color:"#fff",lineHeight:1 }}>SAG DRONES</div>
-              <div style={{ fontSize:"0.64rem",color:"rgba(255,255,255,0.75)",lineHeight:1 }}>Nidadavole, AP</div>
+              <div style={{ fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:"1.05rem",color:"#fff",lineHeight:1,letterSpacing:"-0.01em" }}>SAG DRONES</div>
             </div>
           </div>
           <div style={{ display:"flex",alignItems:"center",gap:8 }}>
@@ -785,11 +869,11 @@ function HomePage({ user, cart, showAuth, showToast, onTabChange, banners, setBa
 
       {/* ─── MAIN SCROLL AREA ─── */}
       <div>
-        <BannerCarousel banners={banners} />
+        <BannerCarousel banners={banners} onCategoryLink={(cat) => setActiveCat(cat)} />
 
         {search || activeCat !== "All" ? (
           <div style={{ padding:"16px 14px 8px" }}>
-            <div style={{ fontSize:"0.82rem",color:"#7aab8a",marginBottom:12 }}>
+            <div style={{ fontSize:"0.82rem",color:"#6b7280",marginBottom:12 }}>
               {filtered.length} result{filtered.length!==1?"s":""}{search ? ` for "${search}"` : ``}{activeCat!=="All" ? ` in ${activeCat}` : ""}
             </div>
             {filtered.length === 0 ? (
@@ -822,8 +906,8 @@ function HomePage({ user, cart, showAuth, showToast, onTabChange, banners, setBa
             <div style={{ padding:"0 14px 8px" }}>
               <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12 }}>
                 <div>
-                  <div style={{ fontFamily:"'Barlow Condensed',sans-serif",fontSize:"1.25rem",fontWeight:800,color:"#fff" }}>All Products</div>
-                  <div style={{ fontSize:"0.75rem",color:"#7aab8a",marginTop:1 }}>{products.length} items available</div>
+                  <div style={{ fontFamily:"'Barlow Condensed',sans-serif",fontSize:"1.25rem",fontWeight:800,color:"#111827" }}>All Products</div>
+                  <div style={{ fontSize:"0.75rem",color:"#6b7280",marginTop:1 }}>{products.length} items available</div>
                 </div>
               </div>
               <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:10 }}>
@@ -833,16 +917,15 @@ function HomePage({ user, cart, showAuth, showToast, onTabChange, banners, setBa
           </>
         )}
 
-        <div style={{ padding:"20px 14px",borderTop:"1px solid rgba(46,204,113,0.1)",marginTop:10 }}>
+        <div style={{ padding:"20px 14px",borderTop:"1px solid #e8edf5",marginTop:10,background:"#fff" }}>
           <div style={{ display:"flex",alignItems:"center",gap:10,marginBottom:10 }}>
             <img src={LOGO} alt="SAG" style={{ height:28 }} />
-            <span style={{ fontFamily:"'Barlow Condensed',sans-serif",fontSize:"0.9rem",fontWeight:800,color:"#fff" }}>SAG Drone Technologies</span>
+            <span style={{ fontFamily:"'Barlow Condensed',sans-serif",fontSize:"0.9rem",fontWeight:800,color:"#111827" }}>SAG Drone Technologies</span>
           </div>
-          <div style={{ fontSize:"0.78rem",color:"#7aab8a",lineHeight:1.9 }}>
-            📍 Nidadavole, Andhra Pradesh – 534 302<br />
+          <div style={{ fontSize:"0.78rem",color:"#6b7280",lineHeight:1.9 }}>
             📞 +91 897777 6019 &nbsp;|&nbsp; ✉️ sagtechinfo@gmail.com
           </div>
-          <div style={{ fontSize:"0.72rem",color:"rgba(122,171,138,0.5)",marginTop:10,textAlign:"center" }}>
+          <div style={{ fontSize:"0.72rem",color:"#9ca3af",marginTop:10,textAlign:"center" }}>
             © 2025 SAG Drone Technologies. All rights reserved.
           </div>
         </div>
@@ -861,11 +944,11 @@ function HomePage({ user, cart, showAuth, showToast, onTabChange, banners, setBa
 function SectionBlock({ title, subtitle, products, onProductClick, onAddCart, user, onViewAll, accent="#2ecc71" }) {
   if (!products.length) return null;
   return (
-    <div style={{ margin:"16px 0 0",background:"rgba(13,31,22,0.7)",borderRadius:"0 0 0 0",padding:"14px 0 4px" }}>
+    <div style={{ margin:"16px 0 0",background:"#ffffff",borderRadius:16,padding:"14px 0 4px",boxShadow:"0 1px 6px rgba(0,0,0,0.06)",marginLeft:14,marginRight:14 }}>
       <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 14px",marginBottom:12 }}>
         <div>
-          <div style={{ fontFamily:"'Barlow Condensed',sans-serif",fontSize:"1.25rem",fontWeight:800,color:"#fff" }}>{title}</div>
-          <div style={{ fontSize:"0.74rem",color:"#7aab8a",marginTop:1 }}>{subtitle}</div>
+          <div style={{ fontFamily:"'Barlow Condensed',sans-serif",fontSize:"1.25rem",fontWeight:800,color:"#111827" }}>{title}</div>
+          <div style={{ fontSize:"0.74rem",color:"#6b7280",marginTop:1 }}>{subtitle}</div>
         </div>
         <button onClick={onViewAll} style={{ background:`rgba(${accent==="#2ecc71"?"46,204,113":"240,160,48"},0.15)`,border:`1px solid ${accent}33`,color:accent,borderRadius:20,padding:"5px 12px",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:"0.75rem",cursor:"pointer" }}>
           View All →
@@ -887,36 +970,38 @@ function ProductCard({ p, onClick, onAddCart, user, compact }) {
   const off = discount(p.price, p.originalPrice);
   return (
     <div onClick={onClick} style={{
-      background:"#131f16",border:"1px solid rgba(46,204,113,0.12)",borderRadius:12,
+      background:"#ffffff",border:"1.5px solid #e8edf5",borderRadius:14,
       overflow:"hidden",cursor:"pointer",display:"flex",flexDirection:"column",
-      transition:"border-color .2s", position:"relative"
+      transition:"box-shadow .2s,border-color .2s", position:"relative",
+      height: compact ? "auto" : 300,
+      boxShadow:"0 1px 4px rgba(0,0,0,0.06)"
     }}>
       {(p.isNew||p.isOffer) && (
         <div style={{
-          position:"absolute",top:7,left:7,zIndex:2,background:p.isNew?"#2ecc71":"#f0a030",
-          color:"#0a0f0d",fontSize:"0.58rem",fontWeight:800,padding:"2px 7px",borderRadius:20,textTransform:"uppercase"
+          position:"absolute",top:7,left:7,zIndex:2,background:p.isNew?"#0ea5e9":"#f59e0b",
+          color:"#fff",fontSize:"0.58rem",fontWeight:800,padding:"2px 7px",borderRadius:20,textTransform:"uppercase"
         }}>{p.isNew?"New":"Sale"}</div>
       )}
-      <div style={{ width:"100%",aspectRatio:"4/3",overflow:"hidden",background:"#0d1a10" }}>
+      <div style={{ width:"100%",height:compact?100:145,overflow:"hidden",background:"#f3f4f6",flexShrink:0 }}>
         {p.image && <img src={p.image} alt={p.name} loading="lazy" style={{ width:"100%",height:"100%",objectFit:"cover" }} />}
       </div>
-      <div style={{ padding: compact ? "8px 9px 6px" : "10px 12px 6px",flex:1 }}>
-        <div style={{ fontSize:"0.62rem",fontWeight:700,color:"#2ecc71",letterSpacing:".06em",textTransform:"uppercase",marginBottom:2,opacity:.8 }}>{p.category||"Product"}</div>
-        <div style={{ fontSize: compact ? "0.78rem" : "0.86rem",fontWeight:600,color:"#fff",lineHeight:1.3,marginBottom:6,display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden" }}>{p.name}</div>
-        <div style={{ display:"flex",alignItems:"baseline",gap:5,flexWrap:"wrap",marginBottom: compact ? 0 : 4 }}>
-          <span style={{ fontFamily:"'Barlow Condensed',sans-serif",fontSize: compact ? "0.95rem" : "1.1rem",fontWeight:800,color:"#2ecc71" }}>{formatINR(p.price)}</span>
-          {off && <span style={{ fontSize:"0.62rem",background:"rgba(46,204,113,0.15)",border:"1px solid rgba(46,204,113,0.3)",color:"#2ecc71",padding:"1px 5px",borderRadius:10,fontWeight:700 }}>{off}%</span>}
+      <div style={{ padding: compact ? "8px 9px 6px" : "10px 12px 6px",flex:1,display:"flex",flexDirection:"column" }}>
+        <div style={{ fontSize:"0.62rem",fontWeight:700,color:"#85c9ff",letterSpacing:".06em",textTransform:"uppercase",marginBottom:2 }}>{p.category||"Product"}</div>
+        <div style={{ fontSize: compact ? "0.78rem" : "0.84rem",fontWeight:600,color:"#111827",lineHeight:1.3,marginBottom:4,display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden",flex:1 }}>{p.name}</div>
+        <div style={{ display:"flex",alignItems:"baseline",gap:5,flexWrap:"wrap",marginBottom: compact ? 0 : 2 }}>
+          <span style={{ fontFamily:"'Barlow Condensed',sans-serif",fontSize: compact ? "0.95rem" : "1.05rem",fontWeight:800,color:"#1a2b6b" }}>{formatINR(p.price)}</span>
+          {off && <span style={{ fontSize:"0.62rem",background:"#eff6ff",border:"1px solid #bfdbfe",color:"#2454c7",padding:"1px 5px",borderRadius:10,fontWeight:700 }}>{off}%</span>}
         </div>
-        {p.originalPrice && !compact && <div style={{ fontSize:"0.73rem",color:"#7aab8a",textDecoration:"line-through",marginBottom:4 }}>{formatINR(p.originalPrice)}</div>}
+        {p.originalPrice && !compact && <div style={{ fontSize:"0.73rem",color:"#9ca3af",textDecoration:"line-through" }}>{formatINR(p.originalPrice)}</div>}
       </div>
       {!compact && (
-        <div style={{ padding:"6px 12px 12px",display:"flex",gap:8 }} onClick={e=>e.stopPropagation()}>
+        <div style={{ padding:"6px 10px 10px",display:"flex",gap:8 }} onClick={e=>e.stopPropagation()}>
           <button onClick={onAddCart} style={{
-            flex:1,background:"#2ecc71",color:"#0a0f0d",border:"none",borderRadius:30,
+            flex:1,background:"#2454c7",color:"#fff",border:"none",borderRadius:30,
             padding:"8px 10px",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:"0.78rem",cursor:"pointer"
           }}>🛒 {user?"Add":"Sign in"}</button>
           <a href={waLink(p.waNum||"919390238537",`Hello SAG! I'm interested in ${p.name} (${formatINR(p.price)})`)} target="_blank" rel="noreferrer"
-            style={{ border:"1.5px solid rgba(46,204,113,0.3)",background:"none",color:"#2ecc71",borderRadius:30,padding:"8px 10px",cursor:"pointer",fontSize:"0.85rem",display:"flex",alignItems:"center",textDecoration:"none" }}>
+            style={{ border:"1.5px solid #85c9ff",background:"#eff6ff",color:"#2454c7",borderRadius:30,padding:"8px 10px",cursor:"pointer",fontSize:"0.85rem",display:"flex",alignItems:"center",textDecoration:"none" }}>
             💬
           </a>
         </div>
@@ -936,10 +1021,10 @@ function CategoriesPage({ products, onProductClick, onAddCart, user }) {
   };
 
   return (
-    <div style={{ background:"#0a0f0d",minHeight:"100vh",paddingBottom:70,fontFamily:"'DM Sans',sans-serif" }}>
-      <div style={{ background:"linear-gradient(135deg,#0d3a8e 0%,#1760d8 100%)",padding:"16px 16px 14px" }}>
+    <div style={{ background:"#f5f7fa",minHeight:"100vh",paddingBottom:70,fontFamily:"'DM Sans',sans-serif" }}>
+      <div style={{ background:"linear-gradient(135deg,#1a2b6b 0%,#2454c7 100%)",padding:"16px 16px 14px" }}>
         <div style={{ fontFamily:"'Barlow Condensed',sans-serif",fontSize:"1.5rem",fontWeight:800,color:"#fff" }}>Categories</div>
-        <div style={{ fontSize:"0.78rem",color:"rgba(255,255,255,0.75)",marginTop:2 }}>Browse by product type</div>
+        <div style={{ fontSize:"0.78rem",color:"rgba(255,255,255,0.8)",marginTop:2 }}>Browse by product type</div>
       </div>
       <div style={{ padding:"14px 14px" }}>
         {cats.map(cat => {
@@ -950,8 +1035,8 @@ function CategoriesPage({ products, onProductClick, onAddCart, user }) {
               <div style={{ display:"flex",alignItems:"center",gap:10,marginBottom:10 }}>
                 <span style={{ fontSize:"1.5rem" }}>{CATEGORY_ICONS[cat]}</span>
                 <div>
-                  <div style={{ fontFamily:"'Barlow Condensed',sans-serif",fontSize:"1.15rem",fontWeight:800,color:"#fff" }}>{cat}</div>
-                  <div style={{ fontSize:"0.73rem",color:"#7aab8a" }}>{catDescs[cat]} · {items.length} items</div>
+                  <div style={{ fontFamily:"'Barlow Condensed',sans-serif",fontSize:"1.15rem",fontWeight:800,color:"#111827" }}>{cat}</div>
+                  <div style={{ fontSize:"0.73rem",color:"#6b7280" }}>{catDescs[cat]} · {items.length} items</div>
                 </div>
               </div>
               <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:10 }}>
@@ -998,8 +1083,8 @@ function AccountPage({ user, onLogin, onLogout, cart, showToast }) {
   const statusColor = s => s==="enquired" ? "#2ecc71" : s==="confirmed" ? "#3a9ad9" : "#f0a030";
 
   return (
-    <div style={{ background:"#0a0f0d",minHeight:"100vh",paddingBottom:80,fontFamily:"'DM Sans',sans-serif" }}>
-      <div style={{ background:"linear-gradient(135deg,#0d3a8e 0%,#1760d8 100%)",padding:"16px 16px 20px" }}>
+    <div style={{ background:"#f5f7fa",minHeight:"100vh",paddingBottom:80,fontFamily:"'DM Sans',sans-serif" }}>
+      <div style={{ background:"linear-gradient(135deg,#1a2b6b 0%,#2454c7 100%)",padding:"16px 16px 20px" }}>
         <div style={{ fontFamily:"'Barlow Condensed',sans-serif",fontSize:"1.5rem",fontWeight:800,color:"#fff",marginBottom:2 }}>Account</div>
         {user ? (
           <div style={{ display:"flex",alignItems:"center",gap:12,marginTop:10 }}>
@@ -1190,65 +1275,65 @@ function CartPage({ cart, user, showAuth, showToast, updateCartQty, removeFromCa
   };
 
   return (
-    <div style={{ background:"#0a0f0d",minHeight:"100vh",paddingBottom:100,fontFamily:"'DM Sans',sans-serif" }}>
-      <div style={{ background:"linear-gradient(135deg,#0d3a8e 0%,#1760d8 100%)",padding:"16px 16px 14px" }}>
+    <div style={{ background:"#f5f7fa",minHeight:"100vh",paddingBottom:100,fontFamily:"'DM Sans',sans-serif" }}>
+      <div style={{ background:"linear-gradient(135deg,#1a2b6b 0%,#2454c7 100%)",padding:"16px 16px 14px" }}>
         <div style={{ fontFamily:"'Barlow Condensed',sans-serif",fontSize:"1.5rem",fontWeight:800,color:"#fff" }}>My Cart</div>
-        <div style={{ fontSize:"0.78rem",color:"rgba(255,255,255,0.75)",marginTop:2 }}>{cart.reduce((s,i)=>s+i.qty,0)} items</div>
+        <div style={{ fontSize:"0.78rem",color:"rgba(255,255,255,0.8)",marginTop:2 }}>{cart.reduce((s,i)=>s+i.qty,0)} items</div>
       </div>
 
       <div style={{ padding:"14px 14px" }}>
         {cart.length === 0 ? (
           <div style={{ textAlign:"center",paddingTop:40 }}>
             <div style={{ fontSize:"4rem",opacity:.3,marginBottom:12 }}>🛒</div>
-            <div style={{ fontFamily:"'Barlow Condensed',sans-serif",fontSize:"1.4rem",fontWeight:800,color:"#fff",marginBottom:6 }}>Your cart is empty</div>
-            <div style={{ fontSize:"0.85rem",color:"#7aab8a" }}>Add products from the store to get started</div>
+            <div style={{ fontFamily:"'Barlow Condensed',sans-serif",fontSize:"1.4rem",fontWeight:800,color:"#111827",marginBottom:6 }}>Your cart is empty</div>
+            <div style={{ fontSize:"0.85rem",color:"#6b7280" }}>Add products from the store to get started</div>
           </div>
         ) : (
           <>
             {cart.map(item => (
-              <div key={item.id} style={{ display:"flex",gap:12,padding:"12px",background:"#131f16",border:"1px solid rgba(46,204,113,0.1)",borderRadius:12,marginBottom:10 }}>
-                <div style={{ width:72,height:72,borderRadius:10,overflow:"hidden",background:"#0a0f0d",flexShrink:0 }}>
+              <div key={item.id} style={{ display:"flex",gap:12,padding:"12px",background:"#fff",border:"1.5px solid #e8edf5",borderRadius:14,marginBottom:10,boxShadow:"0 1px 4px rgba(0,0,0,0.05)" }}>
+                <div style={{ width:72,height:72,borderRadius:10,overflow:"hidden",background:"#f3f4f6",flexShrink:0 }}>
                   {item.image && <img src={item.image} alt={item.name} style={{ width:"100%",height:"100%",objectFit:"cover" }} />}
                 </div>
                 <div style={{ flex:1 }}>
-                  <div style={{ fontSize:"0.84rem",fontWeight:600,color:"#fff",marginBottom:3,lineHeight:1.3 }}>{item.name}</div>
-                  <div style={{ fontFamily:"'Barlow Condensed',sans-serif",fontSize:"1rem",fontWeight:800,color:"#2ecc71",marginBottom:8 }}>{formatINR(item.price*item.qty)}</div>
+                  <div style={{ fontSize:"0.84rem",fontWeight:600,color:"#111827",marginBottom:3,lineHeight:1.3 }}>{item.name}</div>
+                  <div style={{ fontFamily:"'Barlow Condensed',sans-serif",fontSize:"1rem",fontWeight:800,color:"#2454c7",marginBottom:8 }}>{formatINR(item.price*item.qty)}</div>
                   <div style={{ display:"flex",alignItems:"center",gap:8 }}>
-                    <button onClick={() => updateCartQty(item.id, item.qty - 1)} style={{ width:28,height:28,borderRadius:"50%",border:"1.5px solid rgba(46,204,113,0.3)",background:"#0a0f0d",color:"#e8f5ec",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1rem" }}>−</button>
-                    <span style={{ fontSize:"0.9rem",fontWeight:700,color:"#fff",minWidth:20,textAlign:"center" }}>{item.qty}</span>
-                    <button onClick={() => updateCartQty(item.id, item.qty + 1)} style={{ width:28,height:28,borderRadius:"50%",border:"1.5px solid rgba(46,204,113,0.3)",background:"#0a0f0d",color:"#e8f5ec",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1rem" }}>+</button>
+                    <button onClick={() => updateCartQty(item.id, item.qty - 1)} style={{ width:28,height:28,borderRadius:"50%",border:"1.5px solid #85c9ff",background:"#eff6ff",color:"#2454c7",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1rem" }}>−</button>
+                    <span style={{ fontSize:"0.9rem",fontWeight:700,color:"#111827",minWidth:20,textAlign:"center" }}>{item.qty}</span>
+                    <button onClick={() => updateCartQty(item.id, item.qty + 1)} style={{ width:28,height:28,borderRadius:"50%",border:"1.5px solid #85c9ff",background:"#eff6ff",color:"#2454c7",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1rem" }}>+</button>
                   </div>
                 </div>
-                <button onClick={() => removeFromCart(item.id)} style={{ background:"none",border:"none",color:"#7aab8a",cursor:"pointer",fontSize:"1.1rem",alignSelf:"flex-start" }}>✕</button>
+                <button onClick={() => removeFromCart(item.id)} style={{ background:"none",border:"none",color:"#9ca3af",cursor:"pointer",fontSize:"1.1rem",alignSelf:"flex-start" }}>✕</button>
               </div>
             ))}
 
-            <div style={{ background:"#131f16",border:"1px solid rgba(46,204,113,0.15)",borderRadius:12,padding:"14px 16px",marginTop:8 }}>
-              <div style={{ display:"flex",justifyContent:"space-between",fontSize:"0.85rem",color:"#7aab8a",marginBottom:6 }}>
+            <div style={{ background:"#fff",border:"1.5px solid #e8edf5",borderRadius:14,padding:"14px 16px",marginTop:8 }}>
+              <div style={{ display:"flex",justifyContent:"space-between",fontSize:"0.85rem",color:"#6b7280",marginBottom:6 }}>
                 <span>Subtotal ({cart.reduce((s,i)=>s+i.qty,0)} items)</span>
-                <span style={{ color:"#fff",fontWeight:600 }}>{formatINR(total)}</span>
+                <span style={{ color:"#111827",fontWeight:600 }}>{formatINR(total)}</span>
               </div>
-              <div style={{ display:"flex",justifyContent:"space-between",fontSize:"0.85rem",color:"#7aab8a",marginBottom:12 }}>
-                <span>Delivery</span><span style={{ color:"#2ecc71",fontWeight:600 }}>Contact for quote</span>
+              <div style={{ display:"flex",justifyContent:"space-between",fontSize:"0.85rem",color:"#6b7280",marginBottom:12 }}>
+                <span>Delivery</span><span style={{ color:"#2454c7",fontWeight:600 }}>Contact for quote</span>
               </div>
-              <div style={{ height:1,background:"rgba(46,204,113,0.1)",marginBottom:12 }} />
+              <div style={{ height:1,background:"#e8edf5",marginBottom:12 }} />
               <div style={{ display:"flex",justifyContent:"space-between",marginBottom:14 }}>
-                <span style={{ fontWeight:700,fontSize:"0.9rem",color:"#fff" }}>Total</span>
-                <span style={{ fontFamily:"'Barlow Condensed',sans-serif",fontSize:"1.4rem",fontWeight:800,color:"#fff" }}>{formatINR(total)}</span>
+                <span style={{ fontWeight:700,fontSize:"0.9rem",color:"#111827" }}>Total</span>
+                <span style={{ fontFamily:"'Barlow Condensed',sans-serif",fontSize:"1.4rem",fontWeight:800,color:"#111827" }}>{formatINR(total)}</span>
               </div>
               <button onClick={checkout} style={{
-                width:"100%",padding:"13px",background:"#2ecc71",color:"#0a0f0d",border:"none",borderRadius:40,
+                width:"100%",padding:"13px",background:"#2454c7",color:"#fff",border:"none",borderRadius:40,
                 fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:"0.93rem",cursor:"pointer",
                 display:"flex",alignItems:"center",justifyContent:"center",gap:8
               }}>💬 Enquire via WhatsApp</button>
               {cart.length > 0 && (
                 <button onClick={clearCart} style={{
                   width:"100%",marginTop:8,padding:"10px",background:"none",
-                  border:"1px solid rgba(224,80,80,0.25)",color:"#e05050",borderRadius:40,
+                  border:"1px solid #fca5a5",color:"#ef4444",borderRadius:40,
                   fontFamily:"'DM Sans',sans-serif",fontWeight:600,fontSize:"0.82rem",cursor:"pointer"
                 }}>🗑 Clear Cart</button>
               )}
-              <div style={{ fontSize:"0.73rem",color:"#7aab8a",textAlign:"center",marginTop:8 }}>
+              <div style={{ fontSize:"0.73rem",color:"#6b7280",textAlign:"center",marginTop:8 }}>
                 {user ? `Signed in as ${user.name}` : "Sign in to enquire"}
               </div>
             </div>
@@ -1271,28 +1356,29 @@ function BottomNav({ activeTab, onTabChange, cartCount }) {
   return (
     <div style={{
       position:"fixed",bottom:0,left:0,right:0,zIndex:200,
-      background:"#101810",borderTop:"1px solid rgba(46,204,113,0.15)",
+      background:"#ffffff",borderTop:"1.5px solid #e8edf5",
       display:"flex",height:62,
+      boxShadow:"0 -2px 12px rgba(36,84,199,0.08)"
     }}>
       {tabs.map(tab => (
         <button key={tab.id} onClick={() => onTabChange(tab.id)} style={{
           flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,
           background:"none",border:"none",cursor:"pointer",padding:"6px 0",
-          color: activeTab===tab.id ? "#2ecc71" : "#7aab8a",
+          color: activeTab===tab.id ? "#2454c7" : "#9ca3af",
           transition:"color .2s",position:"relative"
         }}>
           <span style={{ fontSize:"1.25rem",position:"relative" }}>
             {tab.icon}
             {tab.badge > 0 && (
               <span style={{
-                position:"absolute",top:-4,right:-6,background:"#ff5722",color:"#fff",
+                position:"absolute",top:-4,right:-6,background:"#ef4444",color:"#fff",
                 fontSize:"0.55rem",fontWeight:800,width:14,height:14,borderRadius:"50%",
                 display:"flex",alignItems:"center",justifyContent:"center"
               }}>{tab.badge > 9 ? "9+" : tab.badge}</span>
             )}
           </span>
           <span style={{ fontSize:"0.62rem",fontWeight: activeTab===tab.id ? 700 : 500,fontFamily:"'DM Sans',sans-serif" }}>{tab.label}</span>
-          {activeTab===tab.id && <div style={{ position:"absolute",bottom:0,width:28,height:2,background:"#2ecc71",borderRadius:1 }} />}
+          {activeTab===tab.id && <div style={{ position:"absolute",bottom:0,width:28,height:2.5,background:"#2454c7",borderRadius:1 }} />}
         </button>
       ))}
     </div>
@@ -2158,7 +2244,7 @@ export default function App() {
   );
 
   return (
-    <div style={{ fontFamily:"'DM Sans',sans-serif",background:"#0a0f0d",minHeight:"100vh" }}>
+    <div style={{ fontFamily:"'DM Sans',sans-serif",background:"#f5f7fa",minHeight:"100vh" }}>
       <style>{`*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}html,body{overflow-x:hidden;}`}</style>
 
       {tab === "home" && (
