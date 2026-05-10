@@ -605,13 +605,8 @@ function ProductDetailModal({ product, onClose, onAddCart, user, showAuth, allPr
     finally { setSubmitting(false); }
   };
 
-  // Hardware back button — App.openProduct already pushed a history entry.
-  // We just listen for popstate and call onClose (which navigates the product stack).
-  useEffect(() => {
-    const onPop = () => { onClose(); };
-    window.addEventListener("popstate", onPop);
-    return () => { window.removeEventListener("popstate", onPop); };
-  }, [onClose]);
+  // Hardware back button is handled centrally in the App root.
+  // This component just exposes onClose which the App popstate handler calls.
 
   // Shared style tokens
   const S = {
@@ -3245,10 +3240,16 @@ export default function App() {
   // Stack so similar-product clicks create a back-navigable history
   const [productHistory, setProductHistory] = useState([]);
 
+  // ── nav helpers that also push a browser history entry ──
+  const navTo = (newTab) => {
+    window.history.pushState({ sagNav: newTab }, "");
+    setTab(newTab);
+  };
+
   const openProduct = (p) => {
     if (modalProduct) setProductHistory(h => [...h, modalProduct]);
     setModalProduct(p);
-    window.history.pushState({ pdModal: true }, "");
+    window.history.pushState({ sagModal: true }, "");
   };
 
   const closeModal = () => {
@@ -3261,6 +3262,45 @@ export default function App() {
       setProductHistory([]);
     }
   };
+
+  const openAdmin = () => {
+    window.history.pushState({ sagAdmin: true }, "");
+    setShowAdmin(true);
+  };
+
+  // ── Seed one base history entry on mount ──
+  useEffect(() => {
+    window.history.replaceState({ sagBase: true }, "");
+  }, []);
+
+  // ── Centralized Android hardware back-button handler ──
+  useEffect(() => {
+    const onPop = () => {
+      // Layer 1: product modal open (deepest layer)
+      if (modalProduct) {
+        window.history.pushState({ sagModal: true }, "");
+        closeModal();
+        return;
+      }
+      // Layer 2: admin panel open
+      if (showAdmin) {
+        window.history.pushState({ sagAdmin: true }, "");
+        setShowAdmin(false);
+        return;
+      }
+      // Layer 3: on a non-home tab → go to home
+      if (tab !== "home") {
+        window.history.pushState({ sagBase: true }, "");
+        setTab("home");
+        return;
+      }
+      // Layer 4: already on home — let native WebView exit the app naturally
+    };
+
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [modalProduct, showAdmin, tab, productHistory]);
 
   // ── Load products + cart on mount ──
   useEffect(() => {
@@ -3417,7 +3457,7 @@ export default function App() {
       )}
 
       {tab === "home" && (
-        <HomePage user={user} cart={cart} showAuth={()=>{}} showToast={showToast} onTabChange={setTab}
+        <HomePage user={user} cart={cart} showAuth={()=>{}} showToast={showToast} onTabChange={navTo}
           banners={banners} setBanners={setBanners} addToCart={addToCart} />
       )}
       {tab === "categories" && (
@@ -3427,23 +3467,23 @@ export default function App() {
         <AccountPage user={user} onLogin={handleLogin} onLogout={logout} cart={cart} showToast={showToast} />
       )}
       {tab === "cart" && (
-        <CartPage cart={cart} user={user} showAuth={()=>setTab("account")} showToast={showToast}
+        <CartPage cart={cart} user={user} showAuth={()=>navTo("account")} showToast={showToast}
           updateCartQty={updateCartQty} removeFromCart={removeFromCart} clearCart={clearCart} />
       )}
 
-      <BottomNav activeTab={tab} onTabChange={setTab} cartCount={cartCount} />
+      <BottomNav activeTab={tab} onTabChange={navTo} cartCount={cartCount} />
       {toastEl}
 
       {modalProduct && (
         <ProductDetailModal product={modalProduct} onClose={closeModal}
           onAddCart={addToCart} allProducts={products}
           onSimilarClick={openProduct}
-          user={user} showAuth={()=>{closeModal();setProductHistory([]);setModalProduct(null);setTab("account");}} />
+          user={user} showAuth={()=>{closeModal();setProductHistory([]);setModalProduct(null);navTo("account");}} />
       )}
 
       {(user?.email||"").toLowerCase() === ADMIN_EMAIL && (
         <div style={{ position:"fixed",bottom:72,right:16,zIndex:99 }}>
-          <button onClick={()=>setShowAdmin(true)} style={{ background:"rgba(10,15,13,0.9)",border:"1px solid rgba(46,204,113,0.2)",color:"#7aab8a",padding:"7px 13px",borderRadius:40,fontSize:"0.72rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",backdropFilter:"blur(6px)" }}>⚙ Admin</button>
+          <button onClick={openAdmin} style={{ background:"rgba(10,15,13,0.9)",border:"1px solid rgba(46,204,113,0.2)",color:"#7aab8a",padding:"7px 13px",borderRadius:40,fontSize:"0.72rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",backdropFilter:"blur(6px)" }}>⚙ Admin</button>
         </div>
       )}
     </div>
