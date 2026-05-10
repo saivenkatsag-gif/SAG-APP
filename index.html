@@ -12,5 +12,30 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+
+    <!-- ── Android WebView back-button fix ──────────────────────────
+         WebIntoApp / AppMaker / GoNative style wrappers call
+         window.history.go(-1) OR look for a JS bridge when the
+         Android back button is pressed. We expose both so whichever
+         tool you use will find one that works.
+         If the history length is > 1 we go back (React handles it).
+         If we're already at the root we let the app close normally.
+    ──────────────────────────────────────────────────────────────── -->
+    <script>
+      // Bridge used by WebIntoApp, AppMaker, and similar wrappers
+      window.onBackPressed = function () {
+        if (window.history.length > 1) {
+          window.history.go(-1);
+          return true;   // true = "I handled it, don't close the app"
+        }
+        return false;    // false = "nothing to go back to, close the app"
+      };
+
+      // Some wrappers call this name instead
+      window.handleBackButton = window.onBackPressed;
+
+      // Gonative-style bridge
+      window.gonative_back_pressed = window.onBackPressed;
+    </script>
   </body>
 </html>
