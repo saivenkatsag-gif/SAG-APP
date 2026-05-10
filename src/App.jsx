@@ -3331,6 +3331,71 @@ export default function App() {
   const [showAdmin, setShowAdmin] = useState(false);
   const [products, setProducts] = useState(STATIC_PRODUCTS);
 
+  // ── Android / browser back-button handling ──────────────────
+  // We maintain a "nav stack" in the History API so the phone's
+  // hardware back button steps back through the app instead of
+  // closing it.  Rules (highest priority first):
+  //   1. Product modal open  → close modal (or go to prev product)
+  //   2. Admin page open     → close admin
+  //   3. Any tab != "home"   → switch to "home"
+  //   4. Already on home     → let the browser/OS do its thing
+  //      (we pop the sentinel so the next back press exits normally)
+
+  // Push a sentinel entry whenever the user navigates somewhere
+  // so there is always a history entry to pop before "exit".
+  const pushNavState = () => window.history.pushState({ sagNav: true }, "");
+
+  // Wrap setTab so every tab change pushes a history entry.
+  const navigateTo = (nextTab) => {
+    setTab(nextTab);
+    if (nextTab !== "home") pushNavState();
+  };
+
+  // Keep a ref to current values so the popstate listener (added
+  // once on mount) always sees fresh state without needing to be
+  // re-registered.
+  const navRef = useRef({});
+  navRef.current = { tab, modalProduct: null, showAdmin, setTab, setShowAdmin };
+  // We'll wire modalProduct into navRef inside the modal block below.
+
+  useEffect(() => {
+    // Push an initial sentinel so the very first back press is caught.
+    pushNavState();
+
+    const onPopState = () => {
+      const { tab, showAdmin, setTab, setShowAdmin } = navRef.current;
+
+      // Priority 1 — product modal (handled by its own pushState in openProduct)
+      // closeModal is called from the popstate listener set up in the modal block.
+      // We only handle it here if the modal ref says it is closed already.
+      if (navRef.current.modalOpen) {
+        navRef.current.closeModal();
+        pushNavState(); // keep a sentinel so further backs are still caught
+        return;
+      }
+
+      // Priority 2 — admin page
+      if (showAdmin) {
+        setShowAdmin(false);
+        pushNavState();
+        return;
+      }
+
+      // Priority 3 — any non-home tab
+      if (tab !== "home") {
+        setTab("home");
+        // Don't push — we're back at root; next back press will exit normally.
+        return;
+      }
+
+      // Priority 4 — already at home, let the OS close the app.
+      // (We intentionally do NOT push here so the browser can exit.)
+    };
+
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // ── Load banners from Supabase on mount ──
   useEffect(() => {
     sbGetBanners().then(rows => {
@@ -3354,7 +3419,7 @@ export default function App() {
   const openProduct = (p) => {
     if (modalProduct) setProductHistory(h => [...h, modalProduct]);
     setModalProduct(p);
-    window.history.pushState({ pdModal: true }, "");
+    pushNavState(); // hardware back will trigger closeModal
   };
 
   const closeModal = () => {
@@ -3362,11 +3427,18 @@ export default function App() {
       const prev = productHistory[productHistory.length - 1];
       setProductHistory(h => h.slice(0, -1));
       setModalProduct(prev);
+      pushNavState(); // still more modal history, keep sentinel
     } else {
       setModalProduct(null);
       setProductHistory([]);
+      // Back to the underlying tab; push sentinel only if not on home
+      if (tab !== "home") pushNavState();
     }
   };
+
+  // Keep navRef in sync with latest modal state
+  navRef.current.modalOpen = !!modalProduct;
+  navRef.current.closeModal = closeModal;
 
   // ── Load products + cart on mount ──
   useEffect(() => {
@@ -3508,23 +3580,23 @@ export default function App() {
         <AccountPage user={user} onLogin={handleLogin} onLogout={logout} cart={cart} showToast={showToast} />
       )}
       {tab === "cart" && (
-        <CartPage cart={cart} user={user} showAuth={()=>setTab("account")} showToast={showToast}
+        <CartPage cart={cart} user={user} showAuth={()=>navigateTo("account")} showToast={showToast}
           updateCartQty={updateCartQty} removeFromCart={removeFromCart} clearCart={clearCart} />
       )}
 
-      <BottomNav activeTab={tab} onTabChange={setTab} cartCount={cartCount} />
+      <BottomNav activeTab={tab} onTabChange={navigateTo} cartCount={cartCount} />
       {toastEl}
 
       {modalProduct && (
         <ProductDetailModal product={modalProduct} onClose={closeModal}
           onAddCart={addToCart} allProducts={products}
           onSimilarClick={openProduct}
-          user={user} showAuth={()=>{closeModal();setProductHistory([]);setModalProduct(null);setTab("account");}} />
+          user={user} showAuth={()=>{closeModal();setProductHistory([]);setModalProduct(null);navigateTo("account");}} />
       )}
 
       {(user?.email||"").toLowerCase() === ADMIN_EMAIL && (
         <div style={{ position:"fixed",bottom:72,right:16,zIndex:99 }}>
-          <button onClick={()=>setShowAdmin(true)} style={{ background:"rgba(10,15,13,0.9)",border:"1px solid rgba(46,204,113,0.2)",color:"#7aab8a",padding:"7px 13px",borderRadius:40,fontSize:"0.72rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",backdropFilter:"blur(6px)" }}>⚙ Admin</button>
+          <button onClick={()=>{setShowAdmin(true);pushNavState();}} style={{ background:"rgba(10,15,13,0.9)",border:"1px solid rgba(46,204,113,0.2)",color:"#7aab8a",padding:"7px 13px",borderRadius:40,fontSize:"0.72rem",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",backdropFilter:"blur(6px)" }}>⚙ Admin</button>
         </div>
       )}
     </div>
