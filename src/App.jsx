@@ -1230,30 +1230,11 @@ function BannerAdminModal({ banners, onSave, onClose }) {
 }
 
 // ─── HOME PAGE ─────────────────────────────────────────────────
-function HomePage({ user, cart, showAuth, showToast, onTabChange, banners, setBanners, addToCart }) {
+function HomePage({ user, cart, showAuth, showToast, onTabChange, banners, setBanners, addToCart, onProductClick }) {
   const [products, setProducts] = useState(STATIC_PRODUCTS);
   const [search, setSearch] = useState("");
   const [activeCat, setActiveCat] = useState("All");
-  const [modalProduct, setModalProduct] = useState(null);
-  const [productHistory, setProductHistory] = useState([]);
   const [cartOpen, setCartOpen] = useState(false);
-
-  const openProduct = (p) => {
-    if (modalProduct) setProductHistory(h => [...h, modalProduct]);
-    setModalProduct(p);
-    window.history.pushState({ pdModal: true }, "");
-  };
-
-  const closeModal = () => {
-    if (productHistory.length > 0) {
-      const prev = productHistory[productHistory.length - 1];
-      setProductHistory(h => h.slice(0, -1));
-      setModalProduct(prev);
-    } else {
-      setModalProduct(null);
-      setProductHistory([]);
-    }
-  };
   const [authOpen, setAuthOpen] = useState(false);
   const [localUser, setLocalUser] = useState(user);
   const [bannerAdminOpen, setBannerAdminOpen] = useState(false);
@@ -1393,24 +1374,24 @@ function HomePage({ user, cart, showAuth, showToast, onTabChange, banners, setBa
               </div>
             ) : (
               <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:10 }}>
-                {filtered.map(p => <ProductCard key={p.id} p={p} onClick={() => openProduct(p)} onAddCart={() => { if(!localUser){setAuthOpen(true);return;} addToCart(p); }} user={localUser} />)}
+                {filtered.map(p => <ProductCard key={p.id} p={p} onClick={() => onProductClick(p)} onAddCart={() => { if(!localUser){setAuthOpen(true);return;} addToCart(p); }} user={localUser} />)}
               </div>
             )}
           </div>
         ) : (
           <>
             <SectionBlock title="🚁 Drones" subtitle="Agricultural drones for every farm" products={featuredDrones}
-              onProductClick={openProduct} onAddCart={(p) => { if(!localUser){setAuthOpen(true);return;} addToCart(p); }} user={localUser}
+              onProductClick={onProductClick} onAddCart={(p) => { if(!localUser){setAuthOpen(true);return;} addToCart(p); }} user={localUser}
               onViewAll={() => setActiveCat("Drones")} />
 
             {offers.length > 0 && (
               <SectionBlock title="🏷️ Hot Deals" subtitle="Best prices on top products" products={offers}
-                onProductClick={openProduct} onAddCart={(p) => { if(!localUser){setAuthOpen(true);return;} addToCart(p); }} user={localUser}
+                onProductClick={onProductClick} onAddCart={(p) => { if(!localUser){setAuthOpen(true);return;} addToCart(p); }} user={localUser}
                 onViewAll={() => setActiveCat("Offers")} accent="#f0a030" />
             )}
 
             <SectionBlock title="🔋 Batteries" subtitle="SAG VOLT Plus series & chargers" products={featuredBatteries}
-              onProductClick={openProduct} onAddCart={(p) => { if(!localUser){setAuthOpen(true);return;} addToCart(p); }} user={localUser}
+              onProductClick={onProductClick} onAddCart={(p) => { if(!localUser){setAuthOpen(true);return;} addToCart(p); }} user={localUser}
               onViewAll={() => setActiveCat("Batteries")} />
 
             <div style={{ padding:"0 14px 8px" }}>
@@ -1421,7 +1402,7 @@ function HomePage({ user, cart, showAuth, showToast, onTabChange, banners, setBa
                 </div>
               </div>
               <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:10 }}>
-                {products.map(p => <ProductCard key={p.id} p={p} onClick={() => openProduct(p)} onAddCart={() => { if(!localUser){setAuthOpen(true);return;} addToCart(p); }} user={localUser} />)}
+                {products.map(p => <ProductCard key={p.id} p={p} onClick={() => onProductClick(p)} onAddCart={() => { if(!localUser){setAuthOpen(true);return;} addToCart(p); }} user={localUser} />)}
               </div>
             </div>
           </>
@@ -1444,7 +1425,6 @@ function HomePage({ user, cart, showAuth, showToast, onTabChange, banners, setBa
       {/* Modals */}
       {cartOpen && <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} cart={cart} user={localUser} showAuth={() => setAuthOpen(true)} updateCartQty={updateCartQty} removeFromCart={removeFromCart} />}
       {authOpen && <AuthModal onClose={() => setAuthOpen(false)} onLogin={(session) => { saveSession(session); setLocalUser(session); showToast("success","✅ Welcome, "+session.name+"!"); }} />}
-      {modalProduct && <ProductDetailModal product={modalProduct} onClose={closeModal} onAddCart={addToCart} allProducts={products} onSimilarClick={openProduct} user={localUser} showAuth={() => { closeModal(); setProductHistory([]); setModalProduct(null); setAuthOpen(true); }} />}
       {bannerAdminOpen && <BannerAdminModal banners={banners} onSave={(list) => { setBanners(list); setBannerAdminOpen(false); showToast("success","✅ Banners saved!"); }} onClose={() => setBannerAdminOpen(false)} />}
     </div>
   );
@@ -3240,16 +3220,12 @@ export default function App() {
   // Stack so similar-product clicks create a back-navigable history
   const [productHistory, setProductHistory] = useState([]);
 
-  // ── nav helpers that also push a browser history entry ──
-  const navTo = (newTab) => {
-    window.history.pushState({ sagNav: newTab }, "");
-    setTab(newTab);
-  };
+  // ── nav helper (sentinel in useEffect handles all back interception) ──
+  const navTo = (newTab) => { setTab(newTab); };
 
   const openProduct = (p) => {
     if (modalProduct) setProductHistory(h => [...h, modalProduct]);
     setModalProduct(p);
-    window.history.pushState({ sagModal: true }, "");
   };
 
   const closeModal = () => {
@@ -3263,44 +3239,68 @@ export default function App() {
     }
   };
 
-  const openAdmin = () => {
-    window.history.pushState({ sagAdmin: true }, "");
-    setShowAdmin(true);
-  };
+  const openAdmin = () => { setShowAdmin(true); };
 
-  // ── Seed one base history entry on mount ──
+  // ── Android back-button: sentinel strategy ──
+  // We always keep ONE sentinel entry on top of the history stack.
+  // On mount we push it. Every time back is pressed:
+  //   1. The sentinel is popped (fires popstate) → we handle the navigation
+  //   2. We immediately re-push the sentinel so the next back press is also intercepted
+  // When we're on the home tab with nothing open, we do NOT re-push, so the
+  // next back press pops the base entry and Android exits the app normally.
+
+  // Use a ref so the popstate closure always sees fresh state without stale captures
+  const backStateRef = useRef({ tab: "home", modalProduct: null, showAdmin: false, productHistory: [] });
+
+  // Keep ref in sync with state
   useEffect(() => {
+    backStateRef.current = { tab, modalProduct, showAdmin, productHistory };
+  }, [tab, modalProduct, showAdmin, productHistory]);
+
+  useEffect(() => {
+    // Replace the current entry as our "base" (index 0), then push the sentinel (index 1)
     window.history.replaceState({ sagBase: true }, "");
-  }, []);
+    window.history.pushState({ sagSentinel: true }, "");
 
-  // ── Centralized Android hardware back-button handler ──
-  useEffect(() => {
     const onPop = () => {
-      // Layer 1: product modal open (deepest layer)
+      const { tab, modalProduct, showAdmin, productHistory } = backStateRef.current;
+
       if (modalProduct) {
-        window.history.pushState({ sagModal: true }, "");
-        closeModal();
+        // Close modal layer, then re-push sentinel to stay intercepting
+        if (productHistory.length > 0) {
+          const prev = productHistory[productHistory.length - 1];
+          setProductHistory(h => h.slice(0, -1));
+          setModalProduct(prev);
+        } else {
+          setModalProduct(null);
+          setProductHistory([]);
+        }
+        window.history.pushState({ sagSentinel: true }, "");
         return;
       }
-      // Layer 2: admin panel open
+
       if (showAdmin) {
-        window.history.pushState({ sagAdmin: true }, "");
         setShowAdmin(false);
+        window.history.pushState({ sagSentinel: true }, "");
         return;
       }
-      // Layer 3: on a non-home tab → go to home
+
       if (tab !== "home") {
-        window.history.pushState({ sagBase: true }, "");
         setTab("home");
+        window.history.pushState({ sagSentinel: true }, "");
         return;
       }
-      // Layer 4: already on home — let native WebView exit the app naturally
+
+      // Already on home with nothing open — do NOT re-push sentinel.
+      // The base entry (index 0) is now the current entry.
+      // Android's next back press will find nothing to pop and exit the app.
     };
 
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
+  // Run once on mount only
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [modalProduct, showAdmin, tab, productHistory]);
+  }, []);
 
   // ── Load products + cart on mount ──
   useEffect(() => {
@@ -3458,7 +3458,7 @@ export default function App() {
 
       {tab === "home" && (
         <HomePage user={user} cart={cart} showAuth={()=>{}} showToast={showToast} onTabChange={navTo}
-          banners={banners} setBanners={setBanners} addToCart={addToCart} />
+          banners={banners} setBanners={setBanners} addToCart={addToCart} onProductClick={openProduct} />
       )}
       {tab === "categories" && (
         <CategoriesPage products={products} onProductClick={openProduct} onAddCart={addToCart} user={user} />
