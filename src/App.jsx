@@ -3241,32 +3241,25 @@ export default function App() {
 
   const openAdmin = () => { setShowAdmin(true); };
 
-  // ── Android back-button: sentinel strategy ──
-  // We always keep ONE sentinel entry on top of the history stack.
-  // On mount we push it. Every time back is pressed:
-  //   1. The sentinel is popped (fires popstate) → we handle the navigation
-  //   2. We immediately re-push the sentinel so the next back press is also intercepted
-  // When we're on the home tab with nothing open, we do NOT re-push, so the
-  // next back press pops the base entry and Android exits the app normally.
-
-  // Use a ref so the popstate closure always sees fresh state without stale captures
+  // ── Android hardware back button handler ──
+  // Uses a ref so the handler always sees the latest state without stale closures.
   const backStateRef = useRef({ tab: "home", modalProduct: null, showAdmin: false, productHistory: [] });
 
-  // Keep ref in sync with state
+  // Keep ref in sync whenever state changes
   useEffect(() => {
     backStateRef.current = { tab, modalProduct, showAdmin, productHistory };
   }, [tab, modalProduct, showAdmin, productHistory]);
 
   useEffect(() => {
-    // Replace the current entry as our "base" (index 0), then push the sentinel (index 1)
-    window.history.replaceState({ sagBase: true }, "");
-    window.history.pushState({ sagSentinel: true }, "");
+    // ── Strategy 1: Capacitor backButton event (Android hardware back key) ──
+    // This fires BEFORE the browser history popstate on Capacitor/Android.
+    // We must handle it here; otherwise Capacitor's default action closes the app.
+    let capacitorListener = null;
 
-    const onPop = () => {
+    const handleBackAction = () => {
       const { tab, modalProduct, showAdmin, productHistory } = backStateRef.current;
 
       if (modalProduct) {
-        // Close modal layer, then re-push sentinel to stay intercepting
         if (productHistory.length > 0) {
           const prev = productHistory[productHistory.length - 1];
           setProductHistory(h => h.slice(0, -1));
@@ -3275,29 +3268,61 @@ export default function App() {
           setModalProduct(null);
           setProductHistory([]);
         }
-        window.history.pushState({ sagSentinel: true }, "");
-        return;
+        return true; // handled
       }
 
       if (showAdmin) {
         setShowAdmin(false);
-        window.history.pushState({ sagSentinel: true }, "");
-        return;
+        return true;
       }
 
       if (tab !== "home") {
         setTab("home");
-        window.history.pushState({ sagSentinel: true }, "");
-        return;
+        return true;
       }
 
-      // Already on home with nothing open — do NOT re-push sentinel.
-      // The base entry (index 0) is now the current entry.
-      // Android's next back press will find nothing to pop and exit the app.
+      return false; // not handled → let Capacitor exit the app
+    };
+
+    // Register Capacitor listener if available
+    const registerCapacitor = async () => {
+      try {
+        const { App: CapApp } = await import("@capacitor/app");
+        capacitorListener = await CapApp.addListener("backButton", ({ canGoBack }) => {
+          const handled = handleBackAction();
+          if (!handled) {
+            CapApp.exitApp();
+          }
+        });
+      } catch {
+        // @capacitor/app not available (web browser) — fall through to popstate strategy
+      }
+    };
+    registerCapacitor();
+
+    // ── Strategy 2: Browser popstate sentinel (web + PWA fallback) ──
+    // Push a sentinel entry so popstate fires on back press in non-Capacitor envs.
+    window.history.replaceState({ sagBase: true }, "");
+    window.history.pushState({ sagSentinel: true }, "");
+
+    const onPop = () => {
+      const handled = handleBackAction();
+      if (handled) {
+        // Re-push sentinel so the NEXT back press is also intercepted
+        window.history.pushState({ sagSentinel: true }, "");
+      }
+      // If not handled (home tab, nothing open): do NOT re-push.
+      // Browser/Android will find the base entry and exit naturally.
     };
 
     window.addEventListener("popstate", onPop);
-    return () => window.removeEventListener("popstate", onPop);
+
+    return () => {
+      window.removeEventListener("popstate", onPop);
+      if (capacitorListener) {
+        capacitorListener.remove();
+      }
+    };
   // Run once on mount only
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
